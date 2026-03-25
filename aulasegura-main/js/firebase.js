@@ -1,14 +1,14 @@
 // ===== FIREBASE INIT =====
 const firebaseConfig = {
-  apiKey: "AIzaSyCgbKJO_Wd2IgRxfH-NtVmgul4bdreWqtk",
-  authDomain: "aulasegura-d535e.firebaseapp.com",
-  projectId: "aulasegura-d535e",
-  storageBucket: "aulasegura-d535e.firebasestorage.app",
-  messagingSenderId: "918650073829",
-  appId: "1:918650073829:web:8884dd5e11c571c60a9a0c",
-  databaseURL: "https://aulasegura-d535e-default-rtdb.firebaseio.com"
+  apiKey: "AIzaSyA5yRZNLV1qjA_o63RcGf0qKPehCuHIlgw",
+  authDomain: "aulahtml-c94fa.firebaseapp.com",
+  databaseURL: "https://aulahtml-c94fa-default-rtdb.firebaseio.com",
+  projectId: "aulahtml-c94fa",
+  storageBucket: "aulahtml-c94fa.firebasestorage.app",
+  messagingSenderId: "736905199684",
+  appId: "1:736905199684:web:3fd073449fdc9b5f02bc11",
+  measurementId: "G-WV20R121SN"
 };
-
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 const fbDB = firebase.database();
