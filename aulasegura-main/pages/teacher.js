@@ -4,6 +4,43 @@ function renderTeacher(app) {
   let questions = [], qtext = '', qtype = 'mc', optionsRaw = 'Opción A;Opción B', correctIndex = 0;
   let selectedExam = null, saving = false, filter = '', showRegistry = true;
   const user = getUser();
+  let aiReady = false;
+
+  async function initAIModule() {
+    try {
+      await AI.init({ vocabSize: 40 });
+      aiReady = true;
+      console.log('AI modular listo para entrenar y predecir');
+    } catch (err) {
+      console.warn('Error inicializando AI:', err.message || err);
+    }
+  }
+
+  // Ejemplo de uso desde teacher.js:
+  //   addAIExample('Respuesta correcta', 'correcto');
+  //   await trainAIModel();
+  //   await predictAIText('¿Esta respuesta es correcta?');
+  function addAIExample(text, label) {
+    if (!aiReady) {
+      console.warn('AI no está lista. Llama a initAIModule() primero.');
+      return;
+    }
+    AI.addTrainingExample(text, label);
+    console.log('Ejemplo agregado:', { text, label });
+  }
+
+  async function trainAIModel(epochs = 20, batchSize = 8) {
+    if (!aiReady) await initAIModule();
+    await AI.train({ epochs, batchSize });
+    console.log('Modelo AI entrenado con', AI.getTrainingData().length, 'ejemplos');
+  }
+
+  async function predictAIText(text) {
+    if (!aiReady) await initAIModule();
+    const result = await AI.predict(text);
+    console.log('Predicción AI:', result);
+    return result;
+  }
 
   async function loadExams() {
     loading = true;
@@ -252,4 +289,5 @@ function renderTeacher(app) {
   }
 
   loadExams();
+  initAIModule();
 }
