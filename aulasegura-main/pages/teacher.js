@@ -367,4 +367,4 @@ function renderTeacher(app) {
 
   loadExams();
   initAIModule();
-}
+}}

@@ -54,6 +54,16 @@
     }
   </script>
 
+  <!-- Advertencia de modo offline -->
+  <script>
+    if (location.protocol === 'file:') {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#ffeb3b;color:#000;padding:1rem;text-align:center;font-family:Arial;z-index:1000;position:fixed;top:0;width:100%';
+      banner.innerHTML = '⚠️ Modo Offline: Funcionalidad limitada. Para completo, usa servidor local: <code>python -m http.server 8000</code> y abre <a href="http://localhost:8000" style="color:blue;text-decoration:underline">http://localhost:8000</a>';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+  </script>
+
   <script src="js/auth.js"></script>
   <script src="js/emailValidator.js"></script>
   <script src="js/firebase.js"></script>

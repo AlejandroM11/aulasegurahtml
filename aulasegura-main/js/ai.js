@@ -13,6 +13,16 @@
 (function (window) {
   if (!window.tf) {
     console.warn('TensorFlow.js no está cargado. Asegúrate de incluir el script de tf.js antes de ai.js.');
+    // Proporcionar mocks para evitar errores
+    window.AI = {
+      inicializarModelo: () => Promise.resolve(),
+      entrenarModelo: () => Promise.reject('TensorFlow.js no disponible'),
+      predecir: () => Promise.reject('TensorFlow.js no disponible'),
+      getTrainingData: () => [],
+      addTrainingExample: () => {},
+      clearTrainingData: () => {}
+    };
+    return;
   }
 
   const STORAGE_KEYS = {
