@@ -22,6 +22,16 @@ function router() {
   const path = getHash();
   const user = getUser();
   const app = document.getElementById('app');
+  if (!app) {
+    console.error('Elemento #app no encontrado');
+    return;
+  }
+
+  // Redirigir automáticamente si hay usuario logueado en la home
+  if (path === '/' && user) {
+    navigate(user.role === 'docente' ? '/docente' : '/estudiante');
+    return;
+  }
 
   // Protected route logic
   const teacherRoutes = ['/docente', '/monitor', '/resultados'];
@@ -41,9 +51,14 @@ function router() {
   }
 
   const render = routes[path] || renderHome;
-  app.innerHTML = '';
-  render(app);
-  updateNavbar();
+  try {
+    app.innerHTML = '';
+    render(app);
+    updateNavbar();
+  } catch (error) {
+    console.error('Error al renderizar la ruta:', path, error);
+    app.innerHTML = '<p>Error al cargar la página. Intenta recargar.</p>';
+  }
 }
 
 function updateNavbar() {

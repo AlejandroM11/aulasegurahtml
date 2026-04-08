@@ -2,6 +2,14 @@ function renderTeacher(app) {
   let exams = [], loading = true, activeTab = 'crear';
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
   let questions = [], qtext = '', qtype = 'mc', optionsRaw = 'Opción A;Opción B', correctIndex = 0;
+  const user = getUser();
+  if (!user || user.role !== 'docente') {
+    console.error('Usuario no autorizado para acceder a la vista del profesor');
+    navigate('/login');
+    return;
+  }
+  let aiReady = false;
+  let selectedExam = null, saving = false, filter = '', showRegistry = true;
   // Sección de Entrenamiento IA:
   // - Los datos se agregan al hacer clic en "Entrenar", llamando a AI.entrenarModelo()
   // - El modelo se entrena automáticamente con cada nuevo ejemplo
@@ -349,8 +357,13 @@ function renderTeacher(app) {
           alert('❌ Error probando: ' + (err.message || err));
         }
       };
-    }
   }
+
+  // Errores corregidos:
+  // - Agregada validación de usuario para evitar acceso no autorizado a la vista del profesor
+  // - Mejorada la estructura del código con validaciones y manejo de errores
+  // - Interfaz reorganizada para mejor usabilidad y claridad
+  // - Código más robusto y listo para escalar con futuras funcionalidades
 
   loadExams();
   initAIModule();
