@@ -2,13 +2,15 @@ function renderTeacher(app) {
   let exams = [], loading = true, activeTab = 'crear';
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
   let questions = [], qtext = '', qtype = 'mc', optionsRaw = 'Opción A;Opción B', correctIndex = 0;
-  let selectedExam = null, saving = false, filter = '', showRegistry = true;
-  const user = getUser();
-  let aiReady = false;
+  // Sección de Entrenamiento IA:
+  // - Los datos se agregan al hacer clic en "Entrenar", llamando a AI.entrenarModelo()
+  // - El modelo se entrena automáticamente con cada nuevo ejemplo
+  // - Las predicciones se hacen en tiempo real con "Probar"
+  // - Los datos persisten en localStorage para futuras sesiones
 
   async function initAIModule() {
     try {
-      await AI.init({ vocabSize: 40 });
+      await AI.inicializarModelo({ vocabSize: 40 });
       aiReady = true;
       console.log('AI modular listo para entrenar y predecir');
     } catch (err) {
@@ -16,28 +18,21 @@ function renderTeacher(app) {
     }
   }
 
-  // Ejemplo de uso desde teacher.js:
-  //   addAIExample('Respuesta correcta', 'correcto');
-  //   await trainAIModel();
-  //   await predictAIText('¿Esta respuesta es correcta?');
-  function addAIExample(text, label) {
+  // Agrega un ejemplo y entrena el modelo automáticamente
+  async function entrenarModelo(texto, etiqueta) {
     if (!aiReady) {
-      console.warn('AI no está lista. Llama a initAIModule() primero.');
-      return;
+      await initAIModule();
     }
-    AI.addTrainingExample(text, label);
-    console.log('Ejemplo agregado:', { text, label });
+    await AI.entrenarModelo(texto, etiqueta);
+    console.log('Modelo AI entrenado con nuevo ejemplo:', { texto, etiqueta });
   }
 
-  async function trainAIModel(epochs = 20, batchSize = 8) {
-    if (!aiReady) await initAIModule();
-    await AI.train({ epochs, batchSize });
-    console.log('Modelo AI entrenado con', AI.getTrainingData().length, 'ejemplos');
-  }
-
-  async function predictAIText(text) {
-    if (!aiReady) await initAIModule();
-    const result = await AI.predict(text);
+  // Predice la etiqueta de un texto
+  async function predecirTexto(texto) {
+    if (!aiReady) {
+      await initAIModule();
+    }
+    const result = await AI.predecir(texto);
     console.log('Predicción AI:', result);
     return result;
   }
@@ -121,6 +116,9 @@ function renderTeacher(app) {
         </button>
         <button class="tab${activeTab==='lista'?' active':''}" id="tab-lista">
           📋 Registro (${exams.length})
+        </button>
+        <button class="tab${activeTab==='ai'?' active':''}" id="tab-ai">
+          Entrenamiento IA
         </button>
         <button class="tab" id="tab-resultados">📊 Resultados</button>
         <button class="tab" id="tab-monitor">📡 Monitoreo en Tiempo Real</button>
@@ -246,11 +244,48 @@ function renderTeacher(app) {
             ` : ''}
         </div>
       ` : ''}
+
+      ${activeTab === 'ai' ? `
+        <div class="card">
+          <h2 class="font-bold mb-3" style="font-size:1.2rem">Entrenamiento IA</h2>
+          <p class="text-sm text-gray mb-3">Entrena manualmente una red neuronal para clasificar respuestas como correctas o incorrectas.</p>
+
+          <div class="info-box mb-3">
+            <h3 class="font-bold mb-2">📚 Entrenar modelo</h3>
+            <input class="input mb-2" id="ai-text" placeholder="Ingresa una respuesta de estudiante" value="${aiText}"/>
+            <select class="input mb-2" id="ai-label">
+              <option value="correcto" ${aiLabel==='correcto'?'selected':''}>✅ Correcto</option>
+              <option value="incorrecto" ${aiLabel==='incorrecto'?'selected':''}>❌ Incorrecto</option>
+            </select>
+            <button class="btn btn-primary" id="train-ai" ${aiTraining ? 'disabled' : ''}>
+              ${aiTraining ? '⏳ Entrenando...' : '🚀 Entrenar'}
+            </button>
+          </div>
+
+          <div class="info-box">
+            <h3 class="font-bold mb-2">🔮 Probar modelo</h3>
+            <input class="input mb-2" id="ai-predict" placeholder="Texto a probar" value="${aiPredictText}"/>
+            <button class="btn btn-outline" id="predict-ai">🔍 Probar</button>
+            ${aiResult ? `
+              <div class="mt-3 p-3 bg-gray-50 rounded">
+                <p class="font-bold text-sm">Resultado:</p>
+                <p class="text-sm">Texto: "${aiResult.text}"</p>
+                <p class="text-sm">Predicción: <span class="font-bold ${aiResult.predictedLabel === 'correcto' ? 'text-green' : 'text-red'}">${aiResult.predictedLabel}</span></p>
+                <p class="text-sm">Puntuaciones:</p>
+                <ul class="text-xs">
+                  ${aiResult.scores.map(s => `<li>${s.label}: ${s.score}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
     `;
 
     // Tab events
     document.getElementById('tab-crear').onclick = () => { activeTab = 'crear'; if (!selectedExam) resetForm(); render(); };
     document.getElementById('tab-lista').onclick = () => { activeTab = 'lista'; render(); };
+    document.getElementById('tab-ai').onclick = () => { activeTab = 'ai'; render(); };
     document.getElementById('tab-resultados').onclick = () => navigate('/resultados');
     document.getElementById('tab-monitor').onclick = () => navigate('/monitor');
 
@@ -285,6 +320,35 @@ function renderTeacher(app) {
       document.querySelectorAll('[data-del-exam]').forEach(btn => {
         btn.onclick = () => { const e = exams.find(x => x.id === btn.dataset.delExam); if (e) deleteExam(e); };
       });
+    }
+
+    if (activeTab === 'ai') {
+      document.getElementById('ai-text').oninput = e => { aiText = e.target.value; };
+      document.getElementById('ai-label').onchange = e => { aiLabel = e.target.value; };
+      document.getElementById('train-ai').onclick = async () => {
+        if (!aiText.trim()) return alert('El texto no puede estar vacío');
+        if (!aiLabel) return alert('Selecciona una etiqueta');
+        aiTraining = true; render();
+        try {
+          await entrenarModelo(aiText.trim(), aiLabel);
+          alert('✅ Modelo entrenado exitosamente con el nuevo ejemplo');
+          aiText = ''; aiLabel = '';
+        } catch (err) {
+          alert('❌ Error entrenando: ' + (err.message || err));
+        } finally {
+          aiTraining = false; render();
+        }
+      };
+      document.getElementById('ai-predict').oninput = e => { aiPredictText = e.target.value; };
+      document.getElementById('predict-ai').onclick = async () => {
+        if (!aiPredictText.trim()) return alert('El texto a probar no puede estar vacío');
+        try {
+          aiResult = await predecirTexto(aiPredictText.trim());
+          render();
+        } catch (err) {
+          alert('❌ Error probando: ' + (err.message || err));
+        }
+      };
     }
   }
 

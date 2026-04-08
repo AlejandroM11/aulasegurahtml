@@ -40,6 +40,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
   <script src="js/ai.js"></script>
 
+  <!-- Validación de carga de TensorFlow.js y AI -->
+  <script>
+    if (typeof tf === 'undefined') {
+      console.error('TensorFlow.js no cargado correctamente.');
+    } else {
+      console.log('TensorFlow.js cargado correctamente.');
+    }
+    if (typeof AI === 'undefined') {
+      console.error('Módulo AI no cargado correctamente.');
+    } else {
+      console.log('Módulo AI cargado correctamente.');
+    }
+  </script>
+
   <script src="js/auth.js"></script>
   <script src="js/emailValidator.js"></script>
   <script src="js/firebase.js"></script>

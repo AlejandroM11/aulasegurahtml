@@ -122,7 +122,9 @@
   }
 
   const AI = {
-    async init(options = {}) {
+    // Inicializa el modelo y carga datos previos desde localStorage
+    // Se llama al inicio para preparar la IA
+    async inicializarModelo(options = {}) {
       state.vocabSize = options.vocabSize || state.vocabSize;
       loadStorage();
       if (state.trainingData.length > 0 && Object.keys(state.vocab).length === 0) {
@@ -132,6 +134,30 @@
       state.initialized = true;
     },
 
+    // Agrega un ejemplo de entrenamiento y entrena el modelo automáticamente
+    // texto: la respuesta del estudiante
+    // etiqueta: 'correcto' o 'incorrecto'
+    async entrenarModelo(texto, etiqueta) {
+      if (!state.initialized) {
+        await this.inicializarModelo();
+      }
+      // Agregar el ejemplo
+      this.addTrainingExample(texto, etiqueta);
+      // Entrenar el modelo con todos los datos
+      await this.train();
+    },
+
+    // Predice si un texto es correcto o incorrecto
+    // texto: el texto a evaluar
+    // Retorna un objeto con la predicción y puntuaciones
+    async predecir(texto) {
+      if (!state.initialized) {
+        await this.inicializarModelo();
+      }
+      return await this.predict(texto);
+    },
+
+    // Funciones auxiliares (para compatibilidad interna)
     getTrainingData() {
       return [...state.trainingData];
     },
@@ -149,7 +175,7 @@
 
     async train(options = {}) {
       if (!state.initialized) {
-        await this.init(options);
+        await this.inicializarModelo(options);
       }
       if (state.trainingData.length === 0) {
         throw new Error('No hay datos de entrenamiento. Usa AI.addTrainingExample(...) primero.');
@@ -183,7 +209,7 @@
 
     async predict(text) {
       if (!state.initialized) {
-        await this.init();
+        await this.inicializarModelo();
       }
       if (!state.model) {
         throw new Error('El modelo no está entrenado. Ejecuta AI.train() antes de predecir.');
