@@ -2,7 +2,7 @@ function renderLogin(app) {
   app.innerHTML = `
     <div class="card" style="max-width:440px;margin:0 auto">
       <img src="https://cdn-icons-png.flaticon.com/512/3371/3371723.png"
-        alt="Login" style="width:100%;height:160px;object-fit:cover;border-radius:.75rem;margin-bottom:1rem"/>
+  alt="Login" style="width:140px;height:140px;object-fit:contain;display:block;margin:0 auto 1rem"/>
       <h2 class="text-center font-bold" style="font-size:1.5rem;margin-bottom:.25rem">Iniciar sesión</h2>
       <p class="text-center text-gray text-sm mb-4">Accede a tu cuenta para continuar</p>
 
