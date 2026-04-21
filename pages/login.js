@@ -10,6 +10,7 @@ function renderLogin(app) {
         <div class="form-group">
           <label class="label">Correo</label>
           <input class="input" type="email" id="login-email" required placeholder="correo@ejemplo.com"/>
+          <p id="login-email-error" class="text-xs" style="min-height:1rem;margin-top:.25rem"></p>
         </div>
         <div class="form-group">
           <label class="label">Contraseña</label>
@@ -32,6 +33,7 @@ function renderLogin(app) {
   `;
 
   const btn = document.getElementById('login-btn');
+  bindEmailValidation('login-email', 'login-email-error');
 
   document.getElementById('login-form').onsubmit = async (e) => {
     e.preventDefault();

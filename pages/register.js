@@ -14,6 +14,7 @@ function renderRegister(app) {
         <div class="form-group">
           <label class="label">Correo</label>
           <input class="input" type="email" id="reg-email" required placeholder="correo@ejemplo.com"/>
+          <p id="reg-email-error" class="text-xs" style="min-height:1rem;margin-top:.25rem"></p>
         </div>
         <div class="form-group">
           <label class="label">Contraseña</label>
@@ -42,6 +43,7 @@ function renderRegister(app) {
   `;
 
   const btn = document.getElementById('reg-btn');
+  bindEmailValidation('reg-email', 'reg-email-error');
 
   document.getElementById('reg-form').onsubmit = async (e) => {
     e.preventDefault();
