@@ -19,8 +19,8 @@ function renderLogin(app) {
       </form>
 
       <div class="divider">O</div>
-      <button class="btn btn-gradient btn-full mb-2" id="guest-btn">🎯 Entrar como invitado</button>
-      <button class="btn btn-outline btn-full" id="google-btn">🔵 Continuar con Google</button>
+      <button class="btn btn-gradient btn-full mb-2" id="guest-btn">Entrar como invitado</button>
+      <button class="btn btn-outline btn-full" id="google-btn">Continuar con Google</button>
 
       <p class="text-center text-sm mt-4">
         ¿No tienes cuenta? <a href="#/register" class="text-blue" style="text-decoration:underline">Regístrate</a>
@@ -52,7 +52,19 @@ function renderLogin(app) {
   document.getElementById('guest-btn').onclick = () => navigate('/invitado');
 
   document.getElementById('google-btn').onclick = async () => {
-    const u = await loginWithGoogle('estudiante');
-    if (u) { setUser(u); redirectByRole(u); }
+    try {
+      const result = await fbAuth.signInWithPopup(googleProvider);
+      const u = result.user;
+      const snap = await fbDB.ref(`users/${u.uid}`).get();
+      if (snap.exists()) {
+        const userData = snap.val();
+        setUser(userData);
+        redirectByRole(userData);
+      } else {
+        alert('No tienes cuenta registrada. Por favor regístrate primero.');
+      }
+    } catch (err) {
+      alert('Error al iniciar sesión con Google: ' + err.message);
+    }
   };
 }
