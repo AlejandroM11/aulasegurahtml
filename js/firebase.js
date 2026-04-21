@@ -117,16 +117,15 @@ function listenToBlockStatus(examCode, uid, callback) {
   return () => ref.off('value');
 }
 
-/** Login con Google, registra al usuario si es nuevo */
 async function loginWithGoogle(role) {
   try {
     const result = await fbAuth.signInWithPopup(googleProvider);
     const u = result.user;
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const existing = users.find(x => x.email === u.email);
+    const snap = await fbDB.ref(`users/${u.uid}`).get();
 
-    if (existing) {
+    if (snap.exists()) {
+      const existing = snap.val();
       if (existing.role !== role) {
         alert(`Esta cuenta ya está registrada como ${existing.role}.`);
         return null;
@@ -137,15 +136,14 @@ async function loginWithGoogle(role) {
 
     const newUser = {
       uid: u.uid, email: u.email,
-      name: u.displayName, photo: u.photoURL,
-      role, fromGoogle: true
+      name: u.displayName || '', photo: u.photoURL || '',
+      role, fromGoogle: true, createdAt: new Date().toISOString()
     };
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+    await fbDB.ref(`users/${u.uid}`).set(newUser);
     setUser(newUser);
     return newUser;
-  } catch {
-    alert('Error al iniciar sesión con Google');
+  } catch (err) {
+    alert('Error al iniciar sesión con Google: ' + err.message);
     return null;
   }
 }

@@ -1,36 +1,80 @@
-// ===== CLIENTE HTTP =====
+// ===== API — Firebase Realtime Database directo =====
 
-const IS_LOCAL_FILE = location.protocol === 'file:';
-const API_BASE = IS_LOCAL_FILE
-  ? null
-  : (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://localhost:3000/api'
-    : '/api';
+// ── Auth ──
 
-async function apiFetch(method, path, body) {
-  if (IS_LOCAL_FILE) throw new Error('Modo offline: operación no disponible');
-
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-
-  const res = await fetch(API_BASE + path, opts);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw Object.assign(new Error(err.error || res.statusText), { response: { data: err } });
+async function apiLogin({ email, password }) {
+  try {
+    const result = await fbAuth.signInWithEmailAndPassword(email, password);
+    const uid = result.user.uid;
+    const snap = await fbDB.ref(`users/${uid}`).get();
+    if (!snap.exists()) throw new Error('Usuario no encontrado en la base de datos');
+    return { ok: true, user: snap.val() };
+  } catch (err) {
+    throw new Error(err.message || 'Error al iniciar sesión');
   }
-  return res.json();
 }
 
-// Fallback offline para desarrollo sin servidor
-const mockOk = (extra = {}) => Promise.resolve({ ok: true, ...extra });
+async function apiRegister({ email, password, name, role }) {
+  try {
+    const result = await fbAuth.createUserWithEmailAndPassword(email, password);
+    const uid = result.user.uid;
+    const userData = { uid, email, name: name || '', role, createdAt: new Date().toISOString() };
+    await fbDB.ref(`users/${uid}`).set(userData);
+    return { ok: true, ...userData };
+  } catch (err) {
+    if (err.code === 'auth/email-already-in-use') throw new Error('Este correo ya está registrado');
+    throw new Error(err.message || 'Error al registrar');
+  }
+}
 
-// ===== ENDPOINTS =====
-const apiLogin          = (d)      => IS_LOCAL_FILE ? mockOk({ user: { uid: 'mock', email: d.email, role: d.email.includes('docente') ? 'docente' : 'estudiante' } }) : apiFetch('POST', '/auth/login', d);
-const apiRegister       = (d)      => IS_LOCAL_FILE ? mockOk({ uid: 'mock', ...d })                                                                                    : apiFetch('POST', '/auth/register', d);
-const apiGetExams       = ()       => IS_LOCAL_FILE ? Promise.resolve([])                                                                                               : apiFetch('GET', '/evaluaciones');
-const apiCreateExam     = (d)      => IS_LOCAL_FILE ? mockOk({ id: 'mock-' + Date.now() })                                                                             : apiFetch('POST', '/evaluaciones', d);
-const apiUpdateExam     = (id, d)  => IS_LOCAL_FILE ? mockOk({ id })                                                                                                   : apiFetch('PUT', `/evaluaciones/${id}`, d);
-const apiDeleteExam     = (id)     => IS_LOCAL_FILE ? mockOk()                                                                                                          : apiFetch('DELETE', `/evaluaciones/${id}`);
-const apiGetExamByCode  = (code)   => IS_LOCAL_FILE ? Promise.resolve(null)                                                                                             : apiFetch('GET', `/evaluaciones/code/${code}`);
-const apiGetSubmissions = ()       => IS_LOCAL_FILE ? Promise.resolve([])                                                                                               : apiFetch('GET', '/notas');
-const apiCreateSubmission = (d)    => IS_LOCAL_FILE ? mockOk({ id: 'mock-' + Date.now() })                                                                             : apiFetch('POST', '/notas', d);
+// ── Evaluaciones ──
+
+async function apiGetExams() {
+  const snap = await fbDB.ref('evaluaciones').get();
+  if (!snap.exists()) return [];
+  const items = [];
+  snap.forEach(child => items.push({ id: child.key, ...child.val() }));
+  return items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+
+async function apiCreateExam(data) {
+  const ref = await fbDB.ref('evaluaciones').push({ ...data, createdAt: new Date().toISOString() });
+  return { ok: true, id: ref.key };
+}
+
+async function apiUpdateExam(id, data) {
+  await fbDB.ref(`evaluaciones/${id}`).update(data);
+  return { ok: true };
+}
+
+async function apiDeleteExam(id) {
+  await fbDB.ref(`evaluaciones/${id}`).remove();
+  return { ok: true };
+}
+
+async function apiGetExamByCode(code) {
+  const snap = await fbDB.ref('evaluaciones').get();
+  if (!snap.exists()) return { ok: false };
+  let found = null;
+  snap.forEach(child => {
+    const val = child.val();
+    if (val.code === code.toUpperCase()) found = { id: child.key, ...val };
+  });
+  if (!found) return { ok: false };
+  return { ok: true, exam: found };
+}
+
+// ── Notas ──
+
+async function apiGetSubmissions() {
+  const snap = await fbDB.ref('notas').get();
+  if (!snap.exists()) return [];
+  const items = [];
+  snap.forEach(child => items.push({ id: child.key, ...child.val() }));
+  return items.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+}
+
+async function apiCreateSubmission(data) {
+  const ref = await fbDB.ref('notas').push(data);
+  return { ok: true, id: ref.key };
+}
