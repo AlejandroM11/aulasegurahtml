@@ -1,10 +1,10 @@
 function renderRegister(app) {
   app.innerHTML = `
-    <div class="card" style="max-width:440px;margin:0 auto;overflow:hidden">
+    <div class="card" style="max-width:440px;margin:0 auto">
       <img src="https://img.freepik.com/free-vector/students-taking-exam-online_52683-39549.jpg"
         alt="Registro" style="width:100%;height:160px;object-fit:cover;border-radius:.75rem;margin-bottom:1rem"/>
       <h2 class="text-center font-bold" style="font-size:1.5rem;margin-bottom:.25rem">Crear cuenta</h2>
-      <p class="text-center text-gray text-sm mb-4">Únete a Aula Segura y comienza a aprender</p>
+      <p class="text-center text-gray text-sm mb-4">Únete a Aula Segura</p>
 
       <form id="reg-form" class="space-y">
         <div class="form-group">
@@ -30,7 +30,7 @@ function renderRegister(app) {
       </form>
 
       <div class="divider">O regístrate con</div>
-      <button class="btn btn-outline btn-full" id="google-reg-btn">🔵 Google</button>
+      <button class="btn btn-outline btn-full" id="google-reg-btn">🔵 Continuar con Google</button>
 
       <p class="text-center text-sm mt-4">
         ¿Ya tienes cuenta? <a href="#/login" class="text-blue" style="text-decoration:underline">Inicia sesión</a>
@@ -38,15 +38,14 @@ function renderRegister(app) {
     </div>
   `;
 
-  const form = document.getElementById('reg-form');
   const btn = document.getElementById('reg-btn');
 
-  form.onsubmit = async (e) => {
+  document.getElementById('reg-form').onsubmit = async (e) => {
     e.preventDefault();
     const email = document.getElementById('reg-email').value;
-    const pw = document.getElementById('reg-pw').value;
-    const name = document.getElementById('reg-name').value;
-    const role = document.getElementById('reg-role').value;
+    const pw    = document.getElementById('reg-pw').value;
+    const name  = document.getElementById('reg-name').value;
+    const role  = document.getElementById('reg-role').value;
 
     if (!isValidEmailDomain(email)) { alert(getEmailValidationError(email)); return; }
 
@@ -54,14 +53,14 @@ function renderRegister(app) {
     try {
       const res = await apiRegister({ email, password: pw, name, role });
       if (res.ok) {
-        setUser({ uid: res.uid, email: res.email, name: res.name, role: res.role, fromGoogle: false });
+        setUser({ uid: res.uid, email: res.email, name: res.name, role: res.role });
         alert('✅ Cuenta creada exitosamente');
-        navigate(role === 'docente' ? '/docente' : '/estudiante');
+        redirectByRole({ role });
       } else {
         alert('❌ ' + res.error);
       }
-    } catch(err) {
-      alert('❌ Error al crear la cuenta: ' + (err.response?.data?.error || err.message));
+    } catch (err) {
+      alert('❌ ' + (err.response?.data?.error || err.message || 'Error al crear la cuenta'));
     } finally {
       btn.disabled = false; btn.textContent = 'Registrarme';
     }
@@ -69,9 +68,7 @@ function renderRegister(app) {
 
   document.getElementById('google-reg-btn').onclick = async () => {
     const role = document.getElementById('reg-role').value;
-    try {
-      const u = await loginWithGoogle(role);
-      if (u) { setUser(u); navigate(u.role === 'docente' ? '/docente' : '/estudiante'); }
-    } catch(err) { alert('Error al registrarse con Google'); }
+    const u = await loginWithGoogle(role);
+    if (u) { setUser(u); redirectByRole(u); }
   };
 }

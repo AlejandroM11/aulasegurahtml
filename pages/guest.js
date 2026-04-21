@@ -8,7 +8,6 @@ function renderGuest(app) {
         </div>
         <div style="padding:1.5rem">
           <p class="text-center text-gray text-sm mb-4">Ingresa al examen sin necesidad de crear una cuenta</p>
-
           <form id="guest-form" class="space-y">
             <div class="form-group">
               <label class="label">👤 Tu nombre completo</label>
@@ -18,11 +17,10 @@ function renderGuest(app) {
             <div class="form-group">
               <label class="label">🔑 Código del examen</label>
               <input class="input font-mono" type="text" id="guest-code" placeholder="ABC123"
-                required maxlength="10" style="text-align:center;font-size:1.2rem;font-weight:700;letter-spacing:.1em"/>
+                required maxlength="10"
+                style="text-align:center;font-size:1.2rem;font-weight:700;letter-spacing:.1em"/>
             </div>
-            <button type="submit" class="btn btn-primary btn-full" id="guest-btn" style="font-size:1rem;padding:.75rem">
-              🚀 Comenzar examen
-            </button>
+            <button type="submit" class="btn btn-primary btn-full" id="guest-btn">🚀 Comenzar examen</button>
           </form>
 
           <div class="info-box info-box-blue mt-4">
@@ -34,36 +32,34 @@ function renderGuest(app) {
             </ul>
           </div>
 
-          <div class="text-center mt-4">
+          <p class="text-center mt-4">
             <a href="#/login" class="text-blue text-sm" style="text-decoration:underline">
               ¿Ya tienes cuenta? Inicia sesión
             </a>
-          </div>
+          </p>
         </div>
       </div>
     </div>
   `;
 
-  const form = document.getElementById('guest-form');
-  const btn = document.getElementById('guest-btn');
+  const btn       = document.getElementById('guest-btn');
   const codeInput = document.getElementById('guest-code');
 
   codeInput.oninput = () => { codeInput.value = codeInput.value.toUpperCase(); };
 
-  form.onsubmit = async (e) => {
+  document.getElementById('guest-form').onsubmit = async (e) => {
     e.preventDefault();
     const name = document.getElementById('guest-name').value.trim();
     const code = codeInput.value.trim().toUpperCase();
 
     if (name.length < 3) { alert('❌ El nombre debe tener al menos 3 caracteres'); return; }
-    if (!code) { alert('❌ Por favor ingresa el código del examen'); return; }
 
     btn.disabled = true; btn.textContent = '⏳ Verificando...';
     try {
       const res = await apiGetExamByCode(code);
-      if (res.ok && res.exam) {
+      if (res?.ok && res.exam) {
         setUser({
-          uid: `guest_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,
+          uid: guestUid(),
           email: `invitado_${Date.now()}@temporal.local`,
           name, role: 'estudiante', isGuest: true, examCode: code
         });
@@ -71,7 +67,7 @@ function renderGuest(app) {
       } else {
         alert('❌ Código de examen inválido');
       }
-    } catch(err) {
+    } catch {
       alert('❌ Código de examen no encontrado');
     } finally {
       btn.disabled = false; btn.textContent = '🚀 Comenzar examen';

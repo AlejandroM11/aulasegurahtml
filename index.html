@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-  <!-- Banner -->
+
+  <!-- Banner informativo -->
   <div id="banner">
     <div class="banner-inner">
       <p>Recuerda iniciar sesión como Docente o Estudiante.</p>
@@ -22,52 +23,28 @@
       <a href="#/" class="nav-brand">Aula Segura</a>
       <div class="nav-actions" id="nav-actions">
         <button class="btn btn-outline" id="theme-toggle">🌙 Oscuro</button>
-        <a href="#/login" class="btn btn-primary" id="nav-login">Ingresar</a>
-        <a href="#/register" class="btn btn-outline" id="nav-register">Crear cuenta</a>
+        <a href="#/login" class="btn btn-primary">Ingresar</a>
+        <a href="#/register" class="btn btn-outline">Crear cuenta</a>
       </div>
     </div>
   </nav>
 
-  <!-- App container -->
+  <!-- Contenedor principal -->
   <div id="app"></div>
 
-  <!-- Firebase SDK (compat for simplicity) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- TensorFlow.js must cargarse antes de cualquier archivo que use tf -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-  <script src="js/ai.js"></script>
-
-  <!-- Validación de carga de TensorFlow.js y AI -->
-  <script>
-    if (typeof tf === 'undefined') {
-      console.error('TensorFlow.js no cargado correctamente.');
-    } else {
-      console.log('TensorFlow.js cargado correctamente.');
-    }
-    if (typeof AI === 'undefined') {
-      console.error('Módulo AI no cargado correctamente.');
-    } else {
-      console.log('Módulo AI cargado correctamente.');
-    }
-  </script>
-
-  <!-- Advertencia de modo offline -->
-  <script>
-    if (location.protocol === 'file:') {
-      const banner = document.createElement('div');
-      banner.style.cssText = 'background:#ffeb3b;color:#000;padding:1rem;text-align:center;font-family:Arial;z-index:1000;position:fixed;top:0;width:100%';
-      banner.innerHTML = '⚠️ Modo Offline: Funcionalidad limitada. Para completo, usa servidor local: <code>python -m http.server 8000</code> y abre <a href="http://localhost:8000" style="color:blue;text-decoration:underline">http://localhost:8000</a>';
-      document.body.insertBefore(banner, document.body.firstChild);
-    }
-  </script>
-
+  <!-- Core -->
+  <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/emailValidator.js"></script>
+  <script src="js/email.js"></script>
   <script src="js/firebase.js"></script>
   <script src="js/api.js"></script>
+
+  <!-- Páginas -->
   <script src="pages/home.js"></script>
   <script src="pages/login.js"></script>
   <script src="pages/register.js"></script>
@@ -76,6 +53,9 @@
   <script src="pages/teacher.js"></script>
   <script src="pages/monitor.js"></script>
   <script src="pages/results.js"></script>
+
+  <!-- Router (debe ir último) -->
   <script src="js/app.js"></script>
+
 </body>
 </html>

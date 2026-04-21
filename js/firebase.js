@@ -6,57 +6,88 @@ const firebaseConfig = {
   projectId: "aulahtml-c94fa",
   storageBucket: "aulahtml-c94fa.firebasestorage.app",
   messagingSenderId: "736905199684",
-  appId: "1:736905199684:web:3fd073449fdc9b5f02bc11",
-  measurementId: "G-WV20R121SN"
+  appId: "1:736905199684:web:3fd073449fdc9b5f02bc11"
 };
+
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
-const fbDB = firebase.database();
+const fbDB   = firebase.database();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-// ===== REALTIME DB HELPERS =====
+// ===== HELPERS DE REALTIME DATABASE =====
+
+function dbRef(path) {
+  return fbDB.ref(path);
+}
+
+function studentRef(examCode, uid) {
+  return dbRef(`active_exams/${examCode}/students/${uid}`);
+}
+
+function messagesRef(examCode) {
+  return dbRef(`active_exams/${examCode}/messages`);
+}
+
+/** Registra un estudiante como activo en el examen */
 function registerActiveStudent(examCode, studentData) {
-  return fbDB.ref(`active_exams/${examCode}/students/${studentData.uid}`).set({
-    uid: studentData.uid, email: studentData.email, name: studentData.name,
-    joinedAt: Date.now(), status: 'active', timeLeft: studentData.timeLeft,
-    answeredCount: 0, violations: 0, isBlocked: false, lastActivity: Date.now()
+  return studentRef(examCode, studentData.uid).set({
+    uid: studentData.uid,
+    email: studentData.email,
+    name: studentData.name,
+    joinedAt: Date.now(),
+    status: 'active',
+    timeLeft: studentData.timeLeft,
+    answeredCount: 0,
+    violations: 0,
+    isBlocked: false,
+    lastActivity: Date.now()
   });
 }
 
-function updateStudentStatus(examCode, studentUid, updates) {
-  return fbDB.ref(`active_exams/${examCode}/students/${studentUid}`).update({ ...updates, lastActivity: Date.now() });
+/** Actualiza el estado del estudiante (tiempo, respuestas, infracciones) */
+function updateStudentStatus(examCode, uid, updates) {
+  return studentRef(examCode, uid).update({ ...updates, lastActivity: Date.now() });
 }
 
-function blockStudent(examCode, studentUid, reason) {
-  return fbDB.ref(`active_exams/${examCode}/students/${studentUid}`).update({
-    isBlocked: true, blockReason: reason, blockedAt: Date.now(), status: 'blocked'
+/** Bloquea a un estudiante con una razón */
+function blockStudent(examCode, uid, reason) {
+  return studentRef(examCode, uid).update({
+    isBlocked: true, blockReason: reason,
+    blockedAt: Date.now(), status: 'blocked'
   });
 }
 
-function unblockStudent(examCode, studentUid) {
-  return fbDB.ref(`active_exams/${examCode}/students/${studentUid}`).update({
-    isBlocked: false, blockReason: null, unblockedAt: Date.now(), status: 'active'
+/** Desbloquea a un estudiante */
+function unblockStudent(examCode, uid) {
+  return studentRef(examCode, uid).update({
+    isBlocked: false, blockReason: null,
+    unblockedAt: Date.now(), status: 'active'
   });
 }
 
-function sendMessageToTeacher(examCode, studentUid, message) {
-  return fbDB.ref(`active_exams/${examCode}/messages`).push({
-    studentUid, message, timestamp: Date.now(), read: false
+/** Elimina al estudiante de la lista de activos */
+function removeActiveStudent(examCode, uid) {
+  return studentRef(examCode, uid).remove();
+}
+
+/** Envía un mensaje del estudiante al docente */
+function sendMessageToTeacher(examCode, uid, message) {
+  return messagesRef(examCode).push({
+    studentUid: uid, message,
+    timestamp: Date.now(), read: false
   });
 }
 
+/** Responde a un mensaje de estudiante */
 function respondToStudent(examCode, messageId, response) {
-  return fbDB.ref(`active_exams/${examCode}/messages/${messageId}`).update({
+  return messagesRef(examCode).child(messageId).update({
     response, respondedAt: Date.now(), read: true
   });
 }
 
-function removeActiveStudent(examCode, studentUid) {
-  return fbDB.ref(`active_exams/${examCode}/students/${studentUid}`).remove();
-}
-
+/** Escucha en tiempo real los estudiantes activos de un examen */
 function listenToActiveStudents(examCode, callback) {
-  const ref = fbDB.ref(`active_exams/${examCode}/students`);
+  const ref = dbRef(`active_exams/${examCode}/students`);
   ref.on('value', snap => {
     const students = [];
     snap.forEach(child => students.push({ id: child.key, ...child.val() }));
@@ -65,8 +96,9 @@ function listenToActiveStudents(examCode, callback) {
   return () => ref.off('value');
 }
 
+/** Escucha en tiempo real los mensajes de un examen */
 function listenToMessages(examCode, callback) {
-  const ref = fbDB.ref(`active_exams/${examCode}/messages`);
+  const ref = messagesRef(examCode);
   ref.on('value', snap => {
     const msgs = [];
     snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
@@ -75,8 +107,9 @@ function listenToMessages(examCode, callback) {
   return () => ref.off('value');
 }
 
-function listenToBlockStatus(examCode, studentUid, callback) {
-  const ref = fbDB.ref(`active_exams/${examCode}/students/${studentUid}`);
+/** Escucha el estado de bloqueo de un estudiante específico */
+function listenToBlockStatus(examCode, uid, callback) {
+  const ref = studentRef(examCode, uid);
   ref.on('value', snap => {
     const data = snap.val();
     if (data) callback(data.isBlocked, data.blockReason);
@@ -84,23 +117,34 @@ function listenToBlockStatus(examCode, studentUid, callback) {
   return () => ref.off('value');
 }
 
+/** Login con Google, registra al usuario si es nuevo */
 async function loginWithGoogle(role) {
   try {
     const result = await fbAuth.signInWithPopup(googleProvider);
     const u = result.user;
-    let list = JSON.parse(localStorage.getItem('users') || '[]');
-    let existing = list.find(x => x.email === u.email);
+
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const existing = users.find(x => x.email === u.email);
+
     if (existing) {
-      if (existing.role !== role) { alert(`Esta cuenta ya está registrada como ${existing.role}.`); return null; }
-      setUser(existing); return existing;
+      if (existing.role !== role) {
+        alert(`Esta cuenta ya está registrada como ${existing.role}.`);
+        return null;
+      }
+      setUser(existing);
+      return existing;
     }
-    const newUser = { uid: u.uid, email: u.email, name: u.displayName, photo: u.photoURL, role, fromGoogle: true };
-    list.push(newUser);
-    localStorage.setItem('users', JSON.stringify(list));
+
+    const newUser = {
+      uid: u.uid, email: u.email,
+      name: u.displayName, photo: u.photoURL,
+      role, fromGoogle: true
+    };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
     setUser(newUser);
     return newUser;
-  } catch(err) {
-    console.error(err);
+  } catch {
     alert('Error al iniciar sesión con Google');
     return null;
   }

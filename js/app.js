@@ -1,14 +1,19 @@
 // ===== ROUTER =====
-const routes = {
-  '/': renderHome,
-  '/login': renderLogin,
-  '/register': renderRegister,
-  '/invitado': renderGuest,
+
+const ROUTES = {
+  '/':           renderHome,
+  '/login':      renderLogin,
+  '/register':   renderRegister,
+  '/invitado':   renderGuest,
   '/estudiante': renderStudent,
-  '/docente': renderTeacher,
-  '/monitor': renderMonitor,
+  '/docente':    renderTeacher,
+  '/monitor':    renderMonitor,
   '/resultados': renderResults,
 };
+
+const TEACHER_ROUTES  = ['/docente', '/monitor', '/resultados'];
+const STUDENT_ROUTES  = ['/estudiante'];
+const AUTH_ONLY_ROUTES = ['/login', '/register'];
 
 function navigate(path) {
   location.hash = path;
@@ -21,53 +26,41 @@ function getHash() {
 function router() {
   const path = getHash();
   const user = getUser();
-  const app = document.getElementById('app');
-  if (!app) {
-    console.error('Elemento #app no encontrado');
-    return;
-  }
+  const app  = document.getElementById('app');
 
-  // Redirigir automáticamente si hay usuario logueado en la home
+  // Redirigir desde home si ya hay sesión
   if (path === '/' && user) {
     navigate(user.role === 'docente' ? '/docente' : '/estudiante');
     return;
   }
 
-  // Protected route logic
-  const teacherRoutes = ['/docente', '/monitor', '/resultados'];
-  const studentRoutes = ['/estudiante'];
-
-  if (teacherRoutes.includes(path)) {
+  // Rutas protegidas
+  if (TEACHER_ROUTES.includes(path)) {
     if (!user) { navigate('/login'); return; }
     if (user.role !== 'docente') { navigate('/estudiante'); return; }
   }
-  if (studentRoutes.includes(path)) {
+  if (STUDENT_ROUTES.includes(path)) {
     if (!user) { navigate('/login'); return; }
     if (user.role !== 'estudiante') { navigate('/docente'); return; }
   }
-  if ((path === '/login' || path === '/register') && user) {
-    navigate(user.role === 'docente' ? '/docente' : '/estudiante');
+  if (AUTH_ONLY_ROUTES.includes(path) && user) {
+    redirectByRole(user);
     return;
   }
 
-  const render = routes[path] || renderHome;
-  try {
-    app.innerHTML = '';
-    render(app);
-    updateNavbar();
-  } catch (error) {
-    console.error('Error al renderizar la ruta:', path, error);
-    app.innerHTML = '<p>Error al cargar la página. Intenta recargar.</p>';
-  }
+  const renderPage = ROUTES[path] || renderHome;
+  app.innerHTML = '';
+  renderPage(app);
+  updateNavbar();
 }
 
 function updateNavbar() {
-  const user = getUser();
+  const user    = getUser();
   const actions = document.getElementById('nav-actions');
-  const dark = document.body.classList.contains('dark');
+  const isDark  = document.body.classList.contains('dark');
 
   actions.innerHTML = `
-    <button class="btn btn-outline" id="theme-toggle">${dark ? '☀️ Claro' : '🌙 Oscuro'}</button>
+    <button class="btn btn-outline" id="theme-toggle">${isDark ? '☀️ Claro' : '🌙 Oscuro'}</button>
     ${user ? `
       <span class="nav-user hide-mobile">${user.email} · <b>${user.role}</b></span>
       <button class="btn btn-primary" id="nav-logout">Salir</button>
@@ -83,18 +76,15 @@ function updateNavbar() {
 }
 
 function toggleTheme() {
-  const dark = document.body.classList.toggle('dark');
-  localStorage.setItem('theme', dark ? 'dark' : 'light');
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
   updateNavbar();
 }
 
-// Init theme
+// ===== INIT =====
 if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+setTimeout(() => document.getElementById('banner')?.remove(), 5000);
 
-// Auto-hide banner
-setTimeout(() => { const b = document.getElementById('banner'); if (b) b.remove(); }, 5000);
-
-// Listen to auth changes
 window.addEventListener('auth-changed', updateNavbar);
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', router);
