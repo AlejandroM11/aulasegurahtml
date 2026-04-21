@@ -3,7 +3,8 @@ function renderGuest(app) {
     <div style="max-width:440px;margin:0 auto">
       <div class="card" style="overflow:hidden">
         <div style="background:linear-gradient(135deg,#3b82f6,#7c3aed);padding:2rem;text-align:center">
-          <div style="font-size:3.5rem;margin-bottom:.5rem">🎯</div>
+          <img src="https://images.icon-icons.com/1161/PNG/512/1487716857-user_81635.png"
+            style="width:90px;height:90px;object-fit:contain;display:block;margin:0 auto .75rem;filter:brightness(0) invert(1)"/>
           <h2 style="color:#fff;font-size:1.5rem;font-weight:800">Acceso Rápido</h2>
         </div>
         <div style="padding:1.5rem">
