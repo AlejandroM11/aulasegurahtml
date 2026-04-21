@@ -4,17 +4,13 @@ function renderTeacher(app) {
   let activeTab = 'crear', filter = '', showRegistry = true;
   let selectedExam = null;
 
-  // Estado del formulario de examen
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
-
-  // Estado del formulario de pregunta
   let questions = [], qtext = '', qtype = 'mc';
-  let optionsRaw = 'Opción A;Opción B', correctIndex = 0;
+  let options = ['', ''], correctIndex = 0;
 
   const user = getUser();
 
-  // ===== CARGA DE DATOS =====
-
+  // ===== CARGA =====
   async function loadExams() {
     loading = true;
     try { exams = await apiGetExams(); }
@@ -22,30 +18,25 @@ function renderTeacher(app) {
     finally { loading = false; render(); }
   }
 
-  // ===== FORMULARIO DE EXAMEN =====
-
   function resetForm() {
     title = ''; code = ''; dur = 30; questions = [];
-    qtext = ''; optionsRaw = 'Opción A;Opción B'; correctIndex = 0;
-    showCorrectAnswers = false; selectedExam = null;
+    qtext = ''; options = ['', '']; correctIndex = 0;
+    showCorrectAnswers = false; selectedExam = null; qtype = 'mc';
   }
 
   function openExam(exam) {
     selectedExam = exam;
     title = exam.title; code = exam.code; dur = exam.durationMinutes;
     questions = exam.questions || []; showCorrectAnswers = exam.showCorrectAnswers || false;
-    activeTab = 'crear';
-    render();
+    activeTab = 'crear'; render();
   }
 
   async function saveExam() {
-    if (!title.trim() || !code.trim() || questions.length === 0) {
+    if (!title.trim() || !code.trim() || questions.length === 0)
       return alert('Completa todos los campos y agrega al menos una pregunta');
-    }
-
     const isDuplicate = !selectedExam &&
       exams.find(e => e.code.toUpperCase() === code.trim().toUpperCase());
-    if (isDuplicate) { alert('❌ Ya existe un examen con ese código'); return; }
+    if (isDuplicate) return alert('❌ Ya existe un examen con ese código');
 
     saving = true; render();
     try {
@@ -65,9 +56,7 @@ function renderTeacher(app) {
       resetForm(); activeTab = 'lista';
     } catch (err) {
       alert('❌ ' + (err.response?.data?.error || err.message || 'Error al guardar'));
-    } finally {
-      saving = false; render();
-    }
+    } finally { saving = false; render(); }
   }
 
   async function deleteExam(exam) {
@@ -80,18 +69,17 @@ function renderTeacher(app) {
     } catch { alert('❌ Error al eliminar el examen'); }
   }
 
-  // ===== PREGUNTAS =====
-
   function addQuestion() {
-    if (!qtext.trim()) return alert('La pregunta está vacía');
+    if (!qtext.trim()) return alert('Escribe el texto de la pregunta');
     const q = { id: crypto.randomUUID(), text: qtext.trim(), type: qtype };
     if (qtype === 'mc') {
-      const opts = optionsRaw.split(';').map(o => o.trim()).filter(Boolean);
-      if (opts.length < 2) return alert('Mínimo 2 opciones');
+      const opts = options.map(o => o.trim()).filter(Boolean);
+      if (opts.length < 2) return alert('Agrega al menos 2 opciones');
+      if (!opts[correctIndex]?.trim()) return alert('Selecciona una opción correcta válida');
       q.options = opts; q.correctIndex = Number(correctIndex);
     }
     questions.push(q);
-    qtext = ''; optionsRaw = 'Opción A;Opción B'; correctIndex = 0;
+    qtext = ''; options = ['', '']; correctIndex = 0;
     render();
   }
 
@@ -100,133 +88,212 @@ function renderTeacher(app) {
     render();
   }
 
+  function addOption() {
+    if (options.length >= 6) return;
+    options.push('');
+    render();
+  }
+
+  function removeOption(i) {
+    if (options.length <= 2) return;
+    options.splice(i, 1);
+    if (correctIndex >= options.length) correctIndex = 0;
+    render();
+  }
+
   // ===== RENDER =====
-
   function render() {
-    const filtered = exams.filter(e =>
-      (e.code + e.title).toLowerCase().includes(filter.toLowerCase())
-    );
-    const opts = optionsRaw.split(';').map(o => o.trim()).filter(Boolean);
-
     app.innerHTML = `
-      <div class="tabs">
-        <button class="tab${activeTab === 'crear' ? ' active' : ''}" id="tab-crear">
-          ${selectedExam ? '✏️ Editando examen' : '➕ Crear examen'}
-        </button>
-        <button class="tab${activeTab === 'lista' ? ' active' : ''}" id="tab-lista">
-          📋 Registro (${exams.length})
-        </button>
-        <button class="tab" id="tab-resultados">📊 Resultados</button>
-        <button class="tab" id="tab-monitor">📡 Monitoreo</button>
+      <div style="max-width:900px;margin:0 auto">
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:.5rem;margin-bottom:1.5rem;background:#fff;padding:.4rem;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e2e8f0">
+          <button class="tab-pill${activeTab==='crear'?' active':''}" id="tab-crear" style="flex:1">
+            ${selectedExam ? '✏️ Editando' : '➕ Crear examen'}
+          </button>
+          <button class="tab-pill${activeTab==='lista'?' active':''}" id="tab-lista" style="flex:1">
+            📋 Mis exámenes <span style="background:#e2e8f0;border-radius:999px;padding:.1rem .5rem;font-size:.75rem;margin-left:.25rem">${exams.length}</span>
+          </button>
+          <button class="tab-pill" id="tab-resultados" style="flex:1">📊 Resultados</button>
+          <button class="tab-pill" id="tab-monitor" style="flex:1">📡 Monitoreo</button>
+        </div>
+
+        ${activeTab === 'crear' ? renderTabCrear() : ''}
+        ${activeTab === 'lista' ? renderTabLista() : ''}
       </div>
 
-      ${activeTab === 'crear' ? renderTabCrear(opts) : ''}
-      ${activeTab === 'lista' ? renderTabLista(filtered) : ''}
+      <style>
+        .tab-pill{background:transparent;border:none;padding:.55rem 1rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;color:#64748b;transition:all .2s}
+        .tab-pill.active{background:#2563eb;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+        .tab-pill:hover:not(.active){background:#f1f5f9;color:#1e293b}
+        .opt-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+        .correct-radio{width:1.1rem;height:1.1rem;accent-color:#2563eb;cursor:pointer;flex-shrink:0}
+        .q-chip{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:.75rem;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;transition:border-color .2s}
+        .q-chip:hover{border-color:#2563eb}
+        .section-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.5rem}
+      </style>
     `;
 
     bindTabEvents();
-    if (activeTab === 'crear') bindCrearEvents(opts);
-    if (activeTab === 'lista') bindListaEvents(filtered);
+    if (activeTab === 'crear') bindCrearEvents();
+    if (activeTab === 'lista') bindListaEvents();
   }
 
-  // ===== TEMPLATES =====
-
-  function renderTabCrear(opts) {
+  function renderTabCrear() {
     return `
-      <div class="card">
-        <div class="flex-between mb-3">
-          <h2 class="font-bold" style="font-size:1.2rem">
-            ${selectedExam ? `✏️ Editando: <span class="text-blue">${selectedExam.title}</span>` : '➕ Nuevo examen'}
-          </h2>
-          ${selectedExam ? `<button class="btn btn-outline text-sm" id="cancel-edit">❌ Cancelar</button>` : ''}
-        </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
 
-        <div class="grid-3-md space-y" style="margin-bottom:.75rem">
-          <input class="input" id="f-title" placeholder="Título del examen" value="${title}"/>
-          <input class="input" id="f-code" placeholder="Código (ej: ABC123)" value="${code}"
-            ${selectedExam ? 'disabled' : ''} style="text-transform:uppercase"/>
-          <input class="input" id="f-dur" type="number" placeholder="Duración (min)" value="${dur}" min="1"/>
-        </div>
-        ${selectedExam ? `<p class="text-xs text-gray mb-2">💡 El código no se puede cambiar en un examen existente</p>` : ''}
+        <!-- Columna izquierda: info del examen + agregar pregunta -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
 
-        <div class="info-box info-box-blue mt-3 mb-3">
-          <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer">
-            <input type="checkbox" id="f-show-answers" ${showCorrectAnswers ? 'checked' : ''} style="width:1.1rem;height:1.1rem"/>
-            <div>
-              <p class="font-bold text-sm">Mostrar respuestas correctas al finalizar</p>
-              <p class="text-xs" style="margin-top:.2rem">El estudiante verá las respuestas correctas al terminar el examen</p>
+          <!-- Info del examen -->
+          <div class="card">
+            <div class="flex-between mb-3">
+              <h2 class="font-bold" style="font-size:1.1rem">
+                ${selectedExam ? `✏️ <span class="text-blue">${selectedExam.title}</span>` : '📄 Información del examen'}
+              </h2>
+              ${selectedExam ? `<button class="btn btn-outline text-xs" id="cancel-edit">✕ Cancelar</button>` : ''}
             </div>
-          </label>
-        </div>
 
-        <!-- Agregar pregunta -->
-        <div class="info-box" style="background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:1rem">
-          <h3 class="font-bold mb-2">➕ Agregar pregunta</h3>
-          <input class="input mb-2" id="f-qtext" placeholder="Texto de la pregunta" value="${qtext}"/>
-          <select class="input mb-2" id="f-qtype">
-            <option value="mc"   ${qtype === 'mc'   ? 'selected' : ''}>Opción múltiple</option>
-            <option value="open" ${qtype === 'open' ? 'selected' : ''}>Pregunta abierta</option>
-          </select>
-          ${qtype === 'mc' ? `
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:.5rem;padding:.75rem;margin-bottom:.5rem">
-              <label class="label text-sm">Opciones (separadas por punto y coma)</label>
-              <input class="input mb-2" id="f-opts" value="${optionsRaw}" placeholder="Opción A;Opción B;Opción C"/>
-              <p class="text-sm font-bold mb-1">Respuesta correcta:</p>
-              ${opts.map((opt, i) => `
-                <label style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;cursor:pointer">
-                  <input type="radio" name="correct" value="${i}" ${correctIndex == i ? 'checked' : ''} id="correct-${i}"/>
-                  <span class="text-sm">${opt}</span>
-                </label>
-              `).join('')}
-            </div>
-          ` : ''}
-          <button class="btn btn-outline" id="add-q-btn">➕ Agregar pregunta</button>
-        </div>
-
-        <!-- Lista de preguntas -->
-        ${questions.length > 0 ? `
-          <div class="mb-3">
-            <h3 class="font-bold mb-2">📝 Preguntas (${questions.length})</h3>
-            <div class="space-y">
-              ${questions.map((q, idx) => `
-                <div class="info-box info-box-blue" style="display:flex;justify-content:space-between;align-items:flex-start">
-                  <div style="flex:1">
-                    <p class="font-bold text-sm">${idx + 1}. ${q.text}</p>
-                    ${q.type === 'mc' ? `
-                      <ul style="list-style:none;margin-top:.35rem;margin-left:1rem">
-                        ${q.options.map((o, i) => `
-                          <li class="text-xs ${i === q.correctIndex ? 'text-green font-bold' : ''}">
-                            ${i === q.correctIndex ? '✅ ' : ''}${o}
-                          </li>
-                        `).join('')}
-                      </ul>
-                    ` : `<p class="text-xs text-gray mt-1">Pregunta abierta</p>`}
-                  </div>
-                  <button class="btn btn-danger text-xs" style="padding:.3rem .6rem;margin-left:.75rem"
-                    data-del="${q.id}">🗑️</button>
+            <div style="display:flex;flex-direction:column;gap:.75rem">
+              <div class="form-group">
+                <label class="label">Título del examen</label>
+                <input class="input" id="f-title" placeholder="Ej: Parcial de Matemáticas" value="${title}"/>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+                <div class="form-group">
+                  <label class="label">Código</label>
+                  <input class="input font-mono" id="f-code" placeholder="ABC123" value="${code}"
+                    ${selectedExam ? 'disabled' : ''} style="text-transform:uppercase;letter-spacing:.1em"/>
                 </div>
-              `).join('')}
+                <div class="form-group">
+                  <label class="label">Duración (min)</label>
+                  <input class="input" id="f-dur" type="number" min="1" value="${dur}"/>
+                </div>
+              </div>
+              <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;padding:.75rem;background:#f8fafc;border-radius:.75rem;border:1.5px solid #e2e8f0">
+                <input type="checkbox" id="f-show-answers" ${showCorrectAnswers ? 'checked' : ''} style="width:1.1rem;height:1.1rem;accent-color:#2563eb"/>
+                <div>
+                  <p class="font-bold text-sm">Mostrar respuestas al finalizar</p>
+                  <p class="text-xs text-gray">El estudiante verá las correctas al terminar</p>
+                </div>
+              </label>
             </div>
           </div>
-        ` : ''}
 
-        <button class="btn btn-primary btn-full" id="save-btn" ${saving || questions.length === 0 ? 'disabled' : ''}>
-          ${saving ? '⏳ Guardando...' : selectedExam ? '💾 Guardar cambios' : '✅ Crear examen'}
-        </button>
+          <!-- Agregar pregunta -->
+          <div class="card">
+            <h3 class="font-bold mb-3" style="font-size:1rem">➕ Nueva pregunta</h3>
+
+            <div class="form-group mb-3">
+              <label class="label">Texto de la pregunta</label>
+              <textarea class="input" id="f-qtext" rows="3" placeholder="Escribe aquí la pregunta..." style="resize:none">${qtext}</textarea>
+            </div>
+
+            <div class="form-group mb-3">
+              <label class="label">Tipo</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
+                  <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
+                  <span class="text-sm font-bold">Múltiple opción</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
+                  <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
+                  <span class="text-sm font-bold">Pregunta abierta</span>
+                </label>
+              </div>
+            </div>
+
+            ${qtype === 'mc' ? `
+              <div style="background:#f8fafc;border-radius:.75rem;padding:.85rem;border:1.5px solid #e2e8f0;margin-bottom:.75rem">
+                <p class="section-label">Opciones de respuesta</p>
+                <p class="text-xs text-gray mb-2">Marca el círculo de la respuesta correcta</p>
+                ${options.map((opt, i) => `
+                  <div class="opt-row">
+                    <input type="radio" class="correct-radio" name="correct-opt" value="${i}" ${correctIndex==i?'checked':''} id="correct-${i}"/>
+                    <input class="input text-sm" id="opt-${i}" value="${opt}" placeholder="Opción ${String.fromCharCode(65+i)}" style="flex:1"/>
+                    ${options.length > 2 ? `<button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem" data-remove-opt="${i}">✕</button>` : ''}
+                  </div>
+                `).join('')}
+                ${options.length < 6 ? `
+                  <button class="btn btn-outline text-xs mt-2" id="add-opt-btn" style="width:100%">+ Agregar opción</button>
+                ` : ''}
+              </div>
+            ` : `
+              <div class="info-box info-box-blue mb-3">
+                <p class="text-xs">💡 Las preguntas abiertas serán respondidas con texto libre por el estudiante.</p>
+              </div>
+            `}
+
+            <button class="btn btn-primary btn-full" id="add-q-btn">➕ Agregar pregunta</button>
+          </div>
+        </div>
+
+        <!-- Columna derecha: lista de preguntas + guardar -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+          <div class="card" style="min-height:200px">
+            <div class="flex-between mb-3">
+              <h3 class="font-bold" style="font-size:1rem">📝 Preguntas del examen</h3>
+              <span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:.2rem .65rem;font-size:.8rem;font-weight:700">${questions.length}</span>
+            </div>
+
+            ${questions.length === 0 ? `
+              <div class="text-center text-gray" style="padding:3rem 1rem">
+                <p style="font-size:2.5rem">📭</p>
+                <p class="text-sm mt-2">Aún no hay preguntas.<br/>Agrégalas desde el panel izquierdo.</p>
+              </div>
+            ` : `
+              <div class="space-y">
+                ${questions.map((q, idx) => `
+                  <div class="q-chip">
+                    <div style="flex:1">
+                      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">
+                        <span style="background:${q.type==='mc'?'#dbeafe':'#dcfce7'};color:${q.type==='mc'?'#1d4ed8':'#15803d'};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px">
+                          ${q.type==='mc'?'MÚLTIPLE':'ABIERTA'}
+                        </span>
+                        <span class="text-xs text-gray">#${idx+1}</span>
+                      </div>
+                      <p class="text-sm font-bold">${q.text}</p>
+                      ${q.type==='mc' ? `
+                        <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
+                          ${q.options.map((o,i) => `
+                            <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};color:${i===q.correctIndex?'#15803d':'#475569'};font-weight:${i===q.correctIndex?'700':'400'}">
+                              ${i===q.correctIndex?'✅ ':''}${o}
+                            </span>
+                          `).join('')}
+                        </div>
+                      ` : `<p class="text-xs text-gray mt-1">Respuesta abierta</p>`}
+                    </div>
+                    <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0" data-del="${q.id}">🗑️</button>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <button class="btn btn-primary btn-full" id="save-btn"
+            style="padding:.85rem;font-size:1rem"
+            ${saving || questions.length === 0 || !title.trim() || !code.trim() ? 'disabled' : ''}>
+            ${saving ? '⏳ Guardando...' : selectedExam ? '💾 Guardar cambios' : '✅ Crear examen'}
+          </button>
+
+          ${questions.length === 0 ? `<p class="text-center text-xs text-gray">Agrega al menos una pregunta para guardar</p>` : ''}
+        </div>
       </div>
     `;
   }
 
-  function renderTabLista(filtered) {
+  function renderTabLista() {
+    const filtered = exams.filter(e =>
+      (e.code + e.title).toLowerCase().includes(filter.toLowerCase())
+    );
     return `
       <div class="card">
         <div class="flex-between mb-3">
           <h2 class="font-bold" style="font-size:1.2rem">📋 Registro de exámenes</h2>
           <div class="flex-row">
             <input class="input" id="f-filter" placeholder="Buscar..." value="${filter}" style="width:180px"/>
-            <button class="btn btn-outline text-sm" id="toggle-reg">
-              ${showRegistry ? '👁️ Ocultar' : '👁️ Mostrar'}
-            </button>
+            <button class="btn btn-outline text-sm" id="toggle-reg">${showRegistry ? '👁️ Ocultar' : '👁️ Mostrar'}</button>
           </div>
         </div>
         ${loading
@@ -263,7 +330,7 @@ function renderTeacher(app) {
                 <td>
                   <div class="flex-row">
                     <button class="btn btn-outline text-xs" data-edit="${e.id}">✏️ Editar</button>
-                    <button class="btn btn-danger text-xs"  data-del-exam="${e.id}">🗑️</button>
+                    <button class="btn btn-danger text-xs" data-del-exam="${e.id}">🗑️</button>
                   </div>
                 </td>
               </tr>
@@ -275,31 +342,41 @@ function renderTeacher(app) {
   }
 
   // ===== EVENTOS =====
-
   function bindTabEvents() {
     document.getElementById('tab-crear').onclick = () => {
       activeTab = 'crear';
       if (!selectedExam) resetForm();
       render();
     };
-    document.getElementById('tab-lista').onclick    = () => { activeTab = 'lista'; render(); };
+    document.getElementById('tab-lista').onclick     = () => { activeTab = 'lista'; render(); };
     document.getElementById('tab-resultados').onclick = () => navigate('/resultados');
     document.getElementById('tab-monitor').onclick    = () => navigate('/monitor');
   }
 
-  function bindCrearEvents(opts) {
-    document.getElementById('f-title').oninput        = e => { title = e.target.value; };
-    document.getElementById('f-code').oninput         = e => { code = e.target.value.toUpperCase(); e.target.value = code; };
-    document.getElementById('f-dur').oninput          = e => { dur = e.target.value; };
+  function bindCrearEvents() {
+    document.getElementById('f-title').oninput         = e => { title = e.target.value; };
+    document.getElementById('f-code').oninput          = e => { code = e.target.value.toUpperCase(); e.target.value = code; };
+    document.getElementById('f-dur').oninput           = e => { dur = e.target.value; };
     document.getElementById('f-show-answers').onchange = e => { showCorrectAnswers = e.target.checked; };
-    document.getElementById('f-qtext').oninput        = e => { qtext = e.target.value; };
-    document.getElementById('f-qtype').onchange       = e => { qtype = e.target.value; render(); };
+    document.getElementById('f-qtext').oninput         = e => { qtext = e.target.value; };
+
+    document.querySelectorAll('input[name="qtype"]').forEach(r => {
+      r.onchange = e => { qtype = e.target.value; render(); };
+    });
 
     if (qtype === 'mc') {
-      document.getElementById('f-opts').oninput = e => { optionsRaw = e.target.value; render(); };
-      opts.forEach((_, i) => {
-        const r = document.getElementById(`correct-${i}`);
-        if (r) r.onchange = () => { correctIndex = i; };
+      options.forEach((_, i) => {
+        const inp = document.getElementById(`opt-${i}`);
+        if (inp) inp.oninput = e => { options[i] = e.target.value; };
+        const radio = document.getElementById(`correct-${i}`);
+        if (radio) radio.onchange = () => { correctIndex = i; };
+      });
+
+      const addOptBtn = document.getElementById('add-opt-btn');
+      if (addOptBtn) addOptBtn.onclick = addOption;
+
+      document.querySelectorAll('[data-remove-opt]').forEach(btn => {
+        btn.onclick = () => removeOption(Number(btn.dataset.removeOpt));
       });
     }
 
@@ -315,9 +392,9 @@ function renderTeacher(app) {
     });
   }
 
-  function bindListaEvents(filtered) {
-    document.getElementById('f-filter').oninput  = e => { filter = e.target.value; render(); };
-    document.getElementById('toggle-reg').onclick = () => { showRegistry = !showRegistry; render(); };
+  function bindListaEvents() {
+    document.getElementById('f-filter').oninput   = e => { filter = e.target.value; render(); };
+    document.getElementById('toggle-reg').onclick  = () => { showRegistry = !showRegistry; render(); };
 
     document.querySelectorAll('[data-edit]').forEach(btn => {
       btn.onclick = () => {
