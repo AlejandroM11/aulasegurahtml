@@ -19,8 +19,11 @@ function renderLogin(app) {
       </form>
 
       <div class="divider">O</div>
-      <button class="btn btn-gradient btn-full mb-2" id="guest-btn">Entrar como invitado</button>
-      <button class="btn btn-outline btn-full" id="google-btn">Continuar con Google</button>
+      <button class="btn btn-gradient btn-full mb-2" id="guest-btn">🎯 Entrar como invitado</button>
+      <button class="btn btn-outline btn-full" id="google-btn" style="display:flex;align-items:center;justify-content:center;gap:.6rem">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:1.2rem;height:1.2rem"/>
+        Continuar con Google
+      </button>
 
       <p class="text-center text-sm mt-4">
         ¿No tienes cuenta? <a href="#/register" class="text-blue" style="text-decoration:underline">Regístrate</a>

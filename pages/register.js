@@ -30,7 +30,10 @@ function renderRegister(app) {
       </form>
 
       <div class="divider">O regístrate con</div>
-      <button class="btn btn-outline btn-full" id="google-reg-btn">🔵 Continuar con Google</button>
+      <button class="btn btn-outline btn-full" id="google-reg-btn" style="display:flex;align-items:center;justify-content:center;gap:.6rem">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:1.2rem;height:1.2rem"/>
+        Continuar con Google
+      </button>
 
       <p class="text-center text-sm mt-4">
         ¿Ya tienes cuenta? <a href="#/login" class="text-blue" style="text-decoration:underline">Inicia sesión</a>
