@@ -1,8 +1,8 @@
 function renderRegister(app) {
   app.innerHTML = `
     <div class="card" style="max-width:440px;margin:0 auto">
-      <img src="https://img.freepik.com/free-vector/students-taking-exam-online_52683-39549.jpg"
-        alt="Registro" style="width:100%;height:160px;object-fit:cover;border-radius:.75rem;margin-bottom:1rem"/>
+      <img src="https://cdn-icons-png.flaticon.com/512/3534/3534139.png"
+        alt="Registro" style="width:140px;height:140px;object-fit:contain;display:block;margin:0 auto 1rem"/>
       <h2 class="text-center font-bold" style="font-size:1.5rem;margin-bottom:.25rem">Crear cuenta</h2>
       <p class="text-center text-gray text-sm mb-4">Únete a Aula Segura</p>
 
