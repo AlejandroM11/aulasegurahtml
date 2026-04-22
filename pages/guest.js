@@ -11,25 +11,27 @@ function renderGuest(app) {
           <p class="text-center text-gray text-sm mb-4">Ingresa al examen sin necesidad de crear una cuenta</p>
           <form id="guest-form" class="space-y">
             <div class="form-group">
-              <label class="label">👤 Tu nombre completo</label>
+              <label class="label"><i class="fa-solid fa-user" style="margin-right:.4rem;color:#2563eb"></i> Tu nombre completo</label>
               <input class="input" type="text" id="guest-name" placeholder="Juan Pérez"
                 required minlength="3" maxlength="50" autofocus/>
             </div>
             <div class="form-group">
-              <label class="label">🔑 Código del examen</label>
+              <label class="label"><i class="fa-solid fa-key" style="margin-right:.4rem;color:#2563eb"></i> Código del examen</label>
               <input class="input font-mono" type="text" id="guest-code" placeholder="ABC123"
                 required maxlength="10"
                 style="text-align:center;font-size:1.2rem;font-weight:700;letter-spacing:.1em"/>
             </div>
-            <button type="submit" class="btn btn-primary btn-full" id="guest-btn">🚀 Comenzar examen</button>
+            <button type="submit" class="btn btn-primary btn-full" id="guest-btn">
+              <i class="fa-solid fa-rocket" style="margin-right:.4rem"></i> Comenzar examen
+            </button>
           </form>
 
           <div class="info-box info-box-blue mt-4">
-            <p class="font-bold text-sm mb-1">ℹ️ Información</p>
+            <p class="font-bold text-sm mb-1"><i class="fa-solid fa-circle-info" style="margin-right:.4rem"></i> Información</p>
             <ul class="text-xs space-y-sm">
-              <li>• No necesitas crear una cuenta</li>
-              <li>• Tu sesión es temporal</li>
-              <li>• Tus respuestas se guardan automáticamente</li>
+              <li><i class="fa-solid fa-circle-check" style="margin-right:.4rem;color:#2563eb"></i> No necesitas crear una cuenta</li>
+              <li><i class="fa-solid fa-clock" style="margin-right:.4rem;color:#2563eb"></i> Tu sesión es temporal</li>
+              <li><i class="fa-solid fa-floppy-disk" style="margin-right:.4rem;color:#2563eb"></i> Tus respuestas se guardan automáticamente</li>
             </ul>
           </div>
 
@@ -55,7 +57,8 @@ function renderGuest(app) {
 
     if (name.length < 3) { alert('❌ El nombre debe tener al menos 3 caracteres'); return; }
 
-    btn.disabled = true; btn.textContent = '⏳ Verificando...';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i> Verificando...';
     try {
       const res = await apiGetExamByCode(code);
       if (res?.ok && res.exam) {
@@ -71,7 +74,8 @@ function renderGuest(app) {
     } catch {
       alert('❌ Código de examen no encontrado');
     } finally {
-      btn.disabled = false; btn.textContent = '🚀 Comenzar examen';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-rocket" style="margin-right:.4rem"></i> Comenzar examen';
     }
   };
 }
