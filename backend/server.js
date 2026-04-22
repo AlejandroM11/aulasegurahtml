@@ -98,13 +98,26 @@ app.post('/api/auth/login', async (req, res) => {
 // ─────────────────────────────────────────────
 app.get('/api/evaluaciones', async (req, res) => {
   try {
-    const snap = await db.collection('evaluaciones').orderBy('createdAt', 'desc').get();
-    res.json(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const { teacherId } = req.query;
+
+    let query = db.collection('evaluaciones');
+
+    // 🔥 SI VIENE teacherId → FILTRAR
+    if (teacherId) {
+      query = query.where('teacherId', '==', teacherId);
+    }
+
+    const snap = await query.orderBy('createdAt', 'desc').get();
+
+    res.json(snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    })));
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 app.get('/api/evaluaciones/code/:code', async (req, res) => {
   try {
     const snap = await db.collection('evaluaciones')

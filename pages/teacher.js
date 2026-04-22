@@ -11,13 +11,23 @@ function renderTeacher(app) {
   const user = getUser();
 
   // ===== CARGA =====
-  async function loadExams() {
-    loading = true;
-    try { exams = await apiGetExams(); }
-    catch { alert('Error al cargar los exámenes'); }
-    finally { loading = false; render(); }
-  }
+async function loadExams() {
+  loading = true;
+  try {
+    const allExams = await apiGetExams();
 
+    const currentUserId = user?.uid || user?.email;
+
+    // 🔥 FILTRO CLAVE
+    exams = allExams.filter(exam => exam.teacherId === currentUserId);
+
+  } catch {
+    alert('Error al cargar los exámenes');
+  } finally {
+    loading = false;
+    render();
+  }
+}
   function resetForm() {
     title = ''; code = ''; dur = 30; questions = [];
     qtext = ''; options = ['', '']; correctIndex = 0;
