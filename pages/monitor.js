@@ -86,18 +86,26 @@ function renderMonitor(app) {
         <div style="max-width:800px;margin:0 auto">
           <div class="flex-between mb-4">
             <div>
-              <h1 class="font-bold" style="font-size:1.75rem">📡 Monitoreo en Tiempo Real</h1>
+              <h1 class="font-bold" style="font-size:1.75rem">
+                <i class="fa-solid fa-tower-broadcast" style="margin-right:.5rem;color:#2563eb"></i>Monitoreo en Tiempo Real
+              </h1>
               <p class="text-gray text-sm mt-1">Selecciona un examen para comenzar a monitorear</p>
             </div>
-            <button class="btn btn-outline" id="back-btn">← Volver</button>
+            <button class="btn btn-outline" id="back-btn">
+              <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
+            </button>
           </div>
           <div class="card">
-            <h2 class="font-bold mb-3" style="font-size:1.1rem">Exámenes disponibles</h2>
+            <h2 class="font-bold mb-3" style="font-size:1.1rem">
+              <i class="fa-solid fa-file-lines" style="margin-right:.4rem;color:#2563eb"></i>Exámenes disponibles
+            </h2>
             ${exams.length === 0
               ? `<div class="text-center text-gray" style="padding:3rem">
-                  <p style="font-size:2.5rem;margin-bottom:.5rem">📭</p>
-                  <p>No hay exámenes disponibles</p>
-                  <button class="btn btn-primary mt-3" id="create-btn">Crear primer examen</button>
+                  <i class="fa-solid fa-inbox" style="font-size:2.5rem;color:#cbd5e1"></i>
+                  <p class="mt-3">No hay exámenes disponibles</p>
+                  <button class="btn btn-primary mt-3" id="create-btn">
+                    <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Crear primer examen
+                  </button>
                 </div>`
               : `<div class="space-y">
                   ${exams.map(e => `
@@ -105,11 +113,18 @@ function renderMonitor(app) {
                       <div class="flex-between">
                         <div>
                           <h3 class="font-bold">${e.title}</h3>
-                          <p class="text-sm text-gray mt-1">Código: <span class="font-mono font-bold text-blue">${e.code}</span></p>
+                          <p class="text-sm text-gray mt-1">
+                            <i class="fa-solid fa-key" style="margin-right:.3rem"></i>Código:
+                            <span class="font-mono font-bold text-blue">${e.code}</span>
+                          </p>
                         </div>
                         <div style="text-align:right">
-                          <p class="text-sm text-gray">⏱️ ${e.durationMinutes} min</p>
-                          <p class="text-xs text-gray">📝 ${e.questions?.length || 0} preguntas</p>
+                          <p class="text-sm text-gray">
+                            <i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${e.durationMinutes} min
+                          </p>
+                          <p class="text-xs text-gray">
+                            <i class="fa-solid fa-circle-question" style="margin-right:.3rem"></i>${e.questions?.length || 0} preguntas
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -130,47 +145,53 @@ function renderMonitor(app) {
       return;
     }
 
-    // ── Monitor view ──
     const blocked = allStudents.filter(s => s.isBlocked);
-    const active  = allStudents.filter(s => !s.isBlocked);
     const unread  = messages.filter(m => !m.read);
 
     app.innerHTML = `
       <div style="max-width:1000px;margin:0 auto">
-        <!-- Header -->
         <div class="flex-between mb-4">
           <div>
-            <h1 class="font-bold" style="font-size:1.5rem">📡 ${selectedExam.title}</h1>
+            <h1 class="font-bold" style="font-size:1.5rem">
+              <i class="fa-solid fa-tower-broadcast" style="margin-right:.5rem;color:#2563eb"></i>${selectedExam.title}
+            </h1>
             <p class="text-gray text-sm mt-1">
-              Código: <span class="font-mono font-bold text-blue">${selectedExam.code}</span>
-              &nbsp;·&nbsp; ⏱️ ${selectedExam.durationMinutes} min
+              <i class="fa-solid fa-key" style="margin-right:.3rem"></i>Código:
+              <span class="font-mono font-bold text-blue">${selectedExam.code}</span>
+              &nbsp;·&nbsp;
+              <i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${selectedExam.durationMinutes} min
             </p>
           </div>
-          <button class="btn btn-outline" id="deselect-btn">← Cambiar examen</button>
+          <button class="btn btn-outline" id="deselect-btn">
+            <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Cambiar examen
+          </button>
         </div>
 
-        <!-- Stats -->
-        <div class="grid-3-md mb-4" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">
           <div class="card text-center">
+            <i class="fa-solid fa-users" style="font-size:1.5rem;color:#2563eb;margin-bottom:.5rem"></i>
             <p style="font-size:2rem;font-weight:700;color:#2563eb">${allStudents.length}</p>
             <p class="text-sm text-gray">Estudiantes activos</p>
           </div>
           <div class="card text-center">
+            <i class="fa-solid fa-lock" style="font-size:1.5rem;color:#dc2626;margin-bottom:.5rem"></i>
             <p style="font-size:2rem;font-weight:700;color:#dc2626">${blocked.length}</p>
             <p class="text-sm text-gray">Bloqueados</p>
           </div>
           <div class="card text-center">
+            <i class="fa-solid fa-envelope" style="font-size:1.5rem;color:#d97706;margin-bottom:.5rem"></i>
             <p style="font-size:2rem;font-weight:700;color:#d97706">${unread.length}</p>
             <p class="text-sm text-gray">Mensajes sin leer</p>
           </div>
         </div>
 
-        <!-- Students table -->
         <div class="card mb-4">
-          <h2 class="font-bold mb-3" style="font-size:1.1rem">👥 Estudiantes en examen</h2>
+          <h2 class="font-bold mb-3" style="font-size:1.1rem">
+            <i class="fa-solid fa-users" style="margin-right:.4rem;color:#2563eb"></i>Estudiantes en examen
+          </h2>
           ${allStudents.length === 0
             ? `<div class="text-center text-gray" style="padding:2.5rem">
-                <p style="font-size:2rem">🕐</p>
+                <i class="fa-solid fa-hourglass-half" style="font-size:2rem;color:#cbd5e1"></i>
                 <p class="mt-2">Esperando estudiantes...</p>
               </div>`
             : `<div class="overflow-x">
@@ -188,13 +209,14 @@ function renderMonitor(app) {
                         </td>
                         <td>
                           ${s.isBlocked
-                            ? `<span class="badge badge-red">🔒 Bloqueado</span>`
-                            : `<span class="badge badge-green">✅ Activo</span>`}
+                            ? `<span class="badge badge-red"><i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloqueado</span>`
+                            : `<span class="badge badge-green"><i class="fa-solid fa-circle-check" style="margin-right:.3rem"></i>Activo</span>`}
                         </td>
                         <td class="font-mono">${fmt(s.timeLeft)}</td>
                         <td>${s.answeredCount || 0} / ${selectedExam.questions?.length || 0}</td>
                         <td>
                           <span style="color:${(s.violations||0) > 2 ? '#dc2626' : '#374151'};font-weight:${(s.violations||0) > 2 ? '700' : '400'}">
+                            ${(s.violations||0) > 2 ? '<i class="fa-solid fa-triangle-exclamation" style="margin-right:.3rem"></i>' : ''}
                             ${s.violations || 0}
                           </span>
                         </td>
@@ -202,9 +224,13 @@ function renderMonitor(app) {
                         <td>
                           ${s.isBlocked
                             ? `<button class="btn btn-primary text-xs" data-unblock="${s.id}" ${unblocking ? 'disabled' : ''}>
-                                ${unblocking ? '⏳' : '🔓 Desbloquear'}
+                                ${unblocking
+                                  ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.3rem"></i>Espera...'
+                                  : '<i class="fa-solid fa-lock-open" style="margin-right:.3rem"></i>Desbloquear'}
                               </button>`
-                            : `<button class="btn btn-danger text-xs" data-block="${s.id}">🔒 Bloquear</button>`}
+                            : `<button class="btn btn-danger text-xs" data-block="${s.id}">
+                                <i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloquear
+                              </button>`}
                         </td>
                       </tr>
                     `).join('')}
@@ -214,38 +240,50 @@ function renderMonitor(app) {
           }
         </div>
 
-        <!-- Messages -->
         <div class="card">
           <h2 class="font-bold mb-3" style="font-size:1.1rem">
-            💬 Mensajes de estudiantes
+            <i class="fa-solid fa-comments" style="margin-right:.4rem;color:#2563eb"></i>Mensajes de estudiantes
             ${unread.length > 0 ? `<span class="badge badge-red" style="margin-left:.5rem">${unread.length} nuevos</span>` : ''}
           </h2>
           ${messages.length === 0
             ? `<div class="text-center text-gray" style="padding:2rem">
-                <p style="font-size:1.75rem">📭</p>
+                <i class="fa-solid fa-inbox" style="font-size:1.75rem;color:#cbd5e1"></i>
                 <p class="mt-2 text-sm">No hay mensajes</p>
               </div>`
             : `<div class="space-y">
                 ${messages.map(m => `
                   <div class="info-box ${m.read ? '' : 'info-box-blue'}" style="border-left:3px solid ${m.read ? '#e2e8f0' : '#2563eb'}">
                     <div class="flex-between mb-1">
-                      <p class="font-bold text-sm">${m.studentName || m.studentUid}</p>
-                      <p class="text-xs text-gray">${fmtTs(m.timestamp)}</p>
+                      <p class="font-bold text-sm">
+                        <i class="fa-solid fa-user" style="margin-right:.3rem;color:#64748b"></i>
+                        ${m.studentName || m.studentUid}
+                      </p>
+                      <p class="text-xs text-gray">
+                        <i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${fmtTs(m.timestamp)}
+                      </p>
                     </div>
                     <p class="text-sm mb-2">${m.message}</p>
                     ${m.response
                       ? `<div style="background:#f0fdf4;border-radius:.4rem;padding:.5rem .75rem;margin-top:.5rem">
-                          <p class="text-xs text-gray mb-1">Tu respuesta:</p>
+                          <p class="text-xs text-gray mb-1">
+                            <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Tu respuesta:
+                          </p>
                           <p class="text-sm">${m.response}</p>
                         </div>`
                       : `<div>
                           ${selectedMsg === m.id
                             ? `<div style="display:flex;gap:.5rem;margin-top:.5rem">
                                 <input class="input text-sm" id="resp-input" placeholder="Escribe tu respuesta..." value="${responseText}" style="flex:1"/>
-                                <button class="btn btn-primary text-xs" data-send="${m.id}">Enviar</button>
-                                <button class="btn btn-outline text-xs" id="cancel-resp">Cancelar</button>
+                                <button class="btn btn-primary text-xs" data-send="${m.id}">
+                                  <i class="fa-solid fa-paper-plane" style="margin-right:.3rem"></i>Enviar
+                                </button>
+                                <button class="btn btn-outline text-xs" id="cancel-resp">
+                                  <i class="fa-solid fa-xmark"></i>
+                                </button>
                               </div>`
-                            : `<button class="btn btn-outline text-xs" data-reply="${m.id}">💬 Responder</button>`}
+                            : `<button class="btn btn-outline text-xs" data-reply="${m.id}">
+                                <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Responder
+                              </button>`}
                         </div>`
                     }
                   </div>
@@ -255,7 +293,6 @@ function renderMonitor(app) {
         </div>
       </div>`;
 
-    // Events
     document.getElementById('deselect-btn').onclick = deselectExam;
 
     document.querySelectorAll('[data-unblock]').forEach(btn => {
