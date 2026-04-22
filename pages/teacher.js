@@ -11,23 +11,20 @@ function renderTeacher(app) {
   const user = getUser();
 
   // ===== CARGA =====
-async function loadExams() {
-  loading = true;
-  try {
-    const allExams = await apiGetExams();
-
-    const currentUserId = user?.uid || user?.email;
-
-    // 🔥 FILTRO CLAVE
-    exams = allExams.filter(exam => exam.teacherId === currentUserId);
-
-  } catch {
-    alert('Error al cargar los exámenes');
-  } finally {
-    loading = false;
-    render();
+  async function loadExams() {
+    loading = true;
+    try {
+      const allExams = await apiGetExams();
+      const currentUserId = user?.uid || user?.email;
+      exams = allExams.filter(exam => exam.teacherId === currentUserId);
+    } catch {
+      alert('Error al cargar los exámenes');
+    } finally {
+      loading = false;
+      render();
+    }
   }
-}
+
   function resetForm() {
     title = ''; code = ''; dur = 30; questions = [];
     qtext = ''; options = ['', '']; correctIndex = 0;
@@ -116,16 +113,22 @@ async function loadExams() {
     app.innerHTML = `
       <div style="max-width:900px;margin:0 auto">
 
-        <!-- Tabs -->
         <div style="display:flex;gap:.5rem;margin-bottom:1.5rem;background:#fff;padding:.4rem;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e2e8f0">
           <button class="tab-pill${activeTab==='crear'?' active':''}" id="tab-crear" style="flex:1">
-            ${selectedExam ? '✏️ Editando' : '➕ Crear examen'}
+            ${selectedExam
+              ? '<i class="fa-solid fa-pen" style="margin-right:.4rem"></i>Editando'
+              : '<i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Crear examen'}
           </button>
           <button class="tab-pill${activeTab==='lista'?' active':''}" id="tab-lista" style="flex:1">
-            📋 Mis exámenes <span style="background:#e2e8f0;border-radius:999px;padding:.1rem .5rem;font-size:.75rem;margin-left:.25rem">${exams.length}</span>
+            <i class="fa-solid fa-list" style="margin-right:.4rem"></i>Mis exámenes
+            <span style="background:#e2e8f0;border-radius:999px;padding:.1rem .5rem;font-size:.75rem;margin-left:.25rem">${exams.length}</span>
           </button>
-          <button class="tab-pill" id="tab-resultados" style="flex:1">📊 Resultados</button>
-          <button class="tab-pill" id="tab-monitor" style="flex:1">📡 Monitoreo</button>
+          <button class="tab-pill" id="tab-resultados" style="flex:1">
+            <i class="fa-solid fa-chart-bar" style="margin-right:.4rem"></i>Resultados
+          </button>
+          <button class="tab-pill" id="tab-monitor" style="flex:1">
+            <i class="fa-solid fa-tower-broadcast" style="margin-right:.4rem"></i>Monitoreo
+          </button>
         </div>
 
         ${activeTab === 'crear' ? renderTabCrear() : ''}
@@ -153,16 +156,15 @@ async function loadExams() {
     return `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
 
-        <!-- Columna izquierda: info del examen + agregar pregunta -->
         <div style="display:flex;flex-direction:column;gap:1.25rem">
-
-          <!-- Info del examen -->
           <div class="card">
             <div class="flex-between mb-3">
               <h2 class="font-bold" style="font-size:1.1rem">
-                ${selectedExam ? `✏️ <span class="text-blue">${selectedExam.title}</span>` : '📄 Información del examen'}
+                ${selectedExam
+                  ? `<i class="fa-solid fa-pen" style="margin-right:.4rem;color:#2563eb"></i><span class="text-blue">${selectedExam.title}</span>`
+                  : '<i class="fa-solid fa-file-lines" style="margin-right:.4rem;color:#2563eb"></i>Información del examen'}
               </h2>
-              ${selectedExam ? `<button class="btn btn-outline text-xs" id="cancel-edit">✕ Cancelar</button>` : ''}
+              ${selectedExam ? `<button class="btn btn-outline text-xs" id="cancel-edit"><i class="fa-solid fa-xmark" style="margin-right:.3rem"></i>Cancelar</button>` : ''}
             </div>
 
             <div style="display:flex;flex-direction:column;gap:.75rem">
@@ -191,9 +193,10 @@ async function loadExams() {
             </div>
           </div>
 
-          <!-- Agregar pregunta -->
           <div class="card">
-            <h3 class="font-bold mb-3" style="font-size:1rem">➕ Nueva pregunta</h3>
+            <h3 class="font-bold mb-3" style="font-size:1rem">
+              <i class="fa-solid fa-circle-plus" style="margin-right:.4rem;color:#2563eb"></i>Nueva pregunta
+            </h3>
 
             <div class="form-group mb-3">
               <label class="label">Texto de la pregunta</label>
@@ -205,10 +208,12 @@ async function loadExams() {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
                 <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
                   <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
+                  <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.3rem"></i>
                   <span class="text-sm font-bold">Múltiple opción</span>
                 </label>
                 <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
                   <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
+                  <i class="fa-solid fa-pen-to-square" style="color:#2563eb;margin-right:.3rem"></i>
                   <span class="text-sm font-bold">Pregunta abierta</span>
                 </label>
               </div>
@@ -222,34 +227,45 @@ async function loadExams() {
                   <div class="opt-row">
                     <input type="radio" class="correct-radio" name="correct-opt" value="${i}" ${correctIndex==i?'checked':''} id="correct-${i}"/>
                     <input class="input text-sm" id="opt-${i}" value="${opt}" placeholder="Opción ${String.fromCharCode(65+i)}" style="flex:1"/>
-                    ${options.length > 2 ? `<button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem" data-remove-opt="${i}">✕</button>` : ''}
+                    ${options.length > 2 ? `
+                      <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem" data-remove-opt="${i}">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>` : ''}
                   </div>
                 `).join('')}
                 ${options.length < 6 ? `
-                  <button class="btn btn-outline text-xs mt-2" id="add-opt-btn" style="width:100%">+ Agregar opción</button>
+                  <button class="btn btn-outline text-xs mt-2" id="add-opt-btn" style="width:100%">
+                    <i class="fa-solid fa-plus" style="margin-right:.3rem"></i>Agregar opción
+                  </button>
                 ` : ''}
               </div>
             ` : `
               <div class="info-box info-box-blue mb-3">
-                <p class="text-xs">💡 Las preguntas abiertas serán respondidas con texto libre por el estudiante.</p>
+                <p class="text-xs">
+                  <i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>
+                  Las preguntas abiertas serán respondidas con texto libre por el estudiante.
+                </p>
               </div>
             `}
 
-            <button class="btn btn-primary btn-full" id="add-q-btn">➕ Agregar pregunta</button>
+            <button class="btn btn-primary btn-full" id="add-q-btn">
+              <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Agregar pregunta
+            </button>
           </div>
         </div>
 
-        <!-- Columna derecha: lista de preguntas + guardar -->
         <div style="display:flex;flex-direction:column;gap:1.25rem">
           <div class="card" style="min-height:200px">
             <div class="flex-between mb-3">
-              <h3 class="font-bold" style="font-size:1rem">📝 Preguntas del examen</h3>
+              <h3 class="font-bold" style="font-size:1rem">
+                <i class="fa-solid fa-clipboard-list" style="margin-right:.4rem;color:#2563eb"></i>Preguntas del examen
+              </h3>
               <span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:.2rem .65rem;font-size:.8rem;font-weight:700">${questions.length}</span>
             </div>
 
             ${questions.length === 0 ? `
               <div class="text-center text-gray" style="padding:3rem 1rem">
-                <p style="font-size:2.5rem">📭</p>
+                <i class="fa-solid fa-inbox" style="font-size:2.5rem;color:#cbd5e1"></i>
                 <p class="text-sm mt-2">Aún no hay preguntas.<br/>Agrégalas desde el panel izquierdo.</p>
               </div>
             ` : `
@@ -259,6 +275,7 @@ async function loadExams() {
                     <div style="flex:1">
                       <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">
                         <span style="background:${q.type==='mc'?'#dbeafe':'#dcfce7'};color:${q.type==='mc'?'#1d4ed8':'#15803d'};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px">
+                          <i class="fa-solid ${q.type==='mc'?'fa-list-check':'fa-pen-to-square'}" style="margin-right:.3rem"></i>
                           ${q.type==='mc'?'MÚLTIPLE':'ABIERTA'}
                         </span>
                         <span class="text-xs text-gray">#${idx+1}</span>
@@ -268,13 +285,15 @@ async function loadExams() {
                         <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
                           ${q.options.map((o,i) => `
                             <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};color:${i===q.correctIndex?'#15803d':'#475569'};font-weight:${i===q.correctIndex?'700':'400'}">
-                              ${i===q.correctIndex?'✅ ':''}${o}
+                              ${i===q.correctIndex?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
                             </span>
                           `).join('')}
                         </div>
-                      ` : `<p class="text-xs text-gray mt-1">Respuesta abierta</p>`}
+                      ` : `<p class="text-xs text-gray mt-1"><i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta</p>`}
                     </div>
-                    <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0" data-del="${q.id}">🗑️</button>
+                    <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0" data-del="${q.id}">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
                 `).join('')}
               </div>
@@ -284,7 +303,11 @@ async function loadExams() {
           <button class="btn btn-primary btn-full" id="save-btn"
             style="padding:.85rem;font-size:1rem"
             ${saving || questions.length === 0 || !title.trim() || !code.trim() ? 'disabled' : ''}>
-            ${saving ? '⏳ Guardando...' : selectedExam ? '💾 Guardar cambios' : '✅ Crear examen'}
+            ${saving
+              ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Guardando...'
+              : selectedExam
+                ? '<i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Guardar cambios'
+                : '<i class="fa-solid fa-circle-check" style="margin-right:.4rem"></i>Crear examen'}
           </button>
 
           ${questions.length === 0 ? `<p class="text-center text-xs text-gray">Agrega al menos una pregunta para guardar</p>` : ''}
@@ -300,10 +323,15 @@ async function loadExams() {
     return `
       <div class="card">
         <div class="flex-between mb-3">
-          <h2 class="font-bold" style="font-size:1.2rem">📋 Registro de exámenes</h2>
+          <h2 class="font-bold" style="font-size:1.2rem">
+            <i class="fa-solid fa-list" style="margin-right:.4rem;color:#2563eb"></i>Registro de exámenes
+          </h2>
           <div class="flex-row">
             <input class="input" id="f-filter" placeholder="Buscar..." value="${filter}" style="width:180px"/>
-            <button class="btn btn-outline text-sm" id="toggle-reg">${showRegistry ? '👁️ Ocultar' : '👁️ Mostrar'}</button>
+            <button class="btn btn-outline text-sm" id="toggle-reg">
+              <i class="fa-solid ${showRegistry ? 'fa-eye-slash' : 'fa-eye'}" style="margin-right:.3rem"></i>
+              ${showRegistry ? 'Ocultar' : 'Mostrar'}
+            </button>
           </div>
         </div>
         ${loading
@@ -331,16 +359,20 @@ async function loadExams() {
               <tr>
                 <td class="font-mono font-bold text-blue">${e.code}</td>
                 <td>${e.title}</td>
-                <td>${e.durationMinutes} min</td>
-                <td>${e.questions?.length || 0}</td>
+                <td><i class="fa-solid fa-clock" style="margin-right:.3rem;color:#64748b"></i>${e.durationMinutes} min</td>
+                <td><i class="fa-solid fa-circle-question" style="margin-right:.3rem;color:#64748b"></i>${e.questions?.length || 0}</td>
                 <td>${e.showCorrectAnswers
-                  ? `<span class="badge badge-green">✅ Muestra respuestas</span>`
-                  : `<span class="badge badge-gray">🔒 Oculta respuestas</span>`}
+                  ? `<span class="badge badge-green"><i class="fa-solid fa-eye" style="margin-right:.3rem"></i>Muestra respuestas</span>`
+                  : `<span class="badge badge-gray"><i class="fa-solid fa-eye-slash" style="margin-right:.3rem"></i>Oculta respuestas</span>`}
                 </td>
                 <td>
                   <div class="flex-row">
-                    <button class="btn btn-outline text-xs" data-edit="${e.id}">✏️ Editar</button>
-                    <button class="btn btn-danger text-xs" data-del-exam="${e.id}">🗑️</button>
+                    <button class="btn btn-outline text-xs" data-edit="${e.id}">
+                      <i class="fa-solid fa-pen" style="margin-right:.3rem"></i>Editar
+                    </button>
+                    <button class="btn btn-danger text-xs" data-del-exam="${e.id}">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -358,7 +390,7 @@ async function loadExams() {
       if (!selectedExam) resetForm();
       render();
     };
-    document.getElementById('tab-lista').onclick     = () => { activeTab = 'lista'; render(); };
+    document.getElementById('tab-lista').onclick      = () => { activeTab = 'lista'; render(); };
     document.getElementById('tab-resultados').onclick = () => navigate('/resultados');
     document.getElementById('tab-monitor').onclick    = () => navigate('/monitor');
   }
@@ -403,8 +435,8 @@ async function loadExams() {
   }
 
   function bindListaEvents() {
-    document.getElementById('f-filter').oninput   = e => { filter = e.target.value; render(); };
-    document.getElementById('toggle-reg').onclick  = () => { showRegistry = !showRegistry; render(); };
+    document.getElementById('f-filter').oninput  = e => { filter = e.target.value; render(); };
+    document.getElementById('toggle-reg').onclick = () => { showRegistry = !showRegistry; render(); };
 
     document.querySelectorAll('[data-edit]').forEach(btn => {
       btn.onclick = () => {
