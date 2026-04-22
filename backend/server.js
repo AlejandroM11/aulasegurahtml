@@ -168,6 +168,26 @@ app.delete('/api/evaluaciones/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 app.get('/api/notas', async (req, res) => {
   try {
+    const { teacherId } = req.query;
+
+    // Obtener los IDs de exámenes del profesor para filtrar sus notas
+    if (teacherId) {
+      const examsSnap = await db.collection('evaluaciones')
+        .where('teacherId', '==', teacherId)
+        .get();
+
+      const examIds  = new Set(examsSnap.docs.map(d => d.id));
+      const examCodes = new Set(examsSnap.docs.map(d => d.data().code));
+
+      const notasSnap = await db.collection('notas').orderBy('submittedAt', 'desc').get();
+      const notas = notasSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(n => examIds.has(n.examId) || examCodes.has(n.code));
+
+      return res.json(notas);
+    }
+
+    // Sin teacherId devuelve todo (compatibilidad)
     const snap = await db.collection('notas').orderBy('submittedAt', 'desc').get();
     res.json(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   } catch (err) {
