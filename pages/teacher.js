@@ -55,8 +55,7 @@ function renderTeacher(app) {
       const examData = {
         title: title.trim(), code: code.trim().toUpperCase(),
         durationMinutes: Number(dur), questions, showCorrectAnswers,
-        teacherId: user?.uid || user?.email,
-        teacherEmail: user?.email || ''   // campo extra para debug/consistencia
+        teacherId: user?.uid || user?.email
       };
       if (selectedExam) {
         await apiUpdateExam(selectedExam.id, examData);
@@ -254,6 +253,11 @@ function renderTeacher(app) {
               </div>
             `}
 
+            <button class="btn btn-full mb-2" id="rag-btn"
+              style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">
+              <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:.4rem"></i>
+              Generar con IA
+            </button>
             <button class="btn btn-primary btn-full" id="add-q-btn">
               <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Agregar pregunta
             </button>
@@ -438,8 +442,15 @@ function renderTeacher(app) {
     document.querySelectorAll('[data-del]').forEach(btn => {
       btn.onclick = () => removeQuestion(btn.dataset.del);
     });
-  }
 
+    const ragBtn = document.getElementById('rag-btn');
+    if (ragBtn) ragBtn.onclick = () => {
+      openRAGModal((newQuestions) => {
+        questions.push(...newQuestions);
+        render();
+      });
+    };
+  }
   function bindListaEvents() {
     document.getElementById('f-filter').oninput  = e => { filter = e.target.value; render(); };
     document.getElementById('toggle-reg').onclick = () => { showRegistry = !showRegistry; render(); };
