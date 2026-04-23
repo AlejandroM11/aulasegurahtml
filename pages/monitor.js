@@ -17,8 +17,12 @@ function renderMonitor(app) {
   }
 
   async function loadExams() {
-    try { exams = await apiGetExams(); }
-    catch { console.error('Error al cargar exámenes'); }
+    try {
+      const user = getUser();
+      const teacherId = user?.uid || user?.email;
+      const all = await apiGetExams();
+      exams = all.filter(e => e.teacherId === teacherId);
+    } catch { console.error('Error al cargar exámenes'); }
     finally { loading = false; render(); }
   }
 

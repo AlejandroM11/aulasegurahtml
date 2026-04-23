@@ -228,10 +228,6 @@ function renderHome(app) {
           <div class="stat-lbl">Monitoreo</div>
         </div>
         <div class="stat-item">
-          <span class="stat-num" data-target="3">0</span>
-          <div class="stat-lbl">Tipos de examen</div>
-        </div>
-        <div class="stat-item">
           <span class="stat-num" data-text="∞">∞</span>
           <div class="stat-lbl">Estudiantes</div>
         </div>
