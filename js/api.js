@@ -102,32 +102,11 @@ async function apiGetExamByCode(code) {
 // ── Notas ──
 
 async function apiGetSubmissions() {
-  const user = getUser();
   const snap = await fbDB.ref('notas').get();
   if (!snap.exists()) return [];
-
-  // Obtener exámenes del profesor (acepta teacherId como uid o email)
-  const examsSnap = await fbDB.ref('evaluaciones').get();
-  const examIds   = new Set();
-  const examCodes = new Set();
-  if (examsSnap.exists()) {
-    examsSnap.forEach(child => {
-      const val = child.val();
-      const isOwner = (user?.uid   && val.teacherId === user.uid) ||
-                      (user?.email && val.teacherId === user.email);
-      if (isOwner) {
-        examIds.add(child.key);
-        examCodes.add(val.code);
-      }
-    });
-  }
-
   const items = [];
   snap.forEach(child => items.push({ id: child.key, ...child.val() }));
-
-  return items
-    .filter(n => examIds.has(n.examId) || examCodes.has(n.code))
-    .sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  return items.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
 }
 
 async function apiCreateSubmission(data) {

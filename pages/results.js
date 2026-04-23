@@ -27,24 +27,31 @@ function renderResults(app) {
     try {
       const user = getUser();
       console.log('USER:', user);
+      const teacherId = user?.uid || user?.email;
 
-      const [subs, exams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
+      const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
       console.log('SUBMISSIONS (raw):', subs);
-      console.log('EXAMS (del profesor):', exams);
+      console.log('ALL EXAMS:', allExams);
 
-      // Mapa por id Y por code para cruzar con cualquier campo que traiga la submission
+      // Filtrar solo los exámenes del profesor logueado (mismo criterio que teacher.js)
+      const exams = allExams.filter(e =>
+        (user?.uid   && e.teacherId === user.uid) ||
+        (user?.email && e.teacherId === user.email)
+      );
+      console.log('EXAMS del profesor:', exams);
+
+      // Mapa por id Y por code
       const examMap = {};
       exams.forEach(e => {
         if (e.id)   examMap[e.id]   = e;
         if (e.code) examMap[e.code] = e;
       });
 
-      // Filtrar solo submissions que correspondan a un examen existente del profesor
-      // Una submission puede referenciar el examen por examId o por code
+      // Solo submissions que correspondan a un examen del profesor
       submissions = subs
         .filter(s => {
           const match = examMap[s.examId] || examMap[s.code];
-          if (!match) console.warn('Submission sin examen encontrado:', s);
+          if (!match) console.warn('Submission sin examen del profesor:', s);
           return !!match;
         })
         .map(s => {
