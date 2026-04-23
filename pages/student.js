@@ -233,9 +233,14 @@ function renderStudent(app) {
     const submission = {
       examId: exam.id, code: exam.code, title: exam.title,
       studentEmail: user.email || 'anónimo', studentName: user.name || 'Estudiante',
-      submittedAt: new Date().toISOString(), answers,
+      submittedAt: new Date().toISOString(),
+      // Limpiar answers: eliminar undefined, convertir a objeto plano serializable
+      answers: Object.fromEntries(
+        Object.entries(answers).filter(([, v]) => v !== undefined && v !== '')
+      ),
       violations, wasBlocked: isBlocked, blockReason: blockReason || null, forced
     };
+    console.log('SUBMISSION a guardar:', JSON.stringify(submission, null, 2));
 
     try {
       await apiCreateSubmission(submission);

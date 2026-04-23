@@ -3,10 +3,13 @@ function renderResults(app) {
 
   function score(sub) {
     if (!sub.answers || !sub.examQuestions) return null;
+    // Normalizar por si Firebase devuelve algo inesperado
+    const answers = typeof sub.answers === 'object' && !Array.isArray(sub.answers)
+      ? sub.answers : {};
     const mc = sub.examQuestions.filter(q => q.type === 'mc');
     if (!mc.length) return null;
     const correct = mc.filter(q =>
-      sub.answers[q.id] !== undefined && Number(sub.answers[q.id]) === q.correctIndex
+      answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex
     ).length;
     return { correct, total: mc.length, pct: Math.round((correct / mc.length) * 100) };
   }
@@ -249,6 +252,17 @@ function renderResults(app) {
     const questions  = s.examQuestions || [];
     const violations = s.violations    || [];
 
+    // Debug: verificar que answers y question IDs coincidan
+    console.log('SUBMISSION answers:', s.answers);
+    console.log('EXAM questions IDs:', questions.map(q => q.id));
+    console.log('answers keys:', Object.keys(s.answers || {}));
+
+    // Normalizar answers: Firebase puede devolver arrays si los keys son numéricos
+    // Asegurar que siempre sea un objeto plano { [questionId]: value }
+    const answers = s.answers && typeof s.answers === 'object' && !Array.isArray(s.answers)
+      ? s.answers
+      : {};
+
     app.innerHTML = `
       <style>
         .detail-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
@@ -344,7 +358,7 @@ function renderResults(app) {
                 No hay preguntas registradas para este examen
                </p>`
             : questions.map((q, idx) => {
-                const given    = s.answers?.[q.id];
+                const given    = answers[q.id];
                 const answered = given !== undefined && given !== '';
                 let isCorrect  = null;
                 if (q.type === 'mc' && answered) isCorrect = Number(given) === q.correctIndex;
