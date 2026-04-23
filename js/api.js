@@ -6,9 +6,44 @@ async function apiLogin({ email, password }) {
   try {
     const result = await fbAuth.signInWithEmailAndPassword(email, password);
     const uid = result.user.uid;
+
+    // Intentar leer perfil desde Realtime DB (fuente primaria)
     const snap = await fbDB.ref(`users/${uid}`).get();
-    if (!snap.exists()) throw new Error('Usuario no encontrado en la base de datos');
-    return { ok: true, user: snap.val() };
+    if (snap.exists()) {
+      return { ok: true, user: snap.val() };
+    }
+
+    // Fallback: pedir el perfil al backend (que lo tiene en Firestore)
+    // Esto cubre usuarios registrados antes de la migración a Realtime DB
+    try {
+      const res = await fetch(
+        (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+          ? 'http://localhost:3000'
+          : '') + `/api/auth/login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        }
+      );
+      const data = await res.json();
+      if (data.ok && data.user) {
+        // Sincronizar en Realtime DB para próximas sesiones
+        await fbDB.ref(`users/${uid}`).set({ ...data.user, uid });
+        return { ok: true, user: { ...data.user, uid } };
+      }
+    } catch { /* si el backend no responde, continuar con fallback mínimo */ }
+
+    // Último recurso: objeto mínimo desde Firebase Auth
+    const fallbackUser = {
+      uid,
+      email: result.user.email,
+      name: result.user.displayName || result.user.email,
+      role: 'docente'
+    };
+    await fbDB.ref(`users/${uid}`).set({ ...fallbackUser, createdAt: new Date().toISOString() });
+    return { ok: true, user: fallbackUser };
+
   } catch (err) {
     throw new Error(err.message || 'Error al iniciar sesión');
   }
@@ -68,18 +103,19 @@ async function apiGetExamByCode(code) {
 
 async function apiGetSubmissions() {
   const user = getUser();
-  const teacherId = user?.uid || user?.email || '';
   const snap = await fbDB.ref('notas').get();
   if (!snap.exists()) return [];
 
-  // Obtener exámenes del profesor para filtrar solo sus notas
+  // Obtener exámenes del profesor (acepta teacherId como uid o email)
   const examsSnap = await fbDB.ref('evaluaciones').get();
   const examIds   = new Set();
   const examCodes = new Set();
   if (examsSnap.exists()) {
     examsSnap.forEach(child => {
       const val = child.val();
-      if (val.teacherId === teacherId) {
+      const isOwner = (user?.uid   && val.teacherId === user.uid) ||
+                      (user?.email && val.teacherId === user.email);
+      if (isOwner) {
         examIds.add(child.key);
         examCodes.add(val.code);
       }

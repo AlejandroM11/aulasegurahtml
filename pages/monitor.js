@@ -19,9 +19,11 @@ function renderMonitor(app) {
   async function loadExams() {
     try {
       const user = getUser();
-      const teacherId = user?.uid || user?.email;
       const all = await apiGetExams();
-      exams = all.filter(e => e.teacherId === teacherId);
+      exams = all.filter(e =>
+        (user?.uid   && e.teacherId === user.uid) ||
+        (user?.email && e.teacherId === user.email)
+      );
     } catch { console.error('Error al cargar exámenes'); }
     finally { loading = false; render(); }
   }

@@ -15,8 +15,13 @@ function renderTeacher(app) {
     loading = true;
     try {
       const allExams = await apiGetExams();
-      const currentUserId = user?.uid || user?.email;
-      exams = allExams.filter(exam => exam.teacherId === currentUserId);
+      // Usar uid como fuente de verdad; email solo como fallback de último recurso
+      const teacherId = user?.uid || user?.email;
+      exams = allExams.filter(e =>
+        e.teacherId === teacherId ||
+        (user?.uid   && e.teacherId === user.uid) ||
+        (user?.email && e.teacherId === user.email)
+      );
     } catch {
       alert('Error al cargar los exámenes');
     } finally {
@@ -50,7 +55,8 @@ function renderTeacher(app) {
       const examData = {
         title: title.trim(), code: code.trim().toUpperCase(),
         durationMinutes: Number(dur), questions, showCorrectAnswers,
-        teacherId: user?.uid || user?.email
+        teacherId: user?.uid || user?.email,
+        teacherEmail: user?.email || ''   // campo extra para debug/consistencia
       };
       if (selectedExam) {
         await apiUpdateExam(selectedExam.id, examData);
