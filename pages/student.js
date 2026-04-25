@@ -258,13 +258,13 @@ function renderStudent(app) {
     if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
     exam = null; answers = {}; timer = 0; finished = false;
     isBlocked = false; blockReason = ''; violations = [];
-    submitted = false; examActive = false; blockedLocally = false;
-    blockDebounce = false; listenerReady = false;
+    submitted = false; submitting = false; examActive = false;
+    blockedLocally = false; blockDebounce = false; listenerReady = false;
     clearTimerInterval();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-    if (unsubBlock) { try { unsubBlock(); } catch {} unsubBlock = null; }
+   if (unsubBlock) { try { unsubBlock(); } catch {} unsubBlock = null; }
     if (window._examCleanup) { window._examCleanup(); window._examCleanup = null; }
-    window.onbeforeunload = null;
+   window.onbeforeunload = null;
     showJoin();
   }
 
