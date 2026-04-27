@@ -1,6 +1,6 @@
 // ===== RAG SYSTEM — Groq + llama3 =====
 
-const GROQ_API_KEY = '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';
+const apiKey = process.env.GROQ_API_KEY;
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ── Extrae texto de un PDF usando PDF.js ──
