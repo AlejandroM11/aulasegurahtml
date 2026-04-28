@@ -1,18 +1,38 @@
 function renderStudent(app) {
-  // ===== ESTADO =====
+
+  // ===== ESTADO GLOBAL =====
   let exam = null, answers = {}, timer = 0;
-  let submitting = false, finished = false;
-  let isBlocked = false, blockReason = '', violations = [];
-  let examActive = false, submitted = false;
-  let blockedLocally = false, blockDebounce = false, listenerReady = false;
-  let timerInterval = null, statusInterval = null, unsubBlock = null;
+  let submitting = false, finished = false, submitted = false;
+  let violations = [];
+
+  // Control de bloqueo — fuente única de verdad
+  let blockState = {
+    isBlocked: false,
+    reason: '',
+    local: false,       // bloqueado por acción local (antifraude)
+    remote: false,      // bloqueado por el profesor (Firebase)
+    unlocking: false,   // está siendo desbloqueado, ignorar eventos
+  };
+
+  // Control de antifraude
+  let fraudGuard = {
+    active: false,      // ¿los listeners están escuchando?
+    paused: false,      // pausado temporalmente (ej: durante desbloqueo)
+    listeners: null,    // función para remover todos los listeners
+  };
+
+  let timerInterval  = null;
+  let statusInterval = null;
+  let unsubBlock     = null;
+  let listenerReady  = false;
 
   const user      = getUser() || {};
   const studentId = user.uid || user.email;
   const guestCode = user.isGuest ? user.examCode : '';
 
-  // ===== PANTALLA: UNIRSE =====
-
+  // ─────────────────────────────────────────────
+  // PANTALLA: UNIRSE
+  // ─────────────────────────────────────────────
   function showJoin() {
     app.innerHTML = `
       <div style="max-width:520px;margin:0 auto">
@@ -35,7 +55,6 @@ function renderStudent(app) {
         </div>
       </div>
     `;
-
     const codeInput = document.getElementById('exam-code');
     codeInput.oninput = () => { codeInput.value = codeInput.value.toUpperCase(); };
     codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinExam(); });
@@ -46,16 +65,17 @@ function renderStudent(app) {
   async function joinExam() {
     const code = document.getElementById('exam-code')?.value?.trim().toUpperCase();
     if (!code) { alert('Por favor ingresa un código'); return; }
-
     const btn = document.getElementById('join-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
-
     try {
       const res = await apiGetExamByCode(code);
       if (res?.ok && res.exam) {
-        exam = res.exam; answers = {}; violations = [];
-        isBlocked = false; blockedLocally = false; submitted = false;
-        blockDebounce = false; listenerReady = false;
+        exam = res.exam;
+        answers = {}; violations = [];
+        blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
+        fraudGuard = { active: false, paused: false, listeners: null };
+        submitted = false; finished = false; submitting = false;
+        listenerReady = false;
         startExam();
       } else {
         alert('❌ Código inválido');
@@ -67,8 +87,9 @@ function renderStudent(app) {
     }
   }
 
-  // ===== INICIO DEL EXAMEN =====
-
+  // ─────────────────────────────────────────────
+  // INICIO DEL EXAMEN
+  // ─────────────────────────────────────────────
   function startExam() {
     timer = (exam.durationMinutes || 0) * 60;
 
@@ -76,135 +97,234 @@ function renderStudent(app) {
       uid: studentId, email: user.email, name: user.name, timeLeft: timer
     }).catch(() => {});
 
-    unsubBlock = listenToBlockStatus(exam.code, studentId, onBlockStatusChange);
+    // Escuchar bloqueos del profesor
+    unsubBlock = listenToBlockStatus(exam.code, studentId, onRemoteBlockChange);
 
     statusInterval = setInterval(syncStatus, 5000);
 
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
+    // Pantalla completa
+    requestFullscreen();
 
     startTimer();
-    armAntiFraud();
+    mountFraudGuard();
     showExam();
   }
 
-  function onBlockStatusChange(blocked, reason) {
-    if (!listenerReady) { listenerReady = true; return; }
-    if (blockDebounce) return;
+  function requestFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen)            el.requestFullscreen().catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
+  }
 
-    if (blocked && !blockedLocally) {
-      blockedLocally = true; examActive = false;
-      isBlocked = true; blockReason = safeText(reason || 'Bloqueado por el profesor');
-      clearTimerInterval();
+  function exitFullscreen() {
+    if (document.exitFullscreen)            document.exitFullscreen().catch(() => {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    else if (document.mozCancelFullScreen)  document.mozCancelFullScreen();
+  }
+
+  // ─────────────────────────────────────────────
+  // CAMBIO REMOTO DE BLOQUEO (Firebase)
+  // ─────────────────────────────────────────────
+  function onRemoteBlockChange(isBlocked, reason) {
+    // El primer evento al suscribirse es el estado actual — ignorarlo
+    if (!listenerReady) {
+      listenerReady = true;
+      return;
+    }
+
+    if (isBlocked && !blockState.remote) {
+      // Profesor bloqueó al estudiante
+      blockState.remote   = true;
+      blockState.isBlocked = true;
+      blockState.reason   = safeText(reason || 'Bloqueado por el profesor');
+      pauseFraudGuard();
+      stopTimer();
       showBlocked();
-    } else if (!blocked && blockedLocally) {
-      blockedLocally = false; isBlocked = false; blockReason = '';
-      alert('✅ Has sido desbloqueado. Puedes continuar, pero ten más cuidado.');
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-      examActive = true;
-      if (!timerInterval && timer > 0) startTimer();
-      showExam();
+
+    } else if (!isBlocked && blockState.remote) {
+      // Profesor desbloqueó al estudiante
+      handleUnlock();
     }
   }
 
-  function syncStatus() {
-    const answeredCount = countAnswered();
-    updateStudentStatus(exam.code, studentId, {
-      timeLeft: timer, answeredCount,
-      violations: violations.length, lastActivity: Date.now()
-    }).catch(() => {});
+  function handleUnlock() {
+    blockState.unlocking = true;
+    blockState.remote    = false;
+    blockState.local     = false;
+    blockState.isBlocked = false;
+    blockState.reason    = '';
+
+    // Esperar 800ms antes de reactivar el guard para evitar
+    // que eventos residuales (fullscreenchange al re-entrar) disparen nuevo bloqueo
+    setTimeout(() => {
+      blockState.unlocking = false;
+
+      if (submitted || finished) return;
+
+      alert('✅ Has sido desbloqueado. Puedes continuar, pero ten más cuidado.');
+
+      requestFullscreen();
+
+      // Reactivar antifraude solo después de que el fullscreen termine
+      setTimeout(() => {
+        resumeFraudGuard();
+        if (!timerInterval && timer > 0) startTimer();
+        showExam();
+      }, 600);
+    }, 800);
   }
 
-  // ===== TIMER =====
-
-  function startTimer() {
-    clearTimerInterval();
-    timerInterval = setInterval(() => {
-      timer--;
-      updateTimerDisplay();
-      if (timer <= 0) {
-        clearTimerInterval();
-        if (!submitted) finishExam(true);
-      }
-    }, 1000);
-  }
-
-  function clearTimerInterval() {
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  }
-
-  function updateTimerDisplay() {
-    const timerEl    = document.getElementById('exam-timer');
-    const fillEl     = document.getElementById('progress-fill');
-    const progressEl = document.getElementById('progress-text');
-    const answered   = countAnswered();
-    const total      = exam.questions?.length || 0;
-
-    if (timerEl)    timerEl.textContent = fmt(timer);
-    if (fillEl)     fillEl.style.width  = `${total ? (answered / total) * 100 : 0}%`;
-    if (progressEl) progressEl.textContent = `${answered} de ${total} respondidas`;
-  }
-
-  function countAnswered() {
-    return Object.keys(answers).filter(k => answers[k] !== undefined && answers[k] !== '').length;
-  }
-
-  // ===== ANTIFRAUDE =====
-
-  function armAntiFraud() {
-    examActive = true;
+  // ─────────────────────────────────────────────
+  // ANTIFRAUDE — montaje y control
+  // ─────────────────────────────────────────────
+  function mountFraudGuard() {
+    // Si ya hay listeners activos, no duplicar
+    if (fraudGuard.listeners) removeFraudListeners();
 
     const BLOCKED_KEYS = {
-      'Escape':      'Presionaste Escape para salir de pantalla completa',
-      'F11':         'Intentaste cambiar pantalla completa con F11',
+      'Escape':      'Presionaste Escape',
+      'F11':         'Intentaste cambiar pantalla completa (F11)',
       'F12':         'Intentaste abrir DevTools (F12)',
       'PrintScreen': 'Intentaste tomar una captura de pantalla',
     };
 
     const onKey = (e) => {
-      if (!examActive) return;
-      if (BLOCKED_KEYS[e.key]) { e.preventDefault(); blockExam(BLOCKED_KEYS[e.key]); return; }
-      if (e.key === 'Meta' || e.metaKey)                    { e.preventDefault(); blockExam('Presionaste la tecla Windows'); }
-      else if (e.altKey && e.key === 'Tab')                 { e.preventDefault(); blockExam('Intentaste cambiar de ventana (Alt+Tab)'); }
-      else if (e.ctrlKey && e.shiftKey && e.key === 'Escape') { e.preventDefault(); blockExam('Intentaste abrir el Administrador de Tareas'); }
-      else if (e.ctrlKey && e.key === 'p')                  { e.preventDefault(); blockExam('Intentaste imprimir (Ctrl+P)'); }
+      if (!fraudGuard.active || fraudGuard.paused) return;
+
+      if (BLOCKED_KEYS[e.key]) {
+        e.preventDefault(); e.stopPropagation();
+        triggerFraudBlock(BLOCKED_KEYS[e.key]);
+        return;
+      }
+      if (e.key === 'Meta' || e.metaKey) {
+        e.preventDefault(); triggerFraudBlock('Presionaste la tecla Windows/Meta');
+      } else if (e.altKey && e.key === 'Tab') {
+        e.preventDefault(); triggerFraudBlock('Intentaste cambiar de ventana (Alt+Tab)');
+      } else if (e.ctrlKey && e.shiftKey && (e.key === 'Escape' || e.key === 'I' || e.key === 'J')) {
+        e.preventDefault(); triggerFraudBlock('Intentaste abrir herramientas del navegador');
+      } else if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault(); triggerFraudBlock('Intentaste imprimir (Ctrl+P)');
+      } else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault(); triggerFraudBlock('Intentaste copiar contenido (Ctrl+C)');
+      } else if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault(); triggerFraudBlock('Intentaste ver el código fuente');
+      }
     };
 
-    const onBlur       = ()  => { if (examActive) blockExam('Saliste de la ventana del examen'); };
-    const onVisibility = ()  => { if (examActive && document.hidden) blockExam('Cambiaste de pestaña o minimizaste el navegador'); };
-    const onFullscreen = ()  => { if (examActive && !document.fullscreenElement) blockExam('Saliste del modo pantalla completa'); };
-    const onContext    = (e) => { if (examActive) { e.preventDefault(); addViolation('Intentaste abrir el menú contextual'); } };
+    const onBlur = () => {
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      triggerFraudBlock('Saliste de la ventana del examen');
+    };
 
-    document.addEventListener('keydown', onKey, true);
-    window.addEventListener('blur', onBlur);
+    const onVisibility = () => {
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador');
+    };
+
+    const onFullscreen = () => {
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        triggerFraudBlock('Saliste del modo pantalla completa');
+      }
+    };
+
+    const onContext = (e) => {
+      e.preventDefault();
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      addViolation('Intentaste abrir el menú contextual (clic derecho)');
+    };
+
+    const onCopy = (e) => {
+      e.preventDefault();
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      triggerFraudBlock('Intentaste copiar contenido del examen');
+    };
+
+    const onCut = (e) => {
+      e.preventDefault();
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      addViolation('Intentaste cortar contenido');
+    };
+
+    const onSelectAll = (e) => {
+      if (!fraudGuard.active || fraudGuard.paused) return;
+      if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
+        const tag = document.activeElement?.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          addViolation('Intentaste seleccionar todo el contenido');
+        }
+      }
+    };
+
+    document.addEventListener('keydown',        onKey,        { capture: true });
+    document.addEventListener('keydown',        onSelectAll,  { capture: true });
+    window.addEventListener('blur',             onBlur);
     document.addEventListener('visibilitychange', onVisibility);
-    document.addEventListener('fullscreenchange', onFullscreen);
-    document.addEventListener('contextmenu', onContext);
+    document.addEventListener('fullscreenchange',  onFullscreen);
+    document.addEventListener('webkitfullscreenchange', onFullscreen);
+    document.addEventListener('contextmenu',    onContext,    { capture: true });
+    document.addEventListener('copy',           onCopy,       { capture: true });
+    document.addEventListener('cut',            onCut,        { capture: true });
 
-    window._examCleanup = () => {
-      document.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('blur', onBlur);
+    // Guardar función de limpieza
+    fraudGuard.listeners = () => {
+      document.removeEventListener('keydown',        onKey,        { capture: true });
+      document.removeEventListener('keydown',        onSelectAll,  { capture: true });
+      window.removeEventListener('blur',             onBlur);
       document.removeEventListener('visibilitychange', onVisibility);
-      document.removeEventListener('fullscreenchange', onFullscreen);
-      document.removeEventListener('contextmenu', onContext);
+      document.removeEventListener('fullscreenchange',  onFullscreen);
+      document.removeEventListener('webkitfullscreenchange', onFullscreen);
+      document.removeEventListener('contextmenu',    onContext,    { capture: true });
+      document.removeEventListener('copy',           onCopy,       { capture: true });
+      document.removeEventListener('cut',            onCut,        { capture: true });
     };
+
+    fraudGuard.active = true;
+    fraudGuard.paused = false;
 
     window.onbeforeunload = () => {
       if (exam && !finished) removeActiveStudent(exam.code, studentId).catch(() => {});
     };
   }
 
-  async function blockExam(reason) {
-    if (blockedLocally || finished || submitted) return;
-    blockedLocally = true; blockDebounce = true; examActive = false;
-    isBlocked = true; blockReason = safeText(reason);
+  function removeFraudListeners() {
+    if (fraudGuard.listeners) {
+      fraudGuard.listeners();
+      fraudGuard.listeners = null;
+    }
+    fraudGuard.active = false;
+  }
+
+  function pauseFraudGuard() {
+    fraudGuard.paused = true;
+  }
+
+  function resumeFraudGuard() {
+    fraudGuard.paused = false;
+    fraudGuard.active = true;
+  }
+
+  // ─────────────────────────────────────────────
+  // BLOQUEO POR ANTIFRAUDE
+  // ─────────────────────────────────────────────
+  async function triggerFraudBlock(reason) {
+    // Ignorar si ya está bloqueado, en proceso de desbloqueo, enviando o terminado
+    if (blockState.isBlocked || blockState.unlocking || submitted || finished) return;
+
+    blockState.isBlocked = true;
+    blockState.local     = true;
+    blockState.reason    = safeText(reason);
+
+    pauseFraudGuard();
+    stopTimer();
     addViolation(reason);
-    clearTimerInterval();
-    try { await blockStudent(exam.code, studentId, reason); } catch {}
-    setTimeout(() => { blockDebounce = false; }, 3000);
+
+    try {
+      await blockStudent(exam.code, studentId, reason);
+    } catch (_) {}
+
     showBlocked();
   }
 
@@ -214,62 +334,110 @@ function renderStudent(app) {
       await updateStudentStatus(exam.code, studentId, {
         violations: violations.length, lastViolation: reason
       });
-    } catch {}
+    } catch (_) {}
   }
 
-  // ===== ENVÍO =====
+  // ─────────────────────────────────────────────
+  // TIMER
+  // ─────────────────────────────────────────────
+  function startTimer() {
+    stopTimer();
+    timerInterval = setInterval(() => {
+      timer--;
+      updateTimerDisplay();
+      if (timer <= 0) {
+        stopTimer();
+        if (!submitted) finishExam(true);
+      }
+    }, 1000);
+  }
 
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function updateTimerDisplay() {
+    const timerEl    = document.getElementById('exam-timer');
+    const fillEl     = document.getElementById('progress-fill');
+    const progressEl = document.getElementById('progress-text');
+    const answered   = countAnswered();
+    const total      = exam?.questions?.length || 0;
+    if (timerEl)    timerEl.textContent   = fmt(timer);
+    if (fillEl)     fillEl.style.width    = `${total ? (answered / total) * 100 : 0}%`;
+    if (progressEl) progressEl.textContent = `${answered} de ${total} respondidas`;
+  }
+
+  function countAnswered() {
+    return Object.keys(answers).filter(k => answers[k] !== undefined && answers[k] !== '').length;
+  }
+
+  function syncStatus() {
+    if (!exam) return;
+    updateStudentStatus(exam.code, studentId, {
+      timeLeft: timer, answeredCount: countAnswered(),
+      violations: violations.length, lastActivity: Date.now()
+    }).catch(() => {});
+  }
+
+  // ─────────────────────────────────────────────
+  // ENVÍO DEL EXAMEN
+  // ─────────────────────────────────────────────
   async function finishExam(forced) {
     if (!exam || submitted || submitting) return;
-    submitted = true; submitting = true; examActive = false;
+    submitted  = true;
+    submitting = true;
 
-    clearTimerInterval();
+    stopTimer();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-    if (window._examCleanup) { window._examCleanup(); window._examCleanup = null; }
-    if (unsubBlock) { try { unsubBlock(); } catch {} unsubBlock = null; }
+    removeFraudListeners();
+    if (unsubBlock) { try { unsubBlock(); } catch (_) {} unsubBlock = null; }
 
-    try { await removeActiveStudent(exam.code, studentId); } catch {}
+    try { await removeActiveStudent(exam.code, studentId); } catch (_) {}
 
     const submission = {
       examId: exam.id, code: exam.code, title: exam.title,
       studentEmail: user.email || 'anónimo', studentName: user.name || 'Estudiante',
       submittedAt: new Date().toISOString(),
-      // Limpiar answers: eliminar undefined, convertir a objeto plano serializable
       answers: Object.fromEntries(
         Object.entries(answers).filter(([, v]) => v !== undefined && v !== '')
       ),
-      violations, wasBlocked: isBlocked, blockReason: blockReason || null, forced
+      violations,
+      wasBlocked: blockState.isBlocked,
+      blockReason: blockState.reason || null,
+      forced
     };
-    console.log('SUBMISSION a guardar:', JSON.stringify(submission, null, 2));
 
     try {
       await apiCreateSubmission(submission);
       finished = true;
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      exitFullscreen();
       showSuccess();
       setTimeout(resetExam, 3000);
     } catch {
-      submitted = false; submitting = false;
-      alert('❌ Error al enviar el examen');
+      submitted  = false;
+      submitting = false;
+      alert('❌ Error al enviar el examen. Intenta de nuevo.');
     }
   }
 
   function resetExam() {
     if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
-    exam = null; answers = {}; timer = 0; finished = false;
-    isBlocked = false; blockReason = ''; violations = [];
-    submitted = false; submitting = false; examActive = false;
-    blockedLocally = false; blockDebounce = false; listenerReady = false;
-    clearTimerInterval();
+    exam       = null; answers = {}; timer = 0;
+    finished   = false; submitted = false; submitting = false;
+    violations = [];
+    blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
+    stopTimer();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-   if (unsubBlock) { try { unsubBlock(); } catch {} unsubBlock = null; }
-    if (window._examCleanup) { window._examCleanup(); window._examCleanup = null; }
-   window.onbeforeunload = null;
+    if (unsubBlock) { try { unsubBlock(); } catch (_) {} unsubBlock = null; }
+    removeFraudListeners();
+    window.onbeforeunload = null;
+    listenerReady = false;
     showJoin();
   }
 
-  // ===== PANTALLAS =====
-
+  // ─────────────────────────────────────────────
+  // PANTALLAS
+  // ─────────────────────────────────────────────
   function showBlocked() {
     app.innerHTML = `
       <div class="blocked-screen">
@@ -278,7 +446,7 @@ function renderStudent(app) {
           <h1 style="font-size:clamp(2rem,6vw,3.5rem);font-weight:900;margin:.5rem 0">EXAMEN BLOQUEADO</h1>
           <div style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px);padding:1.25rem;border-radius:1rem;margin:1rem 0;border:2px solid rgba(255,255,255,.3)">
             <p style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">Razón del bloqueo:</p>
-            <p style="font-size:1rem">${safeText(blockReason)}</p>
+            <p style="font-size:1rem">${safeText(blockState.reason)}</p>
           </div>
           ${violations.length > 0 ? `
             <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;margin-bottom:1rem;text-align:left;max-height:180px;overflow-y:auto">
@@ -300,6 +468,7 @@ function renderStudent(app) {
               <li>• El profesor ha sido notificado automáticamente</li>
               <li>• Tu examen está pausado y guardado</li>
               <li>• Solo el profesor puede desbloquearte</li>
+              <li>• Esperando desbloqueo...</li>
             </ul>
           </div>
         </div>
@@ -346,8 +515,8 @@ function renderStudent(app) {
   }
 
   function showReview() {
-    examActive = false;
-    clearTimerInterval();
+    pauseFraudGuard();
+    stopTimer();
     const questions = Array.isArray(exam.questions) ? exam.questions : [];
 
     app.innerHTML = `
@@ -382,12 +551,12 @@ function renderStudent(app) {
     `;
 
     const goBack = () => {
-      examActive = true;
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-      startTimer();
-      showExam();
+      resumeFraudGuard();
+      requestFullscreen();
+      setTimeout(() => {
+        startTimer();
+        showExam();
+      }, 400);
     };
 
     document.getElementById('back-btn').onclick  = goBack;
@@ -434,8 +603,8 @@ function renderStudent(app) {
       </div>
     `;
 
-    document.getElementById('review-btn').onclick  = showReview;
-    document.getElementById('submit-btn').onclick  = () => finishExam(false);
+    document.getElementById('review-btn').onclick = showReview;
+    document.getElementById('submit-btn').onclick = () => finishExam(false);
 
     questions.forEach(q => {
       if (q.type === 'mc' && q.options) {
@@ -478,6 +647,8 @@ function renderStudent(app) {
     `;
   }
 
-  // ===== INIT =====
+  // ─────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────
   showJoin();
 }
