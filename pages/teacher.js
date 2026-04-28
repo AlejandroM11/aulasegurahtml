@@ -74,11 +74,18 @@ function renderTeacher(app) {
   async function deleteExam(exam) {
     if (!confirm(`¿Eliminar "${exam.title}"? Esta acción no se puede deshacer.`)) return;
     try {
+      console.log('Eliminando id:', exam.id);
       await apiDeleteExam(exam.id);
-      alert('✅ Examen eliminado');
       if (selectedExam?.id === exam.id) resetForm();
-      await loadExams();
-    } catch { alert('❌ Error al eliminar el examen'); }
+      exams = exams.filter(e => e.id !== exam.id); // elimina del array local inmediatamente
+      activeTab = 'lista';
+      render(); // refresca la vista al instante sin esperar al backend
+      await loadExams(); // sincroniza con el servidor en segundo plano
+      alert('✅ Examen eliminado');
+    } catch (err) {
+      console.error('Error al eliminar:', err);
+      alert('❌ Error al eliminar el examen');
+   }
   }
 
   function addQuestion() {
