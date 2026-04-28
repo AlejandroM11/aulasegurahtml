@@ -117,7 +117,7 @@ function initChat() {
     <div id="chat-widget">
       <div id="chat-header">
         <div>
-          <p><i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente IA</p>
+          <p><i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente ARDI IA</p>
           <span>Powered by LLaMA 3 · Groq</span>
         </div>
         <button id="chat-close"><i class="fa-solid fa-xmark"></i></button>
@@ -125,7 +125,7 @@ function initChat() {
       <div id="chat-messages">
         <div class="chat-msg bot">
           <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
-          <div class="chat-bubble">¡Hola! Soy tu asistente educativo. Puedo ayudarte a crear preguntas, mejorar las que generaste con el RAG, o responder cualquier duda pedagógica.</div>
+          <div class="chat-bubble">¡Hola! Soy tu asistente educativo ARDI!! yo te ayudo a informarte sobre cualquier tema de tus preguntas para tus estudiantes :D.</div>
         </div>
       </div>
       <div id="chat-input-area">
