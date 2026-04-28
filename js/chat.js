@@ -1,5 +1,7 @@
 // ===== CHATBOT — Aula Segura IA =====
 
+const ARDY_IMG = 'https://www.unibague.edu.co/images/2022/ardy/hola-ardy.png';
+
 function initChat() {
   if (document.getElementById('chat-btn')) return;
 
@@ -13,9 +15,10 @@ function initChat() {
         box-shadow: 0 4px 20px rgba(124,58,237,.45);
         display: flex; align-items: center; justify-content: center;
         transition: transform .2s, box-shadow .2s;
+        overflow: hidden; padding: 0;
       }
       #chat-btn:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(124,58,237,.55); }
-      #chat-btn i { color: #fff; font-size: 1.3rem; }
+      #chat-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
       #chat-widget {
         position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 500;
@@ -30,12 +33,20 @@ function initChat() {
 
       #chat-header {
         background: linear-gradient(135deg, #7c3aed, #2563eb);
-        padding: .85rem 1.1rem;
-        display: flex; align-items: center; justify-content: space-between;
+        padding: .75rem 1.1rem;
+        display: flex; align-items: center; gap: .75rem; justify-content: space-between;
       }
-      #chat-header p { color: #fff; font-weight: 700; font-size: .95rem; }
-      #chat-header span { color: rgba(255,255,255,.75); font-size: .75rem; }
-      #chat-close { background: none; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; padding: .2rem; }
+      #chat-header-info { display: flex; align-items: center; gap: .65rem; }
+      #chat-header-avatar {
+        width: 2.75rem; height: 2.75rem; border-radius: 50%;
+        background: #fff; overflow: hidden; flex-shrink: 0;
+        border: 2px solid rgba(255,255,255,.4);
+        box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      }
+      #chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      #chat-header-text p { color: #fff; font-weight: 700; font-size: .95rem; line-height: 1.2; }
+      #chat-header-text span { color: rgba(255,255,255,.75); font-size: .72rem; }
+      #chat-close { background: none; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; padding: .2rem; flex-shrink: 0; }
 
       #chat-messages {
         flex: 1; overflow-y: auto; padding: 1rem;
@@ -63,10 +74,11 @@ function initChat() {
       .chat-avatar {
         width: 1.75rem; height: 1.75rem; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: .75rem; flex-shrink: 0;
+        font-size: .75rem; flex-shrink: 0; overflow: hidden;
+        background: #fff; border: 1.5px solid #e2e8f0;
       }
-      .chat-msg.bot .chat-avatar { background: linear-gradient(135deg,#7c3aed,#2563eb); color:#fff; }
-      .chat-msg.user .chat-avatar { background: #e2e8f0; color: #475569; }
+      .chat-msg.bot .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .chat-msg.user .chat-avatar { background: #e2e8f0; color: #475569; border: none; }
       body.dark .chat-msg.user .chat-avatar { background: #475569; color: #e2e8f0; }
 
       .chat-typing {
@@ -110,24 +122,35 @@ function initChat() {
       #chat-send:disabled { opacity: .5; cursor: not-allowed; }
     </style>
 
-    <button id="chat-btn" title="Asistente IA">
-      <i class="fa-solid fa-robot"></i>
+    <!-- Botón flotante con Ardy -->
+    <button id="chat-btn" title="Habla con Ardy">
+      <img src="${ARDY_IMG}" alt="Ardy"
+        onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<i class=\\'fa-solid fa-robot\\'style=\\'color:#fff;font-size:1.3rem\\'></i>')"/>
     </button>
 
     <div id="chat-widget">
       <div id="chat-header">
-        <div>
-          <p><i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente ARDI IA</p>
-          <span>Powered by LLaMA 3 · Groq</span>
+        <div id="chat-header-info">
+          <div id="chat-header-avatar">
+            <img src="${ARDY_IMG}" alt="Ardy"/>
+          </div>
+          <div id="chat-header-text">
+            <p>Ardy IA</p>
+            <span>Powered by LLaMA 3 · Groq</span>
+          </div>
         </div>
         <button id="chat-close"><i class="fa-solid fa-xmark"></i></button>
       </div>
+
       <div id="chat-messages">
         <div class="chat-msg bot">
-          <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div class="chat-avatar">
+            <img src="${ARDY_IMG}" alt="Ardy"/>
+          </div>
           <div class="chat-bubble">¡Hola! Soy tu asistente educativo ARDI!! yo te ayudo a informarte sobre cualquier tema de tus preguntas para tus estudiantes :D.</div>
         </div>
       </div>
+
       <div id="chat-input-area">
         <textarea id="chat-input" placeholder="Escribe tu mensaje..." rows="1"></textarea>
         <button id="chat-send"><i class="fa-solid fa-paper-plane"></i></button>
@@ -165,10 +188,11 @@ function initChat() {
     const isUser = role === 'user';
     const div = document.createElement('div');
     div.className = `chat-msg ${isUser ? 'user' : 'bot'}`;
+    const avatarHTML = isUser
+      ? `<i class="fa-solid fa-user"></i>`
+      : `<img src="${ARDY_IMG}" alt="Ardy" style="width:100%;height:100%;object-fit:cover"/>`;
     div.innerHTML = `
-      <div class="chat-avatar">
-        <i class="fa-solid ${isUser ? 'fa-user' : 'fa-robot'}"></i>
-      </div>
+      <div class="chat-avatar">${avatarHTML}</div>
       <div class="chat-bubble">${content.replace(/\n/g, '<br/>')}</div>
     `;
     messages.appendChild(div);
@@ -177,9 +201,12 @@ function initChat() {
 
   function showTyping() {
     const div = document.createElement('div');
-    div.className = 'chat-msg bot'; div.id = 'chat-typing-indicator';
+    div.className = 'chat-msg bot';
+    div.id = 'chat-typing-indicator';
     div.innerHTML = `
-      <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+      <div class="chat-avatar">
+        <img src="${ARDY_IMG}" alt="Ardy" style="width:100%;height:100%;object-fit:cover"/>
+      </div>
       <div class="chat-typing"><span></span><span></span><span></span></div>
     `;
     messages.appendChild(div);
