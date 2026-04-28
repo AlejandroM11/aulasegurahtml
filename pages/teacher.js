@@ -12,6 +12,7 @@ function renderTeacher(app) {
 
   // ===== CARGA =====
   async function loadExams() {
+    initChat();
     loading = true;
     try {
       const allExams = await apiGetExams();

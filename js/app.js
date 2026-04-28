@@ -50,6 +50,9 @@ function router() {
 
   const renderPage = ROUTES[path] || renderHome;
   app.innerHTML = '';
+  if (path !== '/docente' && path !== '/monitor' && path !== '/resultados') {
+    destroyChat?.();
+  }
   renderPage(app);
   updateNavbar();
 }

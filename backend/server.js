@@ -202,6 +202,64 @@ FORMATO EXACTO:
 });
 
 // ─────────────────────────────────────────────
+// CHATBOT
+// ─────────────────────────────────────────────
+app.post('/api/chat', async (req, res) => {
+  const { messages } = req.body;
+  if (!messages || !messages.length)
+    return res.status(400).json({ ok: false, error: 'Faltan mensajes' });
+
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `Eres un asistente educativo inteligente integrado en Aula Segura, plataforma de exámenes de la Universidad de Ibagué.
+
+Trabajas en conjunto con el sistema RAG de generación de preguntas. Cuando el docente ya generó preguntas con un temario, puedes:
+- Refinar o mejorar preguntas específicas que el docente te comparta
+- Generar preguntas adicionales sobre un tema que te describan
+- Cambiar el nivel de dificultad de preguntas existentes
+- Sugerir distractores (opciones incorrectas) más convincentes
+- Explicar por qué una pregunta es buena o cómo mejorarla
+- Generar preguntas de un tipo específico (conceptual, aplicación, análisis)
+- Ayudar con cualquier tema educativo o pedagógico
+
+Cuando el docente te pida generar preguntas, responde SIEMPRE en este formato JSON para que puedan agregarse directamente al examen:
+[
+  {
+    "text": "¿Pregunta aquí?",
+    "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+    "correctIndex": 0
+  }
+]
+
+Si el docente no pide preguntas en formato específico, responde de forma conversacional en español, clara y concisa.`
+          },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 1024
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || 'Error de Groq');
+    res.json({ ok: true, message: data.choices[0].message.content });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
 // START
 // ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
