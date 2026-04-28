@@ -23,61 +23,53 @@ function renderResults(app) {
   }
 
   async function load() {
-    loading = true; render();
-    try {
-      const user = getUser();
-      console.log('USER:', user);
+  loading = true; render();
+  try {
+    const user = getUser();
 
-      const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
-      console.log('SUBMISSIONS (raw):', subs);
-      console.log('ALL EXAMS:', allExams);
+    const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
 
-      // Filtrar exámenes del profesor por uid o email
-      let exams = allExams.filter(e =>
-        (user?.uid   && e.teacherId === user.uid) ||
-        (user?.email && e.teacherId === user.email)
-      );
+    // Filtrar exámenes del profesor por uid O por email
+    let myExams = allExams.filter(e =>
+      (user?.uid   && e.teacherId === user.uid) ||
+      (user?.email && e.teacherId === user.email)
+    );
 
-      // Fallback: si el filtro por teacherId no encuentra nada,
-      // usar todos los exámenes (puede pasar si teacherId fue guardado diferente)
-      if (exams.length === 0 && allExams.length > 0) {
-        console.warn('teacherId no coincidió — mostrando todos los exámenes como fallback');
-        exams = allExams;
-      }
+    // Si no encontró nada por teacherId, usar todos como fallback
+    if (myExams.length === 0 && allExams.length > 0) {
+      myExams = allExams;
+    }
 
-      console.log('EXAMS usados:', exams);
+    // Construir mapa por id Y por code (en minúsculas para evitar problemas de mayúsculas)
+    const examMap = {};
+    myExams.forEach(e => {
+      if (e.id)   examMap[e.id.trim()]               = e;
+      if (e.code) examMap[e.code.trim().toUpperCase()] = e;
+    });
 
-      // Mapa por id Y por code
-      const examMap = {};
-      exams.forEach(e => {
-        if (e.id)   examMap[e.id]   = e;
-        if (e.code) examMap[e.code] = e;
+    // Cruzar submissions usando examId o code, normalizando mayúsculas
+    submissions = subs
+      .filter(s => {
+        const byId   = s.examId && examMap[s.examId.trim()];
+        const byCode = s.code   && examMap[s.code.trim().toUpperCase()];
+        return !!(byId || byCode);
+      })
+      .map(s => {
+        const exam = examMap[s.examId?.trim()] || examMap[s.code?.trim().toUpperCase()];
+        return {
+          ...s,
+          examQuestions:      exam?.questions          || [],
+          showCorrectAnswers: exam?.showCorrectAnswers || false
+        };
       });
 
-      // Solo submissions que correspondan a un examen del mapa
-      submissions = subs
-        .filter(s => {
-          const match = examMap[s.examId] || examMap[s.code];
-          if (!match) console.warn('Submission sin examen encontrado:', s);
-          return !!match;
-        })
-        .map(s => {
-          const exam = examMap[s.examId] || examMap[s.code];
-          return {
-            ...s,
-            examQuestions:      exam?.questions          || [],
-            showCorrectAnswers: exam?.showCorrectAnswers || false
-          };
-        });
-
-      console.log('RESULTADOS (filtrados):', submissions);
-    } catch (err) {
-      console.error('Error en load():', err);
-      alert('Error al cargar resultados');
-    } finally {
-      loading = false; render();
-    }
+  } catch (err) {
+    console.error('Error en load():', err);
+    alert('Error al cargar resultados');
+  } finally {
+    loading = false; render();
   }
+}
 
   function render() {
     if (loading) {
