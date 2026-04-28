@@ -1,7 +1,6 @@
 function renderResults(app) {
   let submissions = [], loading = true, filter = '', selectedSub = null;
 
-  // ── Calcula nota de opción múltiple ──
   function score(sub) {
     if (!sub.answers || !sub.examQuestions) return null;
     const mc = sub.examQuestions.filter(q => q.type === 'mc');
@@ -21,55 +20,62 @@ function renderResults(app) {
   }
 
   async function load() {
-  loading = true; render();
-  try {
-    const user = getUser();
+    loading = true; render();
+    try {
+      const user = getUser();
+      const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
 
-    const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
+      // Filtrar exámenes del profesor por uid O email
+      let myExams = allExams.filter(e =>
+        (user?.uid   && e.teacherId === user.uid) ||
+        (user?.email && e.teacherId === user.email)
+      );
 
-    // Filtrar exámenes del profesor por uid O por email
-    let myExams = allExams.filter(e =>
-      (user?.uid   && e.teacherId === user.uid) ||
-      (user?.email && e.teacherId === user.email)
-    );
+      // Fallback: si no hay coincidencia por teacherId, usar todos
+      const isFallback = myExams.length === 0 && allExams.length > 0;
+      if (isFallback) myExams = allExams;
 
-    // Si no encontró nada por teacherId, usar todos como fallback
-    if (myExams.length === 0 && allExams.length > 0) {
-      myExams = allExams;
-    }
-
-    // Construir mapa por id Y por code (en minúsculas para evitar problemas de mayúsculas)
-    const examMap = {};
-    myExams.forEach(e => {
-      if (e.id)   examMap[e.id.trim()]               = e;
-      if (e.code) examMap[e.code.trim().toUpperCase()] = e;
-    });
-
-    // Cruzar submissions usando examId o code, normalizando mayúsculas
-    submissions = subs
-      .filter(s => {
-        const byId   = s.examId && examMap[s.examId.trim()];
-        const byCode = s.code   && examMap[s.code.trim().toUpperCase()];
-        return !!(byId || byCode);
-      })
-      .map(s => {
-        const exam = examMap[s.examId?.trim()] || examMap[s.code?.trim().toUpperCase()];
-        return {
-          ...s,
-          examQuestions:      exam?.questions          || [],
-          showCorrectAnswers: exam?.showCorrectAnswers || false
-        };
+      // Mapa por id Y por code para cruzar con submissions
+      const examMap = {};
+      myExams.forEach(e => {
+        if (e.id)   examMap[e.id]                        = e;
+        if (e.code) examMap[e.code.trim().toUpperCase()] = e;
       });
 
-  } catch (err) {
-    console.error('Error en load():', err);
-    alert('Error al cargar resultados');
-  } finally {
-    loading = false; render();
-  }
-}
+      // Sets para detectar submissions huérfanas (examen borrado)
+      const myIds   = new Set(myExams.map(e => e.id));
+      const myCodes = new Set(myExams.map(e => e.code?.trim().toUpperCase()));
 
-  // ── Render principal ──
+      submissions = subs
+        .filter(s => {
+          // En fallback mostrar todas
+          if (isFallback) return true;
+          // Cruzar por examId, por code, o por teacherId guardado en la submission
+          const byId      = s.examId    && myIds.has(s.examId);
+          const byCode    = s.code      && myCodes.has(s.code?.trim().toUpperCase());
+          const byTeacher = s.teacherId && (
+            s.teacherId === user?.uid || s.teacherId === user?.email
+          );
+          return byId || byCode || byTeacher;
+        })
+        .map(s => {
+          // Si el examen fue borrado, examMap no lo encontrará — usar [] de preguntas
+          const exam = examMap[s.examId] || examMap[s.code?.trim().toUpperCase()];
+          return {
+            ...s,
+            examQuestions:      exam?.questions          || [],
+            showCorrectAnswers: exam?.showCorrectAnswers || false
+          };
+        });
+
+    } catch (err) {
+      console.error('Error en load():', err);
+      alert('Error al cargar resultados');
+    } finally {
+      loading = false; render();
+    }
+  }
+
   function render() {
     if (loading) {
       app.innerHTML = `
@@ -83,14 +89,13 @@ function renderResults(app) {
     if (selectedSub) { renderDetail(); return; }
 
     const filtered = submissions.filter(s =>
-      `${s.studentName}${s.studentEmail}${s.title}${s.code}`
+      `${s.studentName || ''}${s.studentEmail || ''}${s.title || ''}${s.code || ''}`
         .toLowerCase().includes(filter.toLowerCase())
     );
 
-    // Métricas de resumen
-    const totalSubs    = submissions.length;
-    const blocked      = submissions.filter(s => s.wasBlocked).length;
-    const avgPct       = (() => {
+    const totalSubs = submissions.length;
+    const blocked   = submissions.filter(s => s.wasBlocked).length;
+    const avgPct    = (() => {
       const scored = submissions.map(s => score(s)).filter(Boolean);
       if (!scored.length) return null;
       return Math.round(scored.reduce((a, b) => a + b.pct, 0) / scored.length);
@@ -119,7 +124,6 @@ function renderResults(app) {
 
       <div style="max-width:960px;margin:0 auto">
 
-        <!-- Header -->
         <div class="flex-between mb-4">
           <div>
             <h1 class="font-bold" style="font-size:1.6rem">
@@ -132,7 +136,6 @@ function renderResults(app) {
           </button>
         </div>
 
-        <!-- Stats -->
         <div class="results-stat-grid">
           <div class="results-stat">
             <div class="results-stat-icon" style="background:#dbeafe">
@@ -165,7 +168,6 @@ function renderResults(app) {
           </div>
         </div>
 
-        <!-- Tabla -->
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:.75rem">
             <div style="position:relative;flex:1;max-width:320px">
@@ -260,12 +262,11 @@ function renderResults(app) {
     });
   }
 
-  // ── Vista de detalle ──
   function renderDetail() {
-    const s         = selectedSub;
-    const sc        = score(s);
-    const questions = s.examQuestions || [];
-    const violations = s.violations || [];
+    const s          = selectedSub;
+    const sc         = score(s);
+    const questions  = s.examQuestions || [];
+    const violations = s.violations    || [];
 
     app.innerHTML = `
       <style>
@@ -288,8 +289,6 @@ function renderResults(app) {
       </style>
 
       <div style="max-width:820px;margin:0 auto">
-
-        <!-- Header -->
         <div class="flex-between mb-4">
           <div>
             <h1 class="font-bold" style="font-size:1.5rem">
@@ -306,7 +305,6 @@ function renderResults(app) {
           </button>
         </div>
 
-        <!-- Stats -->
         <div class="detail-stat-grid">
           <div class="detail-stat">
             <div class="detail-stat-val" style="color:${sc ? (sc.pct >= 60 ? '#16a34a' : '#dc2626') : '#94a3b8'}">
@@ -338,7 +336,6 @@ function renderResults(app) {
           </div>
         </div>
 
-        <!-- Infracciones -->
         ${violations.length > 0 ? `
           <div class="card mb-4" style="border-left:3px solid #dc2626">
             <h3 class="font-bold mb-3" style="font-size:.95rem">
@@ -357,30 +354,24 @@ function renderResults(app) {
           </div>
         ` : ''}
 
-        <!-- Respuestas -->
         <div class="card">
           <h3 class="font-bold mb-3" style="font-size:.95rem">
             <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.4rem"></i>
             Respuestas (${questions.length} preguntas)
           </h3>
-
           ${questions.length === 0
-            ? `<p class="text-center text-gray" style="padding:2rem">
+            ? `<div class="text-center text-gray" style="padding:2rem">
                 <i class="fa-solid fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:.5rem"></i>
-                No hay preguntas registradas para este examen
-               </p>`
+                <p>El examen original fue eliminado — no se pueden mostrar las preguntas</p>
+                <p class="text-xs mt-2">Las respuestas del estudiante siguen guardadas en el sistema</p>
+               </div>`
             : questions.map((q, idx) => {
                 const given    = s.answers?.[q.id];
                 const answered = given !== undefined && given !== '';
                 let isCorrect  = null;
                 if (q.type === 'mc' && answered) isCorrect = Number(given) === q.correctIndex;
-
-                const rowClass = isCorrect === true
-                  ? 'answer-correct'
-                  : isCorrect === false
-                    ? 'answer-wrong'
-                    : 'answer-neutral';
-
+                const rowClass = isCorrect === true ? 'answer-correct'
+                               : isCorrect === false ? 'answer-wrong' : 'answer-neutral';
                 return `
                   <div class="answer-row ${rowClass}">
                     <div style="display:flex;align-items:flex-start;gap:.75rem">
