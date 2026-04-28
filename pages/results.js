@@ -1,15 +1,13 @@
 function renderResults(app) {
   let submissions = [], loading = true, filter = '', selectedSub = null;
 
+  // ── Calcula nota de opción múltiple ──
   function score(sub) {
     if (!sub.answers || !sub.examQuestions) return null;
-    // Normalizar por si Firebase devuelve algo inesperado
-    const answers = typeof sub.answers === 'object' && !Array.isArray(sub.answers)
-      ? sub.answers : {};
     const mc = sub.examQuestions.filter(q => q.type === 'mc');
     if (!mc.length) return null;
     const correct = mc.filter(q =>
-      answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex
+      sub.answers[q.id] !== undefined && Number(sub.answers[q.id]) === q.correctIndex
     ).length;
     return { correct, total: mc.length, pct: Math.round((correct / mc.length) * 100) };
   }
@@ -71,6 +69,7 @@ function renderResults(app) {
   }
 }
 
+  // ── Render principal ──
   function render() {
     if (loading) {
       app.innerHTML = `
@@ -84,13 +83,14 @@ function renderResults(app) {
     if (selectedSub) { renderDetail(); return; }
 
     const filtered = submissions.filter(s =>
-      `${s.studentName || ''}${s.studentEmail || ''}${s.title || ''}${s.code || ''}`
+      `${s.studentName}${s.studentEmail}${s.title}${s.code}`
         .toLowerCase().includes(filter.toLowerCase())
     );
 
-    const totalSubs = submissions.length;
-    const blocked   = submissions.filter(s => s.wasBlocked).length;
-    const avgPct    = (() => {
+    // Métricas de resumen
+    const totalSubs    = submissions.length;
+    const blocked      = submissions.filter(s => s.wasBlocked).length;
+    const avgPct       = (() => {
       const scored = submissions.map(s => score(s)).filter(Boolean);
       if (!scored.length) return null;
       return Math.round(scored.reduce((a, b) => a + b.pct, 0) / scored.length);
@@ -119,6 +119,7 @@ function renderResults(app) {
 
       <div style="max-width:960px;margin:0 auto">
 
+        <!-- Header -->
         <div class="flex-between mb-4">
           <div>
             <h1 class="font-bold" style="font-size:1.6rem">
@@ -131,6 +132,7 @@ function renderResults(app) {
           </button>
         </div>
 
+        <!-- Stats -->
         <div class="results-stat-grid">
           <div class="results-stat">
             <div class="results-stat-icon" style="background:#dbeafe">
@@ -163,6 +165,7 @@ function renderResults(app) {
           </div>
         </div>
 
+        <!-- Tabla -->
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:.75rem">
             <div style="position:relative;flex:1;max-width:320px">
@@ -185,13 +188,17 @@ function renderResults(app) {
             <div class="overflow-x">
               <table class="results-table">
                 <thead><tr>
-                  <th>Estudiante</th><th>Examen</th><th>Nota</th>
-                  <th>Infracciones</th><th>Estado</th><th>Fecha</th>
+                  <th>Estudiante</th>
+                  <th>Examen</th>
+                  <th>Nota</th>
+                  <th>Infracciones</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
                   <th style="width:60px"></th>
                 </tr></thead>
                 <tbody>
                   ${filtered.map(s => {
-                    const sc         = score(s);
+                    const sc = score(s);
                     const violations = s.violations?.length || 0;
                     return `
                       <tr>
@@ -241,6 +248,7 @@ function renderResults(app) {
 
     document.getElementById('back-btn').onclick = () => navigate('/docente');
     document.getElementById('f-filter').oninput = e => { filter = e.target.value; render(); };
+
     const clearBtn = document.getElementById('clear-filter');
     if (clearBtn) clearBtn.onclick = () => { filter = ''; render(); };
 
@@ -252,22 +260,12 @@ function renderResults(app) {
     });
   }
 
+  // ── Vista de detalle ──
   function renderDetail() {
-    const s          = selectedSub;
-    const sc         = score(s);
-    const questions  = s.examQuestions || [];
-    const violations = s.violations    || [];
-
-    // Debug: verificar que answers y question IDs coincidan
-    console.log('SUBMISSION answers:', s.answers);
-    console.log('EXAM questions IDs:', questions.map(q => q.id));
-    console.log('answers keys:', Object.keys(s.answers || {}));
-
-    // Normalizar answers: Firebase puede devolver arrays si los keys son numéricos
-    // Asegurar que siempre sea un objeto plano { [questionId]: value }
-    const answers = s.answers && typeof s.answers === 'object' && !Array.isArray(s.answers)
-      ? s.answers
-      : {};
+    const s         = selectedSub;
+    const sc        = score(s);
+    const questions = s.examQuestions || [];
+    const violations = s.violations || [];
 
     app.innerHTML = `
       <style>
@@ -290,6 +288,8 @@ function renderResults(app) {
       </style>
 
       <div style="max-width:820px;margin:0 auto">
+
+        <!-- Header -->
         <div class="flex-between mb-4">
           <div>
             <h1 class="font-bold" style="font-size:1.5rem">
@@ -306,6 +306,7 @@ function renderResults(app) {
           </button>
         </div>
 
+        <!-- Stats -->
         <div class="detail-stat-grid">
           <div class="detail-stat">
             <div class="detail-stat-val" style="color:${sc ? (sc.pct >= 60 ? '#16a34a' : '#dc2626') : '#94a3b8'}">
@@ -337,6 +338,7 @@ function renderResults(app) {
           </div>
         </div>
 
+        <!-- Infracciones -->
         ${violations.length > 0 ? `
           <div class="card mb-4" style="border-left:3px solid #dc2626">
             <h3 class="font-bold mb-3" style="font-size:.95rem">
@@ -347,29 +349,38 @@ function renderResults(app) {
               <div class="violation-item">
                 <span style="font-weight:700;margin-right:.5rem">${i + 1}.</span>
                 ${v.reason || v}
-                ${v.timestamp ? `<span class="text-gray" style="margin-left:.5rem;font-size:.75rem">${fmtDate(v.timestamp)}</span>` : ''}
+                ${v.timestamp
+                  ? `<span class="text-gray" style="margin-left:.5rem;font-size:.75rem">${fmtDate(v.timestamp)}</span>`
+                  : ''}
               </div>
             `).join('')}
           </div>
         ` : ''}
 
+        <!-- Respuestas -->
         <div class="card">
           <h3 class="font-bold mb-3" style="font-size:.95rem">
             <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.4rem"></i>
             Respuestas (${questions.length} preguntas)
           </h3>
+
           ${questions.length === 0
             ? `<p class="text-center text-gray" style="padding:2rem">
                 <i class="fa-solid fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:.5rem"></i>
                 No hay preguntas registradas para este examen
                </p>`
             : questions.map((q, idx) => {
-                const given    = answers[q.id];
+                const given    = s.answers?.[q.id];
                 const answered = given !== undefined && given !== '';
                 let isCorrect  = null;
                 if (q.type === 'mc' && answered) isCorrect = Number(given) === q.correctIndex;
-                const rowClass = isCorrect === true ? 'answer-correct'
-                               : isCorrect === false ? 'answer-wrong' : 'answer-neutral';
+
+                const rowClass = isCorrect === true
+                  ? 'answer-correct'
+                  : isCorrect === false
+                    ? 'answer-wrong'
+                    : 'answer-neutral';
+
                 return `
                   <div class="answer-row ${rowClass}">
                     <div style="display:flex;align-items:flex-start;gap:.75rem">
