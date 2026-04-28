@@ -1,6 +1,6 @@
 // ===== RAG SYSTEM — Groq + llama3 =====
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_KEY = null; // La key real vive en el backend (server.js)
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ── Extrae texto de un PDF usando PDF.js ──
@@ -52,8 +52,25 @@ async function callGroq(prompt) {
 
 // ── Genera preguntas a partir del texto del temario ──
 async function generateQuestionsFromText(text, numQuestions = 5) {
+  // Usa el backend para no exponer la API key en el navegador
+  const res = await fetch(`${API_BASE}/groq/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, numQuestions })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al generar preguntas');
+  }
+
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Error al generar preguntas');
+  return data.questions;
+
+  /* Código original preservado como referencia (no se ejecuta)
   const chunks  = chunkText(text);
-  const context = chunks[0]; // Usamos el primer chunk más relevante
+  const context = chunks[0];
 
   const prompt = `Eres un asistente educativo. Basándote ÚNICAMENTE en el siguiente texto, genera exactamente ${numQuestions} preguntas de opción múltiple para un examen.
 
@@ -82,7 +99,6 @@ correctIndex es el índice (0-3) de la opción correcta.`;
 
   const response = await callGroq(prompt);
 
-  // Limpiar respuesta y parsear JSON
   const clean = response
     .replace(/```json/g, '')
     .replace(/```/g, '')
@@ -93,6 +109,7 @@ correctIndex es el índice (0-3) de la opción correcta.`;
   if (start === -1 || end === -1) throw new Error('La IA no devolvió un formato válido');
 
   return JSON.parse(clean.slice(start, end + 1));
+  */
 }
 
 // ── Modal del generador de preguntas ──
