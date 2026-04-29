@@ -135,7 +135,7 @@ function initChat() {
             <img src="${ARDY_IMG}" alt="Ardy"/>
           </div>
           <div id="chat-header-text">
-            <p>Ardy IA</p>
+            <p>ARDI IA</p>
             <span>Powered by LLaMA 3 · Groq</span>
           </div>
         </div>
