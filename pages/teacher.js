@@ -16,13 +16,40 @@ function renderTeacher(app) {
     loading = true;
     try {
       const allExams = await apiGetExams();
-      // Usar uid como fuente de verdad; email solo como fallback de último recurso
-      const teacherId = user?.uid || user?.email;
-      exams = allExams.filter(e =>
-        e.teacherId === teacherId ||
-        (user?.uid   && e.teacherId === user.uid) ||
-        (user?.email && e.teacherId === user.email)
-      );
+
+      // Recopilar TODOS los identificadores posibles del usuario actual
+      const myIds = new Set();
+      if (user?.uid)   myIds.add(user.uid);
+      if (user?.email) myIds.add(user.email);
+
+      // También incluir el UID real de Firebase Auth si está disponible
+      try {
+        const fbUser = fbAuth.currentUser;
+        if (fbUser?.uid)   myIds.add(fbUser.uid);
+        if (fbUser?.email) myIds.add(fbUser.email);
+      } catch (_) {}
+
+      // Filtrar exámenes que coincidan con cualquiera de los IDs
+      exams = allExams.filter(e => myIds.has(e.teacherId));
+
+      // Si no hay ninguno con los IDs conocidos, mostrar todos como fallback
+      // (útil si los exámenes fueron creados con un ID diferente)
+      if (exams.length === 0 && allExams.length > 0) {
+        // Buscar si hay algún examen cuyo teacherId coincida parcialmente
+        // con alguno de nuestros IDs conocidos (primeros 8 chars)
+        const partialMatch = allExams.filter(e => {
+          return [...myIds].some(id =>
+            e.teacherId && id && (
+              e.teacherId.startsWith(id.substring(0, 8)) ||
+              id.startsWith(e.teacherId.substring(0, 8))
+            )
+          );
+        });
+        if (partialMatch.length > 0) {
+          exams = partialMatch;
+        }
+      }
+
     } catch {
       alert('Error al cargar los exámenes');
     } finally {
@@ -53,10 +80,18 @@ function renderTeacher(app) {
 
     saving = true; render();
     try {
+      // Usar siempre el UID real de Firebase Auth como teacherId
+      // para que loadExams() lo encuentre correctamente
+      let teacherId = user?.uid || user?.email;
+      try {
+        const fbUser = fbAuth.currentUser;
+        if (fbUser?.uid) teacherId = fbUser.uid;
+      } catch (_) {}
+
       const examData = {
         title: title.trim(), code: code.trim().toUpperCase(),
         durationMinutes: Number(dur), questions, showCorrectAnswers,
-        teacherId: user?.uid || user?.email
+        teacherId
       };
       if (selectedExam) {
         await apiUpdateExam(selectedExam.id, examData);
@@ -75,18 +110,16 @@ function renderTeacher(app) {
   async function deleteExam(exam) {
     if (!confirm(`¿Eliminar "${exam.title}"? Esta acción no se puede deshacer.`)) return;
     try {
-      console.log('Eliminando id:', exam.id);
       await apiDeleteExam(exam.id);
       if (selectedExam?.id === exam.id) resetForm();
-      exams = exams.filter(e => e.id !== exam.id); // elimina del array local inmediatamente
+      exams = exams.filter(e => e.id !== exam.id);
       activeTab = 'lista';
-      render(); // refresca la vista al instante sin esperar al backend
-      await loadExams(); // sincroniza con el servidor en segundo plano
+      render();
+      await loadExams();
       alert('✅ Examen eliminado');
     } catch (err) {
-      console.error('Error al eliminar:', err);
       alert('❌ Error al eliminar el examen');
-   }
+    }
   }
 
   function addQuestion() {
@@ -459,8 +492,9 @@ function renderTeacher(app) {
       });
     };
   }
+
   function bindListaEvents() {
-    document.getElementById('f-filter').oninput  = e => { filter = e.target.value; render(); };
+    document.getElementById('f-filter').oninput   = e => { filter = e.target.value; render(); };
     document.getElementById('toggle-reg').onclick = () => { showRegistry = !showRegistry; render(); };
 
     document.querySelectorAll('[data-edit]').forEach(btn => {
