@@ -144,7 +144,7 @@ function openRAGModal(onQuestionsSelected) {
             <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:1rem;display:flex;flex-direction:column;height:460px;" id="rag-chat-panel">
               <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);padding:.75rem 1rem;border-radius:.85rem .85rem 0 0;flex-shrink:0">
                 <p style="color:#fff;font-weight:700;font-size:.875rem;">
-                  <i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente de edición
+                  <i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente de edición ARDI
                 </p>
                 <p style="color:rgba(255,255,255,.75);font-size:.7rem;">Pídeme que edite cualquier pregunta</p>
               </div>
