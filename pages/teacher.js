@@ -16,9 +16,18 @@ function renderTeacher(app) {
     } catch { alert('Error al cargar los exámenes'); }
     finally { loading = false; render(); }
   }
-
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = '';
+    for (let i = 0; i < 5; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    // Verificar que no exista ya
+    const exists = exams.some(e => e.code === result);
+    return exists ? generateCode() : result;
+  }
   function resetForm() {
-    title = ''; code = ''; dur = 30; questions = [];
+    title = ''; code = generateCode(); dur = 30; questions = [];
     qtext = ''; options = ['', '']; correctIndex = 0;
     showCorrectAnswers = false; selectedExam = null; qtype = 'mc';
   }
@@ -144,9 +153,15 @@ function renderTeacher(app) {
                 <input class="input" id="f-title" placeholder="Ej: Parcial de Matemáticas" value="${title}"/>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
-                <div class="form-group">
-                  <label class="label">Código</label>
-                  <input class="input font-mono" id="f-code" placeholder="ABC123" value="${code}" ${selectedExam ? 'disabled' : ''} style="text-transform:uppercase;letter-spacing:.1em"/>
+                <div style="display:flex;gap:.5rem">
+                  <input class="input font-mono" id="f-code" value="${code}"
+                    ${selectedExam ? 'disabled' : 'readonly'}
+                    style="text-transform:uppercase;letter-spacing:.1em;background:${selectedExam ? '' : '#f8fafc'}"/>
+                  ${!selectedExam ? `
+                    <button class="btn btn-outline" id="regen-code-btn" style="flex-shrink:0;padding:.5rem .75rem" title="Generar nuevo código">
+                      <i class="fa-solid fa-rotate"></i>
+                    </button>
+                  ` : ''}
                 </div>
                 <div class="form-group">
                   <label class="label">Duración (min)</label>
@@ -307,7 +322,11 @@ function renderTeacher(app) {
 
   function bindCrearEvents() {
     document.getElementById('f-title').oninput         = e => { title = e.target.value; };
-    document.getElementById('f-code').oninput          = e => { code = e.target.value.toUpperCase(); e.target.value = code; };
+   const regenBtn = document.getElementById('regen-code-btn');
+    if (regenBtn) regenBtn.onclick = () => {
+     code = generateCode();
+      document.getElementById('f-code').value = code;
+    };
     document.getElementById('f-dur').oninput           = e => { dur = e.target.value; };
     document.getElementById('f-show-answers').onchange = e => { showCorrectAnswers = e.target.checked; };
     document.getElementById('f-qtext').oninput         = e => { qtext = e.target.value; };
