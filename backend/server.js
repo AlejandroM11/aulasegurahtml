@@ -29,9 +29,8 @@ function dbRef(path) { return db.ref(path); }
 async function getAll(path) {
   const snap = await dbRef(path).get();
   if (!snap.exists()) return [];
-  const items = [];
-  snap.forEach(child => items.push({ id: child.key, ...child.val() }));
-  return items;
+  const val = snap.val();
+  return Object.entries(val).map(([key, value]) => ({ id: key, ...value }));
 }
 
 // ─────────────────────────────────────────────
