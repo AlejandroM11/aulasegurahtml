@@ -4,21 +4,20 @@ function renderStudent(app) {
   let exam = null, answers = {}, timer = 0;
   let submitting = false, finished = false, submitted = false;
   let violations = [];
+  let submissionData = null; // guardamos la entrega para retroalimentación
 
-  // Control de bloqueo — fuente única de verdad
   let blockState = {
     isBlocked: false,
     reason: '',
-    local: false,       // bloqueado por acción local (antifraude)
-    remote: false,      // bloqueado por el profesor (Firebase)
-    unlocking: false,   // está siendo desbloqueado, ignorar eventos
+    local: false,
+    remote: false,
+    unlocking: false,
   };
 
-  // Control de antifraude
   let fraudGuard = {
-    active: false,      // ¿los listeners están escuchando?
-    paused: false,      // pausado temporalmente (ej: durante desbloqueo)
-    listeners: null,    // función para remover todos los listeners
+    active: false,
+    paused: false,
+    listeners: null,
   };
 
   let timerInterval  = null;
@@ -31,30 +30,444 @@ function renderStudent(app) {
   const guestCode = user.isGuest ? user.examCode : '';
 
   // ─────────────────────────────────────────────
+  // ESTILOS GLOBALES DE LA PÁGINA ESTUDIANTE
+  // ─────────────────────────────────────────────
+  const STUDENT_STYLES = `
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    .st-page { font-family: 'DM Sans', sans-serif; }
+
+    /* ── JOIN SCREEN ── */
+    .join-wrap {
+      min-height: 85vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .join-bg-blob {
+      position: fixed; pointer-events: none; z-index: 0;
+      border-radius: 50%; filter: blur(80px); opacity: .12;
+    }
+    .join-card {
+      background: #fff;
+      border: 1px solid #e8e4df;
+      border-radius: 2rem;
+      padding: 2.5rem 2.25rem;
+      width: 100%; max-width: 480px;
+      position: relative; z-index: 1;
+      box-shadow: 0 24px 64px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+    }
+    body.dark .join-card {
+      background: #1a1a2e;
+      border-color: #2a2a4a;
+    }
+    .join-logo-ring {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+      box-shadow: 0 8px 24px rgba(37,99,235,.3);
+    }
+    .join-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 2rem; font-weight: 600;
+      text-align: center; line-height: 1.2;
+      margin-bottom: .35rem;
+      color: #0f172a;
+    }
+    body.dark .join-title { color: #f1f5f9; }
+    .join-subtitle {
+      text-align: center; color: #64748b; font-size: .9rem;
+      margin-bottom: 2rem; font-weight: 300;
+    }
+    body.dark .join-subtitle { color: #94a3b8; }
+
+    .st-label {
+      display: block; font-size: .72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .09em;
+      color: #94a3b8; margin-bottom: .45rem;
+    }
+    .st-input {
+      width: 100%; padding: .8rem 1rem;
+      border: 1.5px solid #e2e8f0; border-radius: 1rem;
+      font-size: .95rem; background: #fafaf9;
+      color: #1e293b; font-family: 'DM Sans', sans-serif;
+      transition: all .2s;
+    }
+    .st-input:focus {
+      outline: none; border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37,99,235,.1);
+      background: #fff;
+    }
+    body.dark .st-input {
+      background: #0f172a; border-color: #334155; color: #e2e8f0;
+    }
+    .st-code-input {
+      text-align: center; font-size: 1.6rem; font-weight: 700;
+      letter-spacing: .2em; text-transform: uppercase;
+      font-family: 'DM Mono', 'Courier New', monospace;
+    }
+    .st-btn-main {
+      width: 100%; padding: .9rem;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      color: #fff; border: none; border-radius: 1rem;
+      font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: all .22s;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: .01em;
+    }
+    .st-btn-main:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37,99,235,.35);
+    }
+    .st-btn-main:disabled { opacity: .5; cursor: not-allowed; }
+
+    .join-warnings {
+      margin-top: 1.5rem; border-radius: 1rem;
+      background: #fef9ee; border: 1px solid #fde68a;
+      padding: 1rem 1.1rem;
+    }
+    body.dark .join-warnings { background: #1c1500; border-color: #92400e; }
+    .join-warnings p.warn-title {
+      font-size: .8rem; font-weight: 600;
+      color: #92400e; margin-bottom: .5rem;
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+    body.dark .join-warnings p.warn-title { color: #fde68a; }
+    .join-warnings li {
+      font-size: .82rem; color: #78350f; line-height: 1.8;
+    }
+    body.dark .join-warnings li { color: #fde68a; opacity: .85; }
+
+    /* ── EXAM HEADER ── */
+    .st-exam-header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      border-radius: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      position: sticky; top: 56px; z-index: 10;
+      box-shadow: 0 6px 24px rgba(37,99,235,.3);
+    }
+    .st-exam-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.3rem; font-weight: 600;
+      color: #fff; line-height: 1.2;
+    }
+    .st-exam-code {
+      font-size: .78rem; color: rgba(255,255,255,.7);
+      margin-top: .2rem;
+    }
+    .st-timer {
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 2.2rem; font-weight: 700;
+      color: #fff; letter-spacing: .04em;
+    }
+    .st-progress-bar {
+      background: rgba(255,255,255,.2);
+      border-radius: 999px; height: 6px; margin-top: .75rem;
+    }
+    .st-progress-fill {
+      background: #fff;
+      height: 100%; border-radius: 999px;
+      transition: width .4s;
+    }
+    .st-progress-text {
+      font-size: .72rem; color: rgba(255,255,255,.75);
+      text-align: center; margin-top: .3rem;
+    }
+
+    /* ── QUESTION CARDS ── */
+    .st-question-card {
+      background: #fff;
+      border: 1px solid #e8e4df;
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      animation: stFadeUp .35s ease both;
+    }
+    body.dark .st-question-card {
+      background: #1e293b; border-color: #334155;
+    }
+    @keyframes stFadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .st-q-number {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.9rem; height: 1.9rem; border-radius: .55rem;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      color: #fff; font-size: .78rem; font-weight: 700;
+      margin-right: .65rem; flex-shrink: 0;
+    }
+    .st-q-text {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.05rem; font-weight: 300;
+      color: #1e293b; line-height: 1.5;
+    }
+    body.dark .st-q-text { color: #e2e8f0; }
+
+    .st-option {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .85rem 1rem; border-radius: .85rem;
+      border: 1.5px solid #e8e4df;
+      cursor: pointer; transition: all .18s;
+      margin-top: .5rem;
+      background: #fafaf9;
+    }
+    body.dark .st-option { background: #0f172a; border-color: #334155; }
+    .st-option:hover { border-color: #93c5fd; background: #f0f7ff; }
+    body.dark .st-option:hover { border-color: #3b82f6; background: #1e3a5f; }
+    .st-option.selected {
+      border-color: #2563eb;
+      background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+      box-shadow: 0 0 0 1px #2563eb;
+    }
+    body.dark .st-option.selected {
+      border-color: #3b82f6; background: #1e3a5f;
+    }
+    .st-option-letter {
+      width: 1.75rem; height: 1.75rem; border-radius: .45rem;
+      border: 1.5px solid #d1d5db; display: flex;
+      align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 700; color: #64748b;
+      flex-shrink: 0; transition: all .18s;
+    }
+    .st-option.selected .st-option-letter {
+      background: #2563eb; border-color: #2563eb; color: #fff;
+    }
+    .st-option-text { font-size: .9rem; color: #374151; flex: 1; }
+    body.dark .st-option-text { color: #cbd5e1; }
+
+    /* ── STICKY BAR ── */
+    .st-sticky {
+      position: sticky; bottom: 0;
+      background: rgba(241,245,249,.95);
+      backdrop-filter: blur(8px);
+      padding: .9rem 1rem;
+      border-radius: 1rem 1rem 0 0;
+      display: flex; gap: .75rem;
+      box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+      margin-top: 1.5rem;
+    }
+    body.dark .st-sticky {
+      background: rgba(15,23,42,.95);
+    }
+    .st-btn-sec {
+      flex: 1; padding: .8rem;
+      background: transparent;
+      border: 1.5px solid #d1d5db;
+      border-radius: .85rem;
+      font-size: .9rem; font-weight: 600;
+      cursor: pointer; color: #374151;
+      transition: all .2s; font-family: 'DM Sans', sans-serif;
+    }
+    .st-btn-sec:hover { background: #f1f5f9; border-color: #2563eb; color: #2563eb; }
+    body.dark .st-btn-sec { color: #e2e8f0; border-color: #334155; }
+    body.dark .st-btn-sec:hover { background: #1e3a5f; border-color: #3b82f6; }
+    .st-btn-prim {
+      flex: 1; padding: .8rem;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      border: none; border-radius: .85rem;
+      font-size: .9rem; font-weight: 600;
+      cursor: pointer; color: #fff;
+      transition: all .2s; font-family: 'DM Sans', sans-serif;
+    }
+    .st-btn-prim:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37,99,235,.35);
+    }
+    .st-btn-prim:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── SUCCESS SCREEN ── */
+    .st-success-wrap {
+      min-height: 85vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .st-success-card {
+      width: 100%; max-width: 520px;
+      text-align: center;
+    }
+    .st-success-icon-ring {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2.8rem;
+      box-shadow: 0 12px 32px rgba(22,163,74,.35);
+      animation: successPop .5s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes successPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .st-success-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 2.2rem; font-weight: 600;
+      color: #0f172a; margin-bottom: .5rem;
+    }
+    body.dark .st-success-title { color: #f1f5f9; }
+    .st-success-sub {
+      color: #64748b; font-size: .95rem; margin-bottom: 2rem;
+    }
+    body.dark .st-success-sub { color: #94a3b8; }
+
+    .st-success-stats {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem;
+      margin-bottom: 2rem;
+    }
+    .st-success-stat {
+      background: #fff; border: 1px solid #e8e4df;
+      border-radius: 1rem; padding: 1rem;
+    }
+    body.dark .st-success-stat { background: #1e293b; border-color: #334155; }
+    .st-success-stat-val {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.8rem; font-weight: 600;
+      color: #1e293b; display: block;
+    }
+    body.dark .st-success-stat-val { color: #f1f5f9; }
+    .st-success-stat-lbl {
+      font-size: .72rem; color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+
+    .st-success-actions {
+      display: flex; flex-direction: column; gap: .75rem;
+    }
+    .st-btn-retro {
+      width: 100%; padding: .9rem;
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      color: #fff; border: none; border-radius: 1rem;
+      font-size: .95rem; font-weight: 600;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: all .2s;
+    }
+    .st-btn-retro:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37,99,235,.35);
+    }
+    .st-btn-home {
+      width: 100%; padding: .85rem;
+      background: transparent; border: 1.5px solid #d1d5db;
+      border-radius: 1rem;
+      font-size: .95rem; font-weight: 600;
+      cursor: pointer; color: #374151;
+      font-family: 'DM Sans', sans-serif; transition: all .2s;
+    }
+    .st-btn-home:hover { background: #f1f5f9; border-color: #2563eb; color: #2563eb; }
+    body.dark .st-btn-home { color: #e2e8f0; border-color: #334155; }
+    body.dark .st-btn-home:hover { background: #1e3a5f; border-color: #3b82f6; }
+
+    /* ── RETRO SCREEN ── */
+    .st-retro-header {
+      background: linear-gradient(135deg, #1e3a5f, #2563eb);
+      border-radius: 1.25rem; padding: 1.5rem;
+      margin-bottom: 1.5rem; text-align: center;
+    }
+    .st-retro-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.5rem; font-weight: 600; color: #fff;
+    }
+    .st-retro-score {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 3.5rem; font-weight: 700; color: #fff;
+      line-height: 1; margin: .5rem 0;
+    }
+    .st-retro-sub { color: rgba(255,255,255,.75); font-size: .85rem; }
+
+    .st-retro-card {
+      background: #fff; border: 1px solid #e8e4df;
+      border-radius: 1.25rem; padding: 1.1rem 1.25rem;
+      margin-bottom: .75rem;
+    }
+    body.dark .st-retro-card { background: #1e293b; border-color: #334155; }
+    .st-retro-card.correct { border-color: #86efac; background: #f0fdf4; }
+    .st-retro-card.wrong   { border-color: #fca5a5; background: #fef2f2; }
+    .st-retro-card.unanswered { border-color: #fed7aa; background: #fff7ed; }
+    body.dark .st-retro-card.correct { border-color: #166534; background: #052e16; }
+    body.dark .st-retro-card.wrong   { border-color: #991b1b; background: #450a0a; }
+    body.dark .st-retro-card.unanswered { border-color: #92400e; background: #1c0a00; }
+
+    .st-retro-icon {
+      width: 1.75rem; height: 1.75rem; border-radius: .45rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; flex-shrink: 0;
+    }
+    .st-retro-q-text {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: .95rem; font-weight: 300;
+      color: #1e293b; line-height: 1.4;
+    }
+    body.dark .st-retro-q-text { color: #e2e8f0; }
+    .st-retro-answer-line {
+      font-size: .82rem; margin-top: .4rem; color: #64748b;
+    }
+    body.dark .st-retro-answer-line { color: #94a3b8; }
+  `;
+
+  function injectStyles() {
+    if (!document.getElementById('student-styles')) {
+      const el = document.createElement('style');
+      el.id = 'student-styles';
+      el.textContent = STUDENT_STYLES;
+      document.head.appendChild(el);
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // PANTALLA: UNIRSE
   // ─────────────────────────────────────────────
   function showJoin() {
+    injectStyles();
     app.innerHTML = `
-      <div style="max-width:520px;margin:0 auto">
-        <div class="card">
-          <h2 class="font-bold text-center" style="font-size:1.5rem;margin-bottom:1rem">Unirse a un examen</h2>
-          <div class="flex-row">
-            <input class="input" id="exam-code" placeholder="Código del examen"
-              value="${guestCode}" style="flex:1;font-family:monospace;font-size:1.1rem;text-transform:uppercase"/>
-            <button class="btn btn-primary" id="join-btn">Ingresar</button>
+      <div class="st-page join-wrap">
+        <div class="join-bg-blob" style="width:500px;height:500px;background:#2563eb;top:-100px;right:-150px"></div>
+        <div class="join-bg-blob" style="width:400px;height:400px;background:#7c3aed;bottom:-80px;left:-120px"></div>
+
+        <div class="join-card">
+          <div class="join-logo-ring">📋</div>
+          <h1 class="join-title">Aula Segura</h1>
+          <p class="join-subtitle">Ingresa el código de tu examen para comenzar</p>
+
+          <div style="margin-bottom:1.25rem">
+            <label class="st-label">Tu nombre completo</label>
+            <input class="st-input" type="text" id="join-name" placeholder="Ej: Camila Torres"
+              value="${user.name || ''}" maxlength="60" autocomplete="off"/>
           </div>
-          <div class="info-box info-box-yellow mt-4">
-            <p class="font-bold mb-1">⚠️ Advertencias</p>
-            <ul class="text-sm space-y-sm">
+
+          <div style="margin-bottom:1.5rem">
+            <label class="st-label">Código del examen</label>
+            <input class="st-input st-code-input" type="text" id="exam-code"
+              placeholder="XXXXX" value="${guestCode}" maxlength="10" autocomplete="off"/>
+          </div>
+
+          <button class="st-btn-main" id="join-btn">
+            Iniciar examen →
+          </button>
+
+          <div class="join-warnings">
+            <p class="warn-title">⚠ Antes de comenzar</p>
+            <ul style="list-style:none;padding:0;margin:0">
               <li>• Serás monitoreado en tiempo real</li>
               <li>• No salgas de la ventana del examen</li>
               <li>• No presiones Escape ni salgas de pantalla completa</li>
-              <li>• Si te bloquean, solo el profesor puede desbloquearte</li>
+              <li>• Solo el docente puede desbloquearte si eres bloqueado</li>
             </ul>
           </div>
+
+          ${user.role === 'estudiante' ? '' : `
+            <p style="text-align:center;margin-top:1.25rem;font-size:.82rem;color:#94a3b8">
+              ¿Tienes cuenta? <a href="#/login" style="color:#2563eb;font-weight:600;text-decoration:none">Iniciar sesión</a>
+            </p>
+          `}
         </div>
       </div>
     `;
+
     const codeInput = document.getElementById('exam-code');
     codeInput.oninput = () => { codeInput.value = codeInput.value.toUpperCase(); };
     codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinExam(); });
@@ -63,10 +476,18 @@ function renderStudent(app) {
   }
 
   async function joinExam() {
+    const name = document.getElementById('join-name')?.value.trim();
     const code = document.getElementById('exam-code')?.value?.trim().toUpperCase();
+
     if (!code) { alert('Por favor ingresa un código'); return; }
+    if (name && name.length >= 2) {
+      const storedUser = getUser();
+      if (storedUser && !storedUser.name) setUser({ ...storedUser, name });
+      else if (!storedUser) setUser({ uid: guestUid?.() || `g_${Date.now()}`, name, email: `inv_${Date.now()}@tmp.local`, role: 'estudiante', isGuest: true });
+    }
+
     const btn = document.getElementById('join-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Buscando examen...'; }
     try {
       const res = await apiGetExamByCode(code);
       if (res?.ok && res.exam) {
@@ -75,15 +496,16 @@ function renderStudent(app) {
         blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
         fraudGuard = { active: false, paused: false, listeners: null };
         submitted = false; finished = false; submitting = false;
+        submissionData = null;
         listenerReady = false;
         startExam();
       } else {
         alert('❌ Código inválido');
-        if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Iniciar examen →'; }
       }
     } catch (err) {
       alert('❌ ' + (err.response?.data?.error || err.message));
-      if (btn) { btn.disabled = false; btn.textContent = 'Ingresar'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Iniciar examen →'; }
     }
   }
 
@@ -97,14 +519,11 @@ function renderStudent(app) {
       uid: studentId, email: user.email, name: user.name, timeLeft: timer
     }).catch(() => {});
 
-    // Escuchar bloqueos del profesor
     unsubBlock = listenToBlockStatus(exam.code, studentId, onRemoteBlockChange);
 
     statusInterval = setInterval(syncStatus, 5000);
 
-    // Pantalla completa
     requestFullscreen();
-
     startTimer();
     mountFraudGuard();
     showExam();
@@ -124,49 +543,28 @@ function renderStudent(app) {
   }
 
   // ─────────────────────────────────────────────
-  // CAMBIO REMOTO DE BLOQUEO (Firebase)
+  // CAMBIO REMOTO DE BLOQUEO
   // ─────────────────────────────────────────────
   function onRemoteBlockChange(isBlocked, reason) {
-    // El primer evento al suscribirse es el estado actual — ignorarlo
-    if (!listenerReady) {
-      listenerReady = true;
-      return;
-    }
-
+    if (!listenerReady) { listenerReady = true; return; }
     if (isBlocked && !blockState.remote) {
-      // Profesor bloqueó al estudiante
-      blockState.remote   = true;
-      blockState.isBlocked = true;
-      blockState.reason   = safeText(reason || 'Bloqueado por el profesor');
-      pauseFraudGuard();
-      stopTimer();
-      showBlocked();
-
+      blockState.remote = true; blockState.isBlocked = true;
+      blockState.reason = safeText(reason || 'Bloqueado por el profesor');
+      pauseFraudGuard(); stopTimer(); showBlocked();
     } else if (!isBlocked && blockState.remote) {
-      // Profesor desbloqueó al estudiante
       handleUnlock();
     }
   }
 
   function handleUnlock() {
     blockState.unlocking = true;
-    blockState.remote    = false;
-    blockState.local     = false;
-    blockState.isBlocked = false;
-    blockState.reason    = '';
-
-    // Esperar 800ms antes de reactivar el guard para evitar
-    // que eventos residuales (fullscreenchange al re-entrar) disparen nuevo bloqueo
+    blockState.remote = false; blockState.local = false;
+    blockState.isBlocked = false; blockState.reason = '';
     setTimeout(() => {
       blockState.unlocking = false;
-
       if (submitted || finished) return;
-
-      alert('✅ Has sido desbloqueado. Puedes continuar, pero ten más cuidado.');
-
+      alert('✅ Has sido desbloqueado. Puedes continuar.');
       requestFullscreen();
-
-      // Reactivar antifraude solo después de que el fullscreen termine
       setTimeout(() => {
         resumeFraudGuard();
         if (!timerInterval && timer > 0) startTimer();
@@ -176,165 +574,84 @@ function renderStudent(app) {
   }
 
   // ─────────────────────────────────────────────
-  // ANTIFRAUDE — montaje y control
+  // ANTIFRAUDE
   // ─────────────────────────────────────────────
   function mountFraudGuard() {
-    // Si ya hay listeners activos, no duplicar
     if (fraudGuard.listeners) removeFraudListeners();
 
     const BLOCKED_KEYS = {
-      'Escape':      'Presionaste Escape',
-      'F11':         'Intentaste cambiar pantalla completa (F11)',
-      'F12':         'Intentaste abrir DevTools (F12)',
-      'PrintScreen': 'Intentaste tomar una captura de pantalla',
+      'Escape': 'Presionaste Escape', 'F11': 'Intentaste cambiar pantalla completa (F11)',
+      'F12': 'Intentaste abrir DevTools (F12)', 'PrintScreen': 'Intentaste tomar captura de pantalla',
     };
 
     const onKey = (e) => {
       if (!fraudGuard.active || fraudGuard.paused) return;
-
-      if (BLOCKED_KEYS[e.key]) {
-        e.preventDefault(); e.stopPropagation();
-        triggerFraudBlock(BLOCKED_KEYS[e.key]);
-        return;
-      }
-      if (e.key === 'Meta' || e.metaKey) {
-        e.preventDefault(); triggerFraudBlock('Presionaste la tecla Windows/Meta');
-      } else if (e.altKey && e.key === 'Tab') {
-        e.preventDefault(); triggerFraudBlock('Intentaste cambiar de ventana (Alt+Tab)');
-      } else if (e.ctrlKey && e.shiftKey && (e.key === 'Escape' || e.key === 'I' || e.key === 'J')) {
-        e.preventDefault(); triggerFraudBlock('Intentaste abrir herramientas del navegador');
-      } else if (e.ctrlKey && e.key === 'p') {
-        e.preventDefault(); triggerFraudBlock('Intentaste imprimir (Ctrl+P)');
-      } else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
-        e.preventDefault(); triggerFraudBlock('Intentaste copiar contenido (Ctrl+C)');
-      } else if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
-        e.preventDefault(); triggerFraudBlock('Intentaste ver el código fuente');
-      }
+      if (BLOCKED_KEYS[e.key]) { e.preventDefault(); e.stopPropagation(); triggerFraudBlock(BLOCKED_KEYS[e.key]); return; }
+      if (e.key === 'Meta' || e.metaKey) { e.preventDefault(); triggerFraudBlock('Presionaste la tecla Windows/Meta'); }
+      else if (e.altKey && e.key === 'Tab') { e.preventDefault(); triggerFraudBlock('Intentaste cambiar de ventana (Alt+Tab)'); }
+      else if (e.ctrlKey && e.shiftKey && (e.key === 'Escape' || e.key === 'I' || e.key === 'J')) { e.preventDefault(); triggerFraudBlock('Intentaste abrir herramientas del navegador'); }
+      else if (e.ctrlKey && e.key === 'p') { e.preventDefault(); triggerFraudBlock('Intentaste imprimir (Ctrl+P)'); }
+      else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); triggerFraudBlock('Intentaste copiar contenido'); }
+      else if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); triggerFraudBlock('Intentaste ver el código fuente'); }
     };
-
-    const onBlur = () => {
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      triggerFraudBlock('Saliste de la ventana del examen');
-    };
-
-    const onVisibility = () => {
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador');
-    };
-
-    const onFullscreen = () => {
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        triggerFraudBlock('Saliste del modo pantalla completa');
-      }
-    };
-
-    const onContext = (e) => {
-      e.preventDefault();
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      addViolation('Intentaste abrir el menú contextual (clic derecho)');
-    };
-
-    const onCopy = (e) => {
-      e.preventDefault();
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      triggerFraudBlock('Intentaste copiar contenido del examen');
-    };
-
-    const onCut = (e) => {
-      e.preventDefault();
-      if (!fraudGuard.active || fraudGuard.paused) return;
-      addViolation('Intentaste cortar contenido');
-    };
-
+    const onBlur = () => { if (!fraudGuard.active || fraudGuard.paused) return; triggerFraudBlock('Saliste de la ventana del examen'); };
+    const onVisibility = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador'); };
+    const onFullscreen = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (!document.fullscreenElement && !document.webkitFullscreenElement) triggerFraudBlock('Saliste del modo pantalla completa'); };
+    const onContext = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; addViolation('Intentaste abrir el menú contextual (clic derecho)'); };
+    const onCopy = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; triggerFraudBlock('Intentaste copiar contenido del examen'); };
+    const onCut = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; addViolation('Intentaste cortar contenido'); };
     const onSelectAll = (e) => {
       if (!fraudGuard.active || fraudGuard.paused) return;
       if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
         const tag = document.activeElement?.tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          addViolation('Intentaste seleccionar todo el contenido');
-        }
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); addViolation('Intentaste seleccionar todo el contenido'); }
       }
     };
 
-    document.addEventListener('keydown',        onKey,        { capture: true });
-    document.addEventListener('keydown',        onSelectAll,  { capture: true });
-    window.addEventListener('blur',             onBlur);
+    document.addEventListener('keydown', onKey, { capture: true });
+    document.addEventListener('keydown', onSelectAll, { capture: true });
+    window.addEventListener('blur', onBlur);
     document.addEventListener('visibilitychange', onVisibility);
-    document.addEventListener('fullscreenchange',  onFullscreen);
+    document.addEventListener('fullscreenchange', onFullscreen);
     document.addEventListener('webkitfullscreenchange', onFullscreen);
-    document.addEventListener('contextmenu',    onContext,    { capture: true });
-    document.addEventListener('copy',           onCopy,       { capture: true });
-    document.addEventListener('cut',            onCut,        { capture: true });
+    document.addEventListener('contextmenu', onContext, { capture: true });
+    document.addEventListener('copy', onCopy, { capture: true });
+    document.addEventListener('cut', onCut, { capture: true });
 
-    // Guardar función de limpieza
     fraudGuard.listeners = () => {
-      document.removeEventListener('keydown',        onKey,        { capture: true });
-      document.removeEventListener('keydown',        onSelectAll,  { capture: true });
-      window.removeEventListener('blur',             onBlur);
+      document.removeEventListener('keydown', onKey, { capture: true });
+      document.removeEventListener('keydown', onSelectAll, { capture: true });
+      window.removeEventListener('blur', onBlur);
       document.removeEventListener('visibilitychange', onVisibility);
-      document.removeEventListener('fullscreenchange',  onFullscreen);
+      document.removeEventListener('fullscreenchange', onFullscreen);
       document.removeEventListener('webkitfullscreenchange', onFullscreen);
-      document.removeEventListener('contextmenu',    onContext,    { capture: true });
-      document.removeEventListener('copy',           onCopy,       { capture: true });
-      document.removeEventListener('cut',            onCut,        { capture: true });
+      document.removeEventListener('contextmenu', onContext, { capture: true });
+      document.removeEventListener('copy', onCopy, { capture: true });
+      document.removeEventListener('cut', onCut, { capture: true });
     };
 
-    fraudGuard.active = true;
-    fraudGuard.paused = false;
-
-    window.onbeforeunload = () => {
-      if (exam && !finished) removeActiveStudent(exam.code, studentId).catch(() => {});
-    };
+    fraudGuard.active = true; fraudGuard.paused = false;
+    window.onbeforeunload = () => { if (exam && !finished) removeActiveStudent(exam.code, studentId).catch(() => {}); };
   }
 
   function removeFraudListeners() {
-    if (fraudGuard.listeners) {
-      fraudGuard.listeners();
-      fraudGuard.listeners = null;
-    }
+    if (fraudGuard.listeners) { fraudGuard.listeners(); fraudGuard.listeners = null; }
     fraudGuard.active = false;
   }
+  function pauseFraudGuard() { fraudGuard.paused = true; }
+  function resumeFraudGuard() { fraudGuard.paused = false; fraudGuard.active = true; }
 
-  function pauseFraudGuard() {
-    fraudGuard.paused = true;
-  }
-
-  function resumeFraudGuard() {
-    fraudGuard.paused = false;
-    fraudGuard.active = true;
-  }
-
-  // ─────────────────────────────────────────────
-  // BLOQUEO POR ANTIFRAUDE
-  // ─────────────────────────────────────────────
   async function triggerFraudBlock(reason) {
-    // Ignorar si ya está bloqueado, en proceso de desbloqueo, enviando o terminado
     if (blockState.isBlocked || blockState.unlocking || submitted || finished) return;
-
-    blockState.isBlocked = true;
-    blockState.local     = true;
-    blockState.reason    = safeText(reason);
-
-    pauseFraudGuard();
-    stopTimer();
-    addViolation(reason);
-
-    try {
-      await blockStudent(exam.code, studentId, reason);
-    } catch (_) {}
-
+    blockState.isBlocked = true; blockState.local = true; blockState.reason = safeText(reason);
+    pauseFraudGuard(); stopTimer(); addViolation(reason);
+    try { await blockStudent(exam.code, studentId, reason); } catch (_) {}
     showBlocked();
   }
 
   async function addViolation(reason) {
     violations.push({ reason, timestamp: new Date().toISOString() });
-    try {
-      await updateStudentStatus(exam.code, studentId, {
-        violations: violations.length, lastViolation: reason
-      });
-    } catch (_) {}
+    try { await updateStudentStatus(exam.code, studentId, { violations: violations.length, lastViolation: reason }); } catch (_) {}
   }
 
   // ─────────────────────────────────────────────
@@ -345,10 +662,7 @@ function renderStudent(app) {
     timerInterval = setInterval(() => {
       timer--;
       updateTimerDisplay();
-      if (timer <= 0) {
-        stopTimer();
-        if (!submitted) finishExam(true);
-      }
+      if (timer <= 0) { stopTimer(); if (!submitted) finishExam(true); }
     }, 1000);
   }
 
@@ -357,14 +671,17 @@ function renderStudent(app) {
   }
 
   function updateTimerDisplay() {
-    const timerEl    = document.getElementById('exam-timer');
-    const fillEl     = document.getElementById('progress-fill');
-    const progressEl = document.getElementById('progress-text');
-    const answered   = countAnswered();
-    const total      = exam?.questions?.length || 0;
-    if (timerEl)    timerEl.textContent   = fmt(timer);
-    if (fillEl)     fillEl.style.width    = `${total ? (answered / total) * 100 : 0}%`;
-    if (progressEl) progressEl.textContent = `${answered} de ${total} respondidas`;
+    const timerEl = document.getElementById('exam-timer');
+    const fillEl  = document.getElementById('st-progress-fill');
+    const textEl  = document.getElementById('st-progress-text');
+    const answered = countAnswered();
+    const total    = exam?.questions?.length || 0;
+    if (timerEl) {
+      timerEl.textContent = fmt(timer);
+      timerEl.style.color = timer < 120 ? '#fca5a5' : '#fff';
+    }
+    if (fillEl)  fillEl.style.width = `${total ? (answered / total) * 100 : 0}%`;
+    if (textEl)  textEl.textContent = `${answered} de ${total} respondidas`;
   }
 
   function countAnswered() {
@@ -384,47 +701,40 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   async function finishExam(forced) {
     if (!exam || submitted || submitting) return;
-    submitted  = true;
-    submitting = true;
+    submitted = true; submitting = true;
 
     stopTimer();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
     removeFraudListeners();
     if (unsubBlock) { try { unsubBlock(); } catch (_) {} unsubBlock = null; }
-
     try { await removeActiveStudent(exam.code, studentId); } catch (_) {}
 
     const submission = {
       examId: exam.id, code: exam.code, title: exam.title,
       studentEmail: user.email || 'anónimo', studentName: user.name || 'Estudiante',
       submittedAt: new Date().toISOString(),
-      answers: Object.fromEntries(
-        Object.entries(answers).filter(([, v]) => v !== undefined && v !== '')
-      ),
-      violations,
-      wasBlocked: blockState.isBlocked,
-      blockReason: blockState.reason || null,
-      forced
+      answers: Object.fromEntries(Object.entries(answers).filter(([, v]) => v !== undefined && v !== '')),
+      violations, wasBlocked: blockState.isBlocked,
+      blockReason: blockState.reason || null, forced
     };
 
     try {
       await apiCreateSubmission(submission);
       finished = true;
       exitFullscreen();
-      showSuccess();
-      setTimeout(resetExam, 3000);
+      submissionData = submission;
+      showSuccess(forced);
     } catch {
-      submitted  = false;
-      submitting = false;
+      submitted = false; submitting = false;
       alert('❌ Error al enviar el examen. Intenta de nuevo.');
     }
   }
 
   function resetExam() {
     if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
-    exam       = null; answers = {}; timer = 0;
-    finished   = false; submitted = false; submitting = false;
-    violations = [];
+    exam = null; answers = {}; timer = 0;
+    finished = false; submitted = false; submitting = false;
+    violations = []; submissionData = null;
     blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
     stopTimer();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
@@ -436,52 +746,49 @@ function renderStudent(app) {
   }
 
   // ─────────────────────────────────────────────
-  // PANTALLAS
+  // PANTALLA BLOQUEADO
   // ─────────────────────────────────────────────
   function showBlocked() {
+    injectStyles();
     app.innerHTML = `
       <div class="blocked-screen">
         <div style="max-width:600px;width:100%">
           <div class="blocked-icon">🚫</div>
-          <h1 style="font-size:clamp(2rem,6vw,3.5rem);font-weight:900;margin:.5rem 0">EXAMEN BLOQUEADO</h1>
+          <h1 style="font-family:'Fraunces',Georgia,serif;font-size:clamp(2rem,6vw,3rem);font-weight:600;margin:.5rem 0">Examen bloqueado</h1>
           <div style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px);padding:1.25rem;border-radius:1rem;margin:1rem 0;border:2px solid rgba(255,255,255,.3)">
-            <p style="font-size:1.1rem;font-weight:700;margin-bottom:.5rem">Razón del bloqueo:</p>
+            <p style="font-size:.85rem;font-weight:700;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.07em;opacity:.8">Razón del bloqueo</p>
             <p style="font-size:1rem">${safeText(blockState.reason)}</p>
           </div>
           ${violations.length > 0 ? `
             <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;margin-bottom:1rem;text-align:left;max-height:180px;overflow-y:auto">
-              <p style="font-weight:700;margin-bottom:.5rem">📋 Historial (${violations.length}):</p>
+              <p style="font-weight:700;margin-bottom:.5rem;font-size:.85rem">Historial de infracciones (${violations.length})</p>
               ${violations.map((v, i) => `
-                <div style="font-size:.85rem;background:rgba(255,255,255,.1);padding:.5rem;border-radius:.5rem;margin-bottom:.35rem">
+                <div style="font-size:.82rem;background:rgba(255,255,255,.1);padding:.5rem;border-radius:.5rem;margin-bottom:.35rem">
                   <b>${i + 1}.</b> ${safeText(v.reason)}
                 </div>
               `).join('')}
             </div>
           ` : ''}
-          <button class="btn" id="msg-btn"
-            style="background:#fff;color:#dc2626;font-size:1rem;padding:.85rem 2rem;margin-bottom:1rem;font-weight:700">
-            💬 Enviar mensaje al profesor
+          <button id="msg-btn" style="width:100%;padding:.9rem;background:#fff;color:#dc2626;border:none;border-radius:1rem;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:1rem">
+            💬 Enviar mensaje al docente
           </button>
-          <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;font-size:.8rem;text-align:left">
-            <p style="font-weight:700;margin-bottom:.5rem">⚠️ INFORMACIÓN IMPORTANTE</p>
-            <ul style="list-style:none;line-height:1.8">
-              <li>• El profesor ha sido notificado automáticamente</li>
-              <li>• Tu examen está pausado y guardado</li>
-              <li>• Solo el profesor puede desbloquearte</li>
-              <li>• Esperando desbloqueo...</li>
-            </ul>
+          <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;font-size:.82rem;text-align:left;line-height:1.8">
+            <p style="font-weight:700;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;font-size:.75rem">Información importante</p>
+            <p>• El docente ha sido notificado automáticamente</p>
+            <p>• Tu progreso está guardado</p>
+            <p>• Solo el docente puede desbloquearte</p>
           </div>
         </div>
       </div>
 
       <div id="msg-modal" class="modal-overlay" style="display:none">
         <div class="modal-box" style="max-width:440px">
-          <h3 class="font-bold" style="font-size:1.25rem;margin-bottom:.75rem">Enviar mensaje al profesor</h3>
-          <p class="text-gray text-sm mb-3">Explica tu situación. El profesor lo recibirá en tiempo real.</p>
+          <h3 style="font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:600;margin-bottom:.75rem">Mensaje al docente</h3>
+          <p style="color:#64748b;font-size:.875rem;margin-bottom:1rem">Explica tu situación. El docente lo recibirá en tiempo real.</p>
           <textarea class="input" id="msg-text" rows="5" placeholder="Escribe tu mensaje aquí..." style="resize:none"></textarea>
           <div class="flex-row mt-4">
             <button class="btn btn-outline" style="flex:1" id="msg-cancel">Cancelar</button>
-            <button class="btn btn-primary" style="flex:1" id="msg-send">✅ Enviar</button>
+            <button class="btn btn-primary" style="flex:1" id="msg-send">Enviar</button>
           </div>
         </div>
       </div>
@@ -495,57 +802,219 @@ function renderStudent(app) {
       if (!msg) { alert('Escribe un mensaje'); return; }
       try {
         await sendMessageToTeacher(exam.code, studentId, msg);
-        alert('✅ Mensaje enviado. Espera la respuesta del profesor.');
+        alert('✅ Mensaje enviado. Espera la respuesta del docente.');
         modal.style.display = 'none';
         document.getElementById('msg-text').value = '';
       } catch { alert('❌ Error al enviar el mensaje'); }
     };
   }
 
-  function showSuccess() {
+  // ─────────────────────────────────────────────
+  // PANTALLA ÉXITO — con botones de acción
+  // ─────────────────────────────────────────────
+  function showSuccess(forced) {
+    injectStyles();
+    const questions = Array.isArray(exam?.questions) ? exam.questions : [];
+    const mc = questions.filter(q => q.type === 'mc');
+    const correct = mc.filter(q => answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex).length;
+    const pct = mc.length ? Math.round((correct / mc.length) * 100) : null;
+    const answered = countAnswered();
+
     app.innerHTML = `
-      <div style="max-width:480px;margin:0 auto;text-align:center">
-        <div class="success-screen">
-          <div class="success-icon">✅</div>
-          <h2 style="font-size:2.5rem;font-weight:800;margin:.75rem 0">¡Examen enviado!</h2>
-          <p style="font-size:1.1rem;opacity:.9">Tus respuestas han sido guardadas</p>
+      <div class="st-page st-success-wrap">
+        <div class="st-success-card">
+          <div class="st-success-icon-ring">✅</div>
+
+          <h1 class="st-success-title">¡Examen enviado!</h1>
+          <p class="st-success-sub">
+            ${forced ? 'El tiempo se agotó y tu examen fue enviado automáticamente.' : 'Tus respuestas han sido guardadas correctamente.'}
+          </p>
+
+          <div class="st-success-stats">
+            <div class="st-success-stat">
+              <span class="st-success-stat-val">${answered}</span>
+              <span class="st-success-stat-lbl">Respondidas</span>
+            </div>
+            <div class="st-success-stat">
+              <span class="st-success-stat-val">${violations.length}</span>
+              <span class="st-success-stat-lbl">Infracciones</span>
+            </div>
+            <div class="st-success-stat">
+              <span class="st-success-stat-val">${pct !== null ? pct + '%' : '—'}</span>
+              <span class="st-success-stat-lbl">Resultado</span>
+            </div>
+          </div>
+
+          <div class="st-success-actions">
+            ${exam?.showCorrectAnswers && mc.length > 0 ? `
+              <button class="st-btn-retro" id="ver-retro-btn">
+                📊 Ver retroalimentación del examen
+              </button>
+            ` : `
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:1rem;padding:1rem;font-size:.85rem;color:#92400e;text-align:center">
+                🔒 El docente no habilitó la retroalimentación para este examen
+              </div>
+            `}
+            <button class="st-btn-home" id="volver-inicio-btn">
+              ← Volver a la página principal
+            </button>
+          </div>
         </div>
       </div>
     `;
+
+    const retroBtn = document.getElementById('ver-retro-btn');
+    if (retroBtn) retroBtn.onclick = () => showRetroalimentacion();
+
+    document.getElementById('volver-inicio-btn').onclick = () => {
+      const u = getUser();
+      if (u?.isGuest) {
+        logout?.();
+        navigate('/');
+      } else {
+        resetExam();
+      }
+    };
   }
 
+  // ─────────────────────────────────────────────
+  // PANTALLA RETROALIMENTACIÓN
+  // ─────────────────────────────────────────────
+  function showRetroalimentacion() {
+    injectStyles();
+    const questions = Array.isArray(exam?.questions) ? exam.questions : [];
+    const mc = questions.filter(q => q.type === 'mc');
+    const correct = mc.filter(q => answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex).length;
+    const pct = mc.length ? Math.round((correct / mc.length) * 100) : null;
+    const total = questions.length;
+    const answeredCount = countAnswered();
+
+    app.innerHTML = `
+      <div class="st-page" style="max-width:760px;margin:0 auto;padding-bottom:3rem">
+
+        <div class="st-retro-header">
+          <p class="st-retro-sub">Retroalimentación</p>
+          <h2 class="st-retro-title">${safeText(exam.title)}</h2>
+          ${pct !== null ? `<div class="st-retro-score">${pct}%</div><p class="st-retro-sub">${correct} de ${mc.length} preguntas correctas</p>` : ''}
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem">
+          <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#16a34a">${correct}</div>
+            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Correctas</div>
+          </div>
+          <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#dc2626">${mc.length - correct}</div>
+            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Incorrectas</div>
+          </div>
+          <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
+            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#d97706">${total - answeredCount}</div>
+            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Sin responder</div>
+          </div>
+        </div>
+
+        <div>
+          ${questions.map((q, idx) => {
+            const given    = answers[q.id];
+            const answered = given !== undefined && given !== '';
+            let cardClass  = 'st-retro-card';
+            let iconHtml   = '';
+            let statusText = '';
+            let correctText = '';
+
+            if (q.type === 'mc') {
+              const isCorrect = answered && Number(given) === q.correctIndex;
+              if (!answered) {
+                cardClass += ' unanswered';
+                iconHtml   = `<span style="color:#d97706;font-size:1rem">—</span>`;
+                statusText = '<span style="color:#d97706;font-size:.82rem">Sin responder</span>';
+              } else if (isCorrect) {
+                cardClass += ' correct';
+                iconHtml   = `<span style="color:#16a34a;font-size:1rem">✓</span>`;
+                statusText = `<span style="color:#16a34a;font-size:.82rem">Correcto · ${safeText(q.options?.[given])}</span>`;
+              } else {
+                cardClass += ' wrong';
+                iconHtml   = `<span style="color:#dc2626;font-size:1rem">✗</span>`;
+                statusText = `<span style="color:#dc2626;font-size:.82rem">Incorrecto · Respondiste: ${safeText(q.options?.[given])}</span>`;
+                correctText = `<p style="font-size:.8rem;color:#16a34a;margin-top:.35rem;font-weight:600">✓ Correcta: ${safeText(q.options?.[q.correctIndex])}</p>`;
+              }
+            } else {
+              cardClass += answered ? '' : ' unanswered';
+              iconHtml   = answered ? `<span style="color:#2563eb;font-size:1rem">✎</span>` : `<span style="color:#d97706;font-size:1rem">—</span>`;
+              statusText = answered ? `<span style="font-size:.82rem;color:#475569">${safeText(given)}</span>` : `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
+            }
+
+            return `
+              <div class="${cardClass}" style="animation:stFadeUp .3s ease ${Math.min(idx * 0.04, 0.5)}s both;opacity:0">
+                <div style="display:flex;gap:.75rem;align-items:flex-start">
+                  <div style="display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:.5rem;background:rgba(0,0,0,.06);flex-shrink:0;margin-top:.1rem">
+                    ${iconHtml}
+                  </div>
+                  <div style="flex:1">
+                    <p class="st-retro-q-text">${idx + 1}. ${safeText(q.text)}</p>
+                    <div class="st-retro-answer-line">${statusText}</div>
+                    ${correctText}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <div style="display:flex;gap:.75rem;margin-top:2rem">
+          <button class="st-btn-sec" id="back-success-btn" style="flex:1;padding:.85rem;border-radius:1rem;font-size:.9rem">
+            ← Volver al resumen
+          </button>
+          <button class="st-btn-main" id="volver-inicio-retro-btn" style="flex:1;padding:.85rem">
+            Ir al inicio
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('back-success-btn').onclick = () => showSuccess(submissionData?.forced || false);
+
+    document.getElementById('volver-inicio-retro-btn').onclick = () => {
+      const u = getUser();
+      if (u?.isGuest) { logout?.(); navigate('/'); }
+      else { resetExam(); }
+    };
+  }
+
+  // ─────────────────────────────────────────────
+  // REVISIÓN
+  // ─────────────────────────────────────────────
   function showReview() {
     pauseFraudGuard();
     stopTimer();
+    injectStyles();
     const questions = Array.isArray(exam.questions) ? exam.questions : [];
 
     app.innerHTML = `
-      <div style="max-width:800px;margin:0 auto">
-        <div class="card">
-          <div class="flex-between mb-4">
-            <h2 class="font-bold" style="font-size:1.4rem">📝 Revisar respuestas</h2>
-            <button class="btn btn-outline" id="back-btn">← Volver</button>
-          </div>
-          <div class="space-y">
-            ${questions.map((q, idx) => {
-              const answer   = answers[q.id];
-              const answered = answer !== undefined && answer !== '';
-              return `
-                <div class="${answered ? 'review-answered' : 'review-unanswered'}">
-                  <p class="font-bold mb-1">${idx + 1}. ${safeText(q.text)}</p>
-                  ${q.type === 'mc'
-                    ? `<p class="text-sm" style="margin-left:1rem">${answered ? '✅ ' + safeText(q.options?.[answer]) : '❌ Sin responder'}</p>`
-                    : `<p class="text-sm" style="margin-left:1rem">${answered ? safeText(answer) : '❌ Sin responder'}</p>`}
-                </div>
-              `;
-            }).join('')}
-          </div>
-          <div class="flex-row mt-4">
-            <button class="btn btn-outline" style="flex:1" id="back-btn2">← Seguir respondiendo</button>
-            <button class="btn btn-primary" style="flex:1" id="submit-btn" ${submitting ? 'disabled' : ''}>
-              ${submitting ? 'Enviando...' : '✅ Enviar examen'}
-            </button>
-          </div>
+      <div class="st-page" style="max-width:760px;margin:0 auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding:.75rem 0">
+          <h2 style="font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:600;color:#1e293b">Revisar respuestas</h2>
+          <button id="back-btn" style="background:none;border:1.5px solid #e2e8f0;border-radius:.75rem;padding:.45rem .9rem;font-size:.85rem;cursor:pointer;color:#374151;font-family:'DM Sans',sans-serif">← Volver</button>
+        </div>
+        <div>
+          ${questions.map((q, idx) => {
+            const answer   = answers[q.id];
+            const answered = answer !== undefined && answer !== '';
+            return `
+              <div style="background:${answered ? '#f0fdf4' : '#fef2f2'};border:1.5px solid ${answered ? '#86efac' : '#fca5a5'};border-radius:1rem;padding:1rem;margin-bottom:.6rem">
+                <p style="font-family:'Fraunces',Georgia,serif;font-size:.95rem;font-weight:300;color:#1e293b;margin-bottom:.4rem">${idx + 1}. ${safeText(q.text)}</p>
+                ${q.type === 'mc'
+                  ? `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? '✅ ' + safeText(q.options?.[answer]) : '❌ Sin responder'}</p>`
+                  : `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? safeText(answer) : '❌ Sin responder'}</p>`}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:1.5rem;position:sticky;bottom:0;background:#f1f5f9;padding:.75rem;border-radius:1rem">
+          <button class="st-btn-sec" style="flex:1;padding:.8rem;border-radius:.85rem" id="back-btn2">Seguir respondiendo</button>
+          <button class="st-btn-main" style="flex:1;padding:.8rem;border-radius:.85rem" id="submit-btn" ${submitting ? 'disabled' : ''}>
+            ${submitting ? 'Enviando...' : '✅ Enviar examen'}
+          </button>
         </div>
       </div>
     `;
@@ -553,10 +1022,7 @@ function renderStudent(app) {
     const goBack = () => {
       resumeFraudGuard();
       requestFullscreen();
-      setTimeout(() => {
-        startTimer();
-        showExam();
-      }, 400);
+      setTimeout(() => { startTimer(); showExam(); }, 400);
     };
 
     document.getElementById('back-btn').onclick  = goBack;
@@ -564,40 +1030,43 @@ function renderStudent(app) {
     document.getElementById('submit-btn').onclick = () => finishExam(false);
   }
 
+  // ─────────────────────────────────────────────
+  // EXAMEN PRINCIPAL
+  // ─────────────────────────────────────────────
   function showExam() {
+    injectStyles();
     const questions = Array.isArray(exam.questions) ? exam.questions : [];
     const answered  = countAnswered();
     const total     = questions.length;
 
     app.innerHTML = `
-      <div style="max-width:800px;margin:0 auto">
-        <div class="exam-header">
-          <div class="flex-between mb-3">
-            <div>
-              <h1 style="font-size:1.4rem;font-weight:800">${safeText(exam.title)}</h1>
-              <p style="font-size:.85rem;opacity:.85">Código: ${safeText(exam.code)}</p>
+      <div class="st-page" style="max-width:760px;margin:0 auto">
+
+        <div class="st-exam-header">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+            <div style="flex:1;min-width:0">
+              <h1 class="st-exam-title">${safeText(exam.title)}</h1>
+              <p class="st-exam-code">Código: ${safeText(exam.code)} · ${total} preguntas</p>
             </div>
-            <div style="text-align:right">
-              <div class="exam-timer" id="exam-timer">${fmt(timer)}</div>
-              <p style="font-size:.75rem;opacity:.75">Restante</p>
+            <div style="text-align:right;flex-shrink:0">
+              <div class="st-timer" id="exam-timer">${fmt(timer)}</div>
+              <p style="font-size:.7rem;color:rgba(255,255,255,.65);margin-top:.1rem">Tiempo restante</p>
             </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill" style="width:${total ? (answered / total) * 100 : 0}%"></div>
+          <div class="st-progress-bar">
+            <div class="st-progress-fill" id="st-progress-fill" style="width:${total ? (answered / total) * 100 : 0}%"></div>
           </div>
-          <p style="font-size:.75rem;text-align:center;margin-top:.35rem;opacity:.85" id="progress-text">
-            ${answered} de ${total} respondidas
-          </p>
+          <p class="st-progress-text" id="st-progress-text">${answered} de ${total} respondidas</p>
         </div>
 
-        <div class="space-y" id="questions-container">
+        <div id="questions-container">
           ${questions.map((q, idx) => renderQuestion(q, idx)).join('')}
         </div>
 
-        <div class="sticky-bar mt-4">
-          <button class="btn btn-outline" style="flex:1" id="review-btn">📝 Revisar</button>
-          <button class="btn btn-primary" style="flex:1" id="submit-btn" ${submitting ? 'disabled' : ''}>
-            ${submitting ? 'Enviando...' : '✅ Enviar'}
+        <div class="st-sticky">
+          <button class="st-btn-sec" id="review-btn">📝 Revisar respuestas</button>
+          <button class="st-btn-prim" id="submit-btn" ${submitting ? 'disabled' : ''}>
+            ${submitting ? 'Enviando...' : '✅ Enviar examen'}
           </button>
         </div>
       </div>
@@ -615,7 +1084,7 @@ function renderStudent(app) {
             answers[q.id] = i;
             q.options.forEach((__, j) => {
               const lbl = document.getElementById(`lbl-${q.id}-${j}`);
-              if (lbl) lbl.className = `option-label${answers[q.id] === j ? ' selected' : ''}`;
+              if (lbl) lbl.className = `st-option${answers[q.id] === j ? ' selected' : ''}`;
             });
             updateTimerDisplay();
           };
@@ -629,19 +1098,25 @@ function renderStudent(app) {
   }
 
   function renderQuestion(q, idx) {
+    const letters = ['A','B','C','D','E','F'];
     return `
-      <div class="card question-card" style="animation-delay:${idx * 0.05}s">
-        <p class="font-bold" style="font-size:1.05rem;margin-bottom:1rem">${idx + 1}. ${safeText(q.text)}</p>
+      <div class="st-question-card" style="animation-delay:${Math.min(idx * 0.06, 0.5)}s">
+        <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:1rem">
+          <div class="st-q-number">${idx + 1}</div>
+          <p class="st-q-text">${safeText(q.text)}</p>
+        </div>
+
         ${q.type === 'mc' && q.options ? q.options.map((opt, i) => `
-          <label id="lbl-${q.id}-${i}" class="option-label${answers[q.id] === i ? ' selected' : ''}">
+          <label id="lbl-${q.id}-${i}" class="st-option${answers[q.id] === i ? ' selected' : ''}">
             <input type="radio" id="opt-${q.id}-${i}" name="q-${q.id}"
-              ${answers[q.id] === i ? 'checked' : ''} style="width:1.1rem;height:1.1rem"/>
-            <span>${safeText(opt)}</span>
+              ${answers[q.id] === i ? 'checked' : ''} style="display:none"/>
+            <div class="st-option-letter">${letters[i]}</div>
+            <span class="st-option-text">${safeText(opt)}</span>
           </label>
         `).join('') : ''}
+
         ${q.type === 'open' ? `
-          <textarea id="open-${q.id}" class="input" rows="4"
-            placeholder="Escribe tu respuesta..." style="resize:none">${answers[q.id] || ''}</textarea>
+          <textarea id="open-${q.id}" style="width:100%;padding:.75rem 1rem;border-radius:.85rem;border:1.5px solid #e2e8f0;font-size:.9rem;font-family:'DM Sans',sans-serif;resize:none;background:#fafaf9;color:#1e293b;min-height:100px;box-sizing:border-box;transition:border .2s" rows="4" placeholder="Escribe tu respuesta aquí...">${answers[q.id] || ''}</textarea>
         ` : ''}
       </div>
     `;
