@@ -9,9 +9,10 @@ const ROUTES = {
   '/docente':    renderTeacher,
   '/monitor':    renderMonitor,
   '/resultados': renderResults,
+  '/examenes':   renderExamenes, 
 };
 
-const TEACHER_ROUTES  = ['/docente', '/monitor', '/resultados'];
+const TEACHER_ROUTES = ['/docente', '/monitor', '/resultados', '/examenes'];
 const STUDENT_ROUTES  = ['/estudiante'];
 const AUTH_ONLY_ROUTES = ['/login', '/register'];
 
