@@ -1,10 +1,21 @@
+// ============================================================
+//  student.js  —  AulaSegura
+//  CON SOPORTE COMPLETO DE ECUACIONES (MathQuill)
+//  - Muestra ecuaciones del profesor (referenceLatex)
+//  - Permite al estudiante responder con teclado matemático
+//  - Retroalimentación muestra respuestas tipo eq correctamente
+// ============================================================
+
 function renderStudent(app) {
 
   // ===== ESTADO GLOBAL =====
   let exam = null, answers = {}, timer = 0;
   let submitting = false, finished = false, submitted = false;
   let violations = [];
-  let submissionData = null; // guardamos la entrega para retroalimentación
+  let submissionData = null;
+
+  // Mapa de campos MathQuill activos: { [questionId]: MathField }
+  let mqStudentFields = {};
 
   let blockState = {
     isBlocked: false,
@@ -241,6 +252,121 @@ function renderStudent(app) {
     .st-option-text { font-size: .9rem; color: #374151; flex: 1; }
     body.dark .st-option-text { color: #cbd5e1; }
 
+    /* ── ECUACIONES ── */
+    .eq-ref-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: .85rem;
+      padding: .85rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    body.dark .eq-ref-box {
+      background: #1e3a5f;
+      border-color: #3b82f6;
+    }
+    .eq-ref-label {
+      font-size: .7rem; font-weight: 700; color: #1d4ed8;
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: .45rem;
+    }
+    body.dark .eq-ref-label { color: #93c5fd; }
+    .eq-ref-display {
+      font-size: 1.15rem; color: #1e293b;
+      min-height: 32px;
+    }
+    body.dark .eq-ref-display { color: #e2e8f0; }
+
+    .eq-answer-label {
+      font-size: .7rem; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: .45rem;
+    }
+    .eq-answer-field {
+      border: 1.5px solid #cbd5e1;
+      border-radius: .75rem;
+      padding: .65rem 1rem;
+      background: #fff;
+      min-height: 48px;
+      font-size: 1.1rem;
+      cursor: text;
+      transition: border-color .2s;
+    }
+    .eq-answer-field:focus-within {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    body.dark .eq-answer-field {
+      background: #0f172a;
+      border-color: #334155;
+    }
+    /* MathQuill overrides */
+    .eq-answer-field .mq-editable-field {
+      border: none !important;
+      box-shadow: none !important;
+      min-width: 100%;
+      font-size: 1.1rem;
+    }
+
+    .eq-keyboard {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: .85rem;
+      padding: .6rem .65rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+      margin-top: .6rem;
+    }
+    body.dark .eq-keyboard {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    .eq-key {
+      padding: .32rem .6rem;
+      border: 1px solid #cbd5e1;
+      border-radius: .4rem;
+      background: #fff;
+      font-size: .8rem;
+      cursor: pointer;
+      font-family: 'DM Mono', 'Courier New', monospace;
+      color: #1e293b;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .eq-key:hover {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+    }
+    body.dark .eq-key {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
+    body.dark .eq-key:hover {
+      background: #1e3a5f;
+      border-color: #3b82f6;
+    }
+    .eq-key-del {
+      border-color: #fca5a5;
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .eq-key-del:hover {
+      background: #fef2f2 !important;
+      border-color: #dc2626 !important;
+      color: #dc2626 !important;
+    }
+    .eq-key-group-label {
+      width: 100%;
+      font-size: .65rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: .25rem .2rem .1rem;
+    }
+
     /* ── STICKY BAR ── */
     .st-sticky {
       position: sticky; bottom: 0;
@@ -407,6 +533,23 @@ function renderStudent(app) {
       font-size: .82rem; margin-top: .4rem; color: #64748b;
     }
     body.dark .st-retro-answer-line { color: #94a3b8; }
+
+    /* MathQuill estático en retroalimentación */
+    .retro-eq-display {
+      display: inline-block;
+      font-size: .95rem;
+      color: #1e293b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: .5rem;
+      padding: .25rem .6rem;
+      margin-top: .25rem;
+    }
+    body.dark .retro-eq-display {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
   `;
 
   function injectStyles() {
@@ -416,6 +559,319 @@ function renderStudent(app) {
       el.textContent = STUDENT_STYLES;
       document.head.appendChild(el);
     }
+  }
+
+  // ─────────────────────────────────────────────
+  // HELPERS MATHQUILL
+  // ─────────────────────────────────────────────
+
+  function getMQ() {
+    if (window.MathQuill) return window.MathQuill.getInterface(2);
+    return null;
+  }
+
+  /**
+   * Renderiza un LaTeX como matemática estática (solo lectura) en un elemento.
+   * Si MathQuill no está disponible, muestra el LaTeX en texto plano.
+   */
+  function renderStaticMath(el, latex) {
+    if (!el) return;
+    const MQ = getMQ();
+    if (MQ) {
+      try {
+        el.innerHTML = '';
+        MQ.StaticMath(el).latex(latex);
+        return;
+      } catch(e) { /* fallback */ }
+    }
+    // Fallback: mostrar LaTeX como código
+    el.innerHTML = `<code style="font-family:monospace;font-size:.95rem;color:#1d4ed8">${safeText(latex)}</code>`;
+  }
+
+  /**
+   * Crea un campo MathQuill editable y lo asocia a una pregunta.
+   * Guarda la respuesta en answers[qId] como string LaTeX cada vez que cambia.
+   */
+  function createMathField(el, qId, initialLatex) {
+    if (!el) return null;
+    const MQ = getMQ();
+    if (!MQ) {
+      // Fallback: input de texto plano
+      el.innerHTML = `<input type="text" style="width:100%;border:none;outline:none;font-size:1rem;background:transparent"
+        placeholder="Escribe en LaTeX (ej: \\frac{x}{2})"
+        value="${safeText(initialLatex || '')}"
+        id="mq-fallback-${qId}"/>`;
+      const inp = el.querySelector('input');
+      if (inp) {
+        inp.oninput = () => {
+          answers[qId] = inp.value;
+          updateTimerDisplay();
+        };
+      }
+      return null;
+    }
+    try {
+      el.innerHTML = '';
+      const mqField = MQ.MathField(el, {
+        spaceBehavesLikeTab: true,
+        supSubsRequireOperand: false,
+        handlers: {
+          edit: () => {
+            answers[qId] = mqField.latex();
+            updateTimerDisplay();
+          }
+        }
+      });
+      if (initialLatex) mqField.latex(initialLatex);
+      mqStudentFields[qId] = mqField;
+      return mqField;
+    } catch(e) {
+      console.warn('MathField error:', e);
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // TECLADO MATEMÁTICO ON-SCREEN — grupos de símbolos
+  // ─────────────────────────────────────────────
+  const EQ_KEYS = [
+    {
+      label: 'Básico',
+      keys: [
+        { show: 'x',   latex: 'x' },
+        { show: 'y',   latex: 'y' },
+        { show: 'z',   latex: 'z' },
+        { show: 'n',   latex: 'n' },
+        { show: '(',   latex: '(' },
+        { show: ')',   latex: ')' },
+        { show: '=',   latex: '=' },
+        { show: '+',   latex: '+' },
+        { show: '−',   latex: '-' },
+        { show: '·',   latex: '\\cdot' },
+        { show: '÷',   latex: '\\div' },
+        { show: '±',   latex: '\\pm' },
+      ]
+    },
+    {
+      label: 'Fracciones y potencias',
+      keys: [
+        { show: 'a/b',   latex: '\\frac{□}{□}' },
+        { show: 'x²',    latex: '^{2}' },
+        { show: 'xⁿ',    latex: '^{□}' },
+        { show: 'x₀',    latex: '_{□}' },
+        { show: '√x',    latex: '\\sqrt{□}' },
+        { show: '∛x',    latex: '\\sqrt[3]{□}' },
+        { show: 'ⁿ√x',   latex: '\\sqrt[□]{□}' },
+        { show: 'eˣ',    latex: 'e^{□}' },
+      ]
+    },
+    {
+      label: 'Trigonometría',
+      keys: [
+        { show: 'sin',   latex: '\\sin(□)' },
+        { show: 'cos',   latex: '\\cos(□)' },
+        { show: 'tan',   latex: '\\tan(□)' },
+        { show: 'csc',   latex: '\\csc(□)' },
+        { show: 'sec',   latex: '\\sec(□)' },
+        { show: 'cot',   latex: '\\cot(□)' },
+        { show: 'arcsin',latex: '\\arcsin(□)' },
+        { show: 'arccos',latex: '\\arccos(□)' },
+        { show: 'arctan',latex: '\\arctan(□)' },
+      ]
+    },
+    {
+      label: 'Cálculo',
+      keys: [
+        { show: '∫',     latex: '\\int_{□}^{□}' },
+        { show: '∮',     latex: '\\oint' },
+        { show: 'd/dx',  latex: '\\frac{d}{dx}' },
+        { show: '∂/∂x',  latex: '\\frac{\\partial}{\\partial x}' },
+        { show: 'lim',   latex: '\\lim_{x \\to □}' },
+        { show: 'Σ',     latex: '\\sum_{□}^{□}' },
+        { show: 'Π',     latex: '\\prod_{□}^{□}' },
+        { show: "f'",    latex: "f'(□)" },
+      ]
+    },
+    {
+      label: 'Símbolos',
+      keys: [
+        { show: 'π',     latex: '\\pi' },
+        { show: 'e',     latex: 'e' },
+        { show: '∞',     latex: '\\infty' },
+        { show: '≤',     latex: '\\leq' },
+        { show: '≥',     latex: '\\geq' },
+        { show: '≠',     latex: '\\neq' },
+        { show: '≈',     latex: '\\approx' },
+        { show: '|x|',   latex: '\\left|□\\right|' },
+        { show: 'α',     latex: '\\alpha' },
+        { show: 'β',     latex: '\\beta' },
+        { show: 'γ',     latex: '\\gamma' },
+        { show: 'θ',     latex: '\\theta' },
+        { show: 'λ',     latex: '\\lambda' },
+        { show: 'μ',     latex: '\\mu' },
+        { show: 'σ',     latex: '\\sigma' },
+        { show: 'Δ',     latex: '\\Delta' },
+        { show: 'ω',     latex: '\\omega' },
+      ]
+    },
+    {
+      label: 'Logaritmos',
+      keys: [
+        { show: 'log',   latex: '\\log(□)' },
+        { show: 'ln',    latex: '\\ln(□)' },
+        { show: 'log₂',  latex: '\\log_{2}(□)' },
+        { show: 'logₙ',  latex: '\\log_{□}(□)' },
+      ]
+    },
+  ];
+
+  function renderEqKeyboard(qId) {
+    const groups = EQ_KEYS.map(group => `
+      <span class="eq-key-group-label">${group.label}</span>
+      ${group.keys.map(k => `
+        <button type="button" class="eq-key"
+          data-qid="${qId}"
+          data-latex="${k.latex.replace(/"/g,'&quot;')}"
+          title="${k.latex}"
+        >${k.show}</button>
+      `).join('')}
+    `).join('');
+
+    return `
+      <div class="eq-keyboard" data-keyboard="${qId}">
+        ${groups}
+        <button type="button" class="eq-key eq-key-del"
+          data-qid="${qId}" data-action="backspace">⌫ Borrar</button>
+        <button type="button" class="eq-key"
+          style="border-color:#86efac;color:#16a34a"
+          data-qid="${qId}" data-action="clear">✕ Limpiar</button>
+      </div>
+    `;
+  }
+
+  function bindKeyboardEvents(container) {
+    container.querySelectorAll('.eq-key').forEach(btn => {
+      btn.addEventListener('mousedown', e => {
+        e.preventDefault(); // evitar que el campo de MQ pierda foco
+        const qId   = btn.dataset.qid;
+        const latex = btn.dataset.latex;
+        const action = btn.dataset.action;
+        const mq = mqStudentFields[qId];
+
+        if (action === 'backspace') {
+          if (mq) { mq.keystroke('Backspace'); mq.focus(); }
+          else {
+            const inp = document.getElementById(`mq-fallback-${qId}`);
+            if (inp) { inp.focus(); }
+          }
+          return;
+        }
+        if (action === 'clear') {
+          if (mq) { mq.latex(''); mq.focus(); answers[qId] = ''; }
+          else {
+            const inp = document.getElementById(`mq-fallback-${qId}`);
+            if (inp) { inp.value = ''; answers[qId] = ''; }
+          }
+          updateTimerDisplay();
+          return;
+        }
+        if (latex && mq) {
+          mq.write(latex);
+          mq.focus();
+        }
+      });
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // RENDER DE CADA PREGUNTA
+  // ─────────────────────────────────────────────
+  function renderQuestion(q, idx) {
+    const answer = answers[q.id];
+
+    // ── OPCIÓN MÚLTIPLE ──
+    if (q.type === 'mc') {
+      return `
+        <div class="st-question-card" style="animation-delay:${idx * 0.05}s">
+          <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1rem">
+            <span class="st-q-number">${idx + 1}</span>
+            <p class="st-q-text">${safeText(q.text)}</p>
+          </div>
+          <div>
+            ${(q.options || []).map((opt, i) => `
+              <label id="lbl-${q.id}-${i}" class="st-option${answer === i ? ' selected' : ''}" style="cursor:pointer">
+                <input type="radio" id="opt-${q.id}-${i}" name="q-${q.id}" value="${i}"
+                  ${answer === i ? 'checked' : ''} style="display:none"/>
+                <span class="st-option-letter">${String.fromCharCode(65 + i)}</span>
+                <span class="st-option-text">${safeText(opt)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── ECUACIÓN ──
+    if (q.type === 'eq') {
+      const hasRef = q.referenceLatex && q.referenceLatex.trim();
+      return `
+        <div class="st-question-card" style="animation-delay:${idx * 0.05}s">
+          <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1rem">
+            <span class="st-q-number">${idx + 1}</span>
+            <p class="st-q-text">${safeText(q.text)}</p>
+          </div>
+
+          ${hasRef ? `
+            <div class="eq-ref-box">
+              <p class="eq-ref-label">📐 Referencia del profesor</p>
+              <div class="eq-ref-display" id="eq-ref-${q.id}"></div>
+            </div>
+          ` : ''}
+
+          <p class="eq-answer-label">✏️ Tu respuesta</p>
+          <div class="eq-answer-field" id="eq-field-${q.id}"></div>
+
+          ${renderEqKeyboard(q.id)}
+        </div>
+      `;
+    }
+
+    // ── ABIERTA (texto libre) ──
+    return `
+      <div class="st-question-card" style="animation-delay:${idx * 0.05}s">
+        <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1rem">
+          <span class="st-q-number">${idx + 1}</span>
+          <p class="st-q-text">${safeText(q.text)}</p>
+        </div>
+        <textarea class="st-input" id="open-${q.id}" rows="3"
+          placeholder="Escribe tu respuesta aquí..."
+          style="resize:vertical;min-height:80px"
+        >${safeText(answer || '')}</textarea>
+      </div>
+    `;
+  }
+
+  // ─────────────────────────────────────────────
+  // INICIALIZAR MATHQUILL EN EL DOM (después de render)
+  // ─────────────────────────────────────────────
+  function initMathFields(questions) {
+    mqStudentFields = {};
+    questions.forEach(q => {
+      if (q.type !== 'eq') return;
+
+      // Referencia del profesor (solo lectura)
+      if (q.referenceLatex && q.referenceLatex.trim()) {
+        const refEl = document.getElementById(`eq-ref-${q.id}`);
+        renderStaticMath(refEl, q.referenceLatex);
+      }
+
+      // Campo editable del estudiante
+      const fieldEl = document.getElementById(`eq-field-${q.id}`);
+      createMathField(fieldEl, q.id, answers[q.id] || '');
+    });
+
+    // Eventos de teclado para todos los teclados del DOM
+    document.querySelectorAll('.eq-keyboard').forEach(kb => bindKeyboardEvents(kb));
   }
 
   // ─────────────────────────────────────────────
@@ -520,7 +976,6 @@ function renderStudent(app) {
     }).catch(() => {});
 
     unsubBlock = listenToBlockStatus(exam.code, studentId, onRemoteBlockChange);
-
     statusInterval = setInterval(syncStatus, 5000);
 
     requestFullscreen();
@@ -580,8 +1035,10 @@ function renderStudent(app) {
     if (fraudGuard.listeners) removeFraudListeners();
 
     const BLOCKED_KEYS = {
-      'Escape': 'Presionaste Escape', 'F11': 'Intentaste cambiar pantalla completa (F11)',
-      'F12': 'Intentaste abrir DevTools (F12)', 'PrintScreen': 'Intentaste tomar captura de pantalla',
+      'Escape': 'Presionaste Escape',
+      'F11': 'Intentaste cambiar pantalla completa (F11)',
+      'F12': 'Intentaste abrir DevTools (F12)',
+      'PrintScreen': 'Intentaste tomar captura de pantalla',
     };
 
     const onKey = (e) => {
@@ -597,7 +1054,13 @@ function renderStudent(app) {
     const onBlur = () => { if (!fraudGuard.active || fraudGuard.paused) return; triggerFraudBlock('Saliste de la ventana del examen'); };
     const onVisibility = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador'); };
     const onFullscreen = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (!document.fullscreenElement && !document.webkitFullscreenElement) triggerFraudBlock('Saliste del modo pantalla completa'); };
-    const onContext = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; addViolation('Intentaste abrir el menú contextual (clic derecho)'); };
+    const onContext = (e) => {
+      // Permitir clic derecho dentro de campos MathQuill para no bloquear al escribir
+      const isMathField = e.target.closest('.mq-editable-field');
+      if (!isMathField) e.preventDefault();
+      if (!fraudGuard.active || fraudGuard.paused || isMathField) return;
+      addViolation('Intentaste abrir el menú contextual (clic derecho)');
+    };
     const onCopy = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; triggerFraudBlock('Intentaste copiar contenido del examen'); };
     const onCut = (e) => { e.preventDefault(); if (!fraudGuard.active || fraudGuard.paused) return; addViolation('Intentaste cortar contenido'); };
     const onSelectAll = (e) => {
@@ -735,6 +1198,7 @@ function renderStudent(app) {
     exam = null; answers = {}; timer = 0;
     finished = false; submitted = false; submitting = false;
     violations = []; submissionData = null;
+    mqStudentFields = {};
     blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
     stopTimer();
     if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
@@ -810,7 +1274,7 @@ function renderStudent(app) {
   }
 
   // ─────────────────────────────────────────────
-  // PANTALLA ÉXITO — con botones de acción
+  // PANTALLA ÉXITO
   // ─────────────────────────────────────────────
   function showSuccess(forced) {
     injectStyles();
@@ -841,7 +1305,7 @@ function renderStudent(app) {
             </div>
             <div class="st-success-stat">
               <span class="st-success-stat-val">${pct !== null ? pct + '%' : '—'}</span>
-              <span class="st-success-stat-lbl">Resultado</span>
+              <span class="st-success-stat-lbl">Resultado MC</span>
             </div>
           </div>
 
@@ -868,12 +1332,8 @@ function renderStudent(app) {
 
     document.getElementById('volver-inicio-btn').onclick = () => {
       const u = getUser();
-      if (u?.isGuest) {
-        logout?.();
-        navigate('/');
-      } else {
-        resetExam();
-      }
+      if (u?.isGuest) { logout?.(); navigate('/'); }
+      else { resetExam(); }
     };
   }
 
@@ -895,17 +1355,17 @@ function renderStudent(app) {
         <div class="st-retro-header">
           <p class="st-retro-sub">Retroalimentación</p>
           <h2 class="st-retro-title">${safeText(exam.title)}</h2>
-          ${pct !== null ? `<div class="st-retro-score">${pct}%</div><p class="st-retro-sub">${correct} de ${mc.length} preguntas correctas</p>` : ''}
+          ${pct !== null ? `<div class="st-retro-score">${pct}%</div><p class="st-retro-sub">${correct} de ${mc.length} preguntas de opción múltiple correctas</p>` : ''}
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem">
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
             <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#16a34a">${correct}</div>
-            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Correctas</div>
+            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Correctas MC</div>
           </div>
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
             <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#dc2626">${mc.length - correct}</div>
-            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Incorrectas</div>
+            <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Incorrectas MC</div>
           </div>
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
             <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#d97706">${total - answeredCount}</div>
@@ -913,35 +1373,68 @@ function renderStudent(app) {
           </div>
         </div>
 
-        <div>
+        <div id="retro-questions-list">
           ${questions.map((q, idx) => {
             const given    = answers[q.id];
             const answered = given !== undefined && given !== '';
             let cardClass  = 'st-retro-card';
             let iconHtml   = '';
-            let statusText = '';
-            let correctText = '';
+            let statusHtml = '';
+            let extraHtml  = '';
 
             if (q.type === 'mc') {
               const isCorrect = answered && Number(given) === q.correctIndex;
               if (!answered) {
                 cardClass += ' unanswered';
                 iconHtml   = `<span style="color:#d97706;font-size:1rem">—</span>`;
-                statusText = '<span style="color:#d97706;font-size:.82rem">Sin responder</span>';
+                statusHtml = `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
               } else if (isCorrect) {
                 cardClass += ' correct';
                 iconHtml   = `<span style="color:#16a34a;font-size:1rem">✓</span>`;
-                statusText = `<span style="color:#16a34a;font-size:.82rem">Correcto · ${safeText(q.options?.[given])}</span>`;
+                statusHtml = `<span style="color:#16a34a;font-size:.82rem">Correcto · ${safeText(q.options?.[given])}</span>`;
               } else {
                 cardClass += ' wrong';
                 iconHtml   = `<span style="color:#dc2626;font-size:1rem">✗</span>`;
-                statusText = `<span style="color:#dc2626;font-size:.82rem">Incorrecto · Respondiste: ${safeText(q.options?.[given])}</span>`;
-                correctText = `<p style="font-size:.8rem;color:#16a34a;margin-top:.35rem;font-weight:600">✓ Correcta: ${safeText(q.options?.[q.correctIndex])}</p>`;
+                statusHtml = `<span style="color:#dc2626;font-size:.82rem">Incorrecto · Respondiste: ${safeText(q.options?.[given])}</span>`;
+                extraHtml  = `<p style="font-size:.8rem;color:#16a34a;margin-top:.35rem;font-weight:600">✓ Correcta: ${safeText(q.options?.[q.correctIndex])}</p>`;
               }
-            } else {
+
+            } else if (q.type === 'eq') {
+              // Preguntas de ecuación
               cardClass += answered ? '' : ' unanswered';
-              iconHtml   = answered ? `<span style="color:#2563eb;font-size:1rem">✎</span>` : `<span style="color:#d97706;font-size:1rem">—</span>`;
-              statusText = answered ? `<span style="font-size:.82rem;color:#475569">${safeText(given)}</span>` : `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
+              iconHtml = answered
+                ? `<span style="color:#2563eb;font-size:1rem">∫</span>`
+                : `<span style="color:#d97706;font-size:1rem">—</span>`;
+              statusHtml = answered
+                ? `<span style="font-size:.75rem;color:#475569;font-style:italic">Respuesta enviada (revisión manual por el docente)</span>`
+                : `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
+
+              if (answered) {
+                extraHtml += `
+                  <div style="margin-top:.5rem">
+                    <p style="font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem">Tu respuesta:</p>
+                    <div class="retro-eq-display" id="retro-student-eq-${q.id}"></div>
+                  </div>
+                `;
+              }
+              if (q.referenceLatex) {
+                extraHtml += `
+                  <div style="margin-top:.4rem">
+                    <p style="font-size:.7rem;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem">📐 Referencia del profesor:</p>
+                    <div class="retro-eq-display" id="retro-ref-eq-${q.id}"></div>
+                  </div>
+                `;
+              }
+
+            } else {
+              // Pregunta abierta
+              cardClass += answered ? '' : ' unanswered';
+              iconHtml = answered
+                ? `<span style="color:#2563eb;font-size:1rem">✎</span>`
+                : `<span style="color:#d97706;font-size:1rem">—</span>`;
+              statusHtml = answered
+                ? `<span style="font-size:.82rem;color:#475569">${safeText(given)}</span>`
+                : `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
             }
 
             return `
@@ -950,10 +1443,10 @@ function renderStudent(app) {
                   <div style="display:flex;align-items:center;justify-content:center;width:2rem;height:2rem;border-radius:.5rem;background:rgba(0,0,0,.06);flex-shrink:0;margin-top:.1rem">
                     ${iconHtml}
                   </div>
-                  <div style="flex:1">
+                  <div style="flex:1;min-width:0">
                     <p class="st-retro-q-text">${idx + 1}. ${safeText(q.text)}</p>
-                    <div class="st-retro-answer-line">${statusText}</div>
-                    ${correctText}
+                    <div class="st-retro-answer-line">${statusHtml}</div>
+                    ${extraHtml}
                   </div>
                 </div>
               </div>
@@ -972,8 +1465,23 @@ function renderStudent(app) {
       </div>
     `;
 
-    document.getElementById('back-success-btn').onclick = () => showSuccess(submissionData?.forced || false);
+    // Renderizar ecuaciones en retroalimentación (después de que el DOM esté listo)
+    setTimeout(() => {
+      questions.forEach(q => {
+        if (q.type !== 'eq') return;
+        const given = answers[q.id];
+        if (given) {
+          const studentEl = document.getElementById(`retro-student-eq-${q.id}`);
+          renderStaticMath(studentEl, given);
+        }
+        if (q.referenceLatex) {
+          const refEl = document.getElementById(`retro-ref-eq-${q.id}`);
+          renderStaticMath(refEl, q.referenceLatex);
+        }
+      });
+    }, 80);
 
+    document.getElementById('back-success-btn').onclick = () => showSuccess(submissionData?.forced || false);
     document.getElementById('volver-inicio-retro-btn').onclick = () => {
       const u = getUser();
       if (u?.isGuest) { logout?.(); navigate('/'); }
@@ -1000,12 +1508,20 @@ function renderStudent(app) {
           ${questions.map((q, idx) => {
             const answer   = answers[q.id];
             const answered = answer !== undefined && answer !== '';
+            let answerHtml = '';
+            if (q.type === 'mc') {
+              answerHtml = `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? '✅ ' + safeText(q.options?.[answer]) : '❌ Sin responder'}</p>`;
+            } else if (q.type === 'eq') {
+              answerHtml = answered
+                ? `<p style="font-size:.82rem;color:#15803d;font-weight:600">✅ Ecuación ingresada</p><div id="review-eq-${q.id}" style="font-size:.9rem;margin-top:.3rem"></div>`
+                : `<p style="font-size:.82rem;color:#dc2626;font-weight:600">❌ Sin responder</p>`;
+            } else {
+              answerHtml = `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? safeText(answer) : '❌ Sin responder'}</p>`;
+            }
             return `
               <div style="background:${answered ? '#f0fdf4' : '#fef2f2'};border:1.5px solid ${answered ? '#86efac' : '#fca5a5'};border-radius:1rem;padding:1rem;margin-bottom:.6rem">
                 <p style="font-family:'Fraunces',Georgia,serif;font-size:.95rem;font-weight:300;color:#1e293b;margin-bottom:.4rem">${idx + 1}. ${safeText(q.text)}</p>
-                ${q.type === 'mc'
-                  ? `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? '✅ ' + safeText(q.options?.[answer]) : '❌ Sin responder'}</p>`
-                  : `<p style="font-size:.82rem;color:${answered ? '#15803d' : '#dc2626'};font-weight:600">${answered ? safeText(answer) : '❌ Sin responder'}</p>`}
+                ${answerHtml}
               </div>
             `;
           }).join('')}
@@ -1018,6 +1534,18 @@ function renderStudent(app) {
         </div>
       </div>
     `;
+
+    // Renderizar ecuaciones respondidas en pantalla de revisión
+    setTimeout(() => {
+      questions.forEach(q => {
+        if (q.type !== 'eq') return;
+        const answer = answers[q.id];
+        if (answer) {
+          const el = document.getElementById(`review-eq-${q.id}`);
+          renderStaticMath(el, answer);
+        }
+      });
+    }, 80);
 
     const goBack = () => {
       resumeFraudGuard();
@@ -1075,6 +1603,7 @@ function renderStudent(app) {
     document.getElementById('review-btn').onclick = showReview;
     document.getElementById('submit-btn').onclick = () => finishExam(false);
 
+    // Listeners de opción múltiple
     questions.forEach(q => {
       if (q.type === 'mc' && q.options) {
         q.options.forEach((_, i) => {
@@ -1084,46 +1613,32 @@ function renderStudent(app) {
             answers[q.id] = i;
             q.options.forEach((__, j) => {
               const lbl = document.getElementById(`lbl-${q.id}-${j}`);
-              if (lbl) lbl.className = `st-option${answers[q.id] === j ? ' selected' : ''}`;
+              if (lbl) lbl.classList.toggle('selected', j === i);
             });
             updateTimerDisplay();
           };
         });
       }
-      if (q.type === 'open') {
+
+      // Listener de preguntas abiertas
+      if (q.type === 'open' || (!q.type && q.type !== 'mc' && q.type !== 'eq')) {
         const ta = document.getElementById(`open-${q.id}`);
-        if (ta) ta.oninput = () => { answers[q.id] = ta.value; updateTimerDisplay(); };
+        if (ta) {
+          ta.oninput = () => {
+            answers[q.id] = ta.value;
+            updateTimerDisplay();
+          };
+        }
       }
     });
-  }
 
-  function renderQuestion(q, idx) {
-    const letters = ['A','B','C','D','E','F'];
-    return `
-      <div class="st-question-card" style="animation-delay:${Math.min(idx * 0.06, 0.5)}s">
-        <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:1rem">
-          <div class="st-q-number">${idx + 1}</div>
-          <p class="st-q-text">${safeText(q.text)}</p>
-        </div>
-
-        ${q.type === 'mc' && q.options ? q.options.map((opt, i) => `
-          <label id="lbl-${q.id}-${i}" class="st-option${answers[q.id] === i ? ' selected' : ''}">
-            <input type="radio" id="opt-${q.id}-${i}" name="q-${q.id}"
-              ${answers[q.id] === i ? 'checked' : ''} style="display:none"/>
-            <div class="st-option-letter">${letters[i]}</div>
-            <span class="st-option-text">${safeText(opt)}</span>
-          </label>
-        `).join('') : ''}
-
-        ${q.type === 'open' ? `
-          <textarea id="open-${q.id}" style="width:100%;padding:.75rem 1rem;border-radius:.85rem;border:1.5px solid #e2e8f0;font-size:.9rem;font-family:'DM Sans',sans-serif;resize:none;background:#fafaf9;color:#1e293b;min-height:100px;box-sizing:border-box;transition:border .2s" rows="4" placeholder="Escribe tu respuesta aquí...">${answers[q.id] || ''}</textarea>
-        ` : ''}
-      </div>
-    `;
+    // Inicializar campos MathQuill para preguntas tipo eq
+    // Usamos setTimeout para asegurar que el DOM esté listo
+    setTimeout(() => initMathFields(questions), 50);
   }
 
   // ─────────────────────────────────────────────
-  // INIT
+  // INICIO
   // ─────────────────────────────────────────────
   showJoin();
 }
