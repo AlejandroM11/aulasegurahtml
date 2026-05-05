@@ -35,6 +35,7 @@ function renderStudent(app) {
   let statusInterval = null;
   let unsubBlock     = null;
   let listenerReady  = false;
+  let enteringFullscreen = false; // suprime el guard durante transición de entrada a FS
 
   const user      = getUser() || {};
   const studentId = user.uid || user.email;
@@ -985,10 +986,16 @@ function renderStudent(app) {
   }
 
   function requestFullscreen() {
+    enteringFullscreen = true;
     const el = document.documentElement;
-    if (el.requestFullscreen)            el.requestFullscreen().catch(() => {});
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
+    const promise = el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.mozRequestFullScreen?.();
+    // Limpiar el flag una vez que la transición termina (o tras timeout de seguridad)
+    const clearFlag = () => { enteringFullscreen = false; };
+    if (promise && typeof promise.then === 'function') {
+      promise.then(clearFlag).catch(clearFlag);
+    } else {
+      setTimeout(clearFlag, 800);
+    }
   }
 
   function exitFullscreen() {
@@ -1051,9 +1058,20 @@ function renderStudent(app) {
       else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); triggerFraudBlock('Intentaste copiar contenido'); }
       else if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); triggerFraudBlock('Intentaste ver el código fuente'); }
     };
-    const onBlur = () => { if (!fraudGuard.active || fraudGuard.paused) return; triggerFraudBlock('Saliste de la ventana del examen'); };
-    const onVisibility = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador'); };
-    const onFullscreen = () => { if (!fraudGuard.active || fraudGuard.paused) return; if (!document.fullscreenElement && !document.webkitFullscreenElement) triggerFraudBlock('Saliste del modo pantalla completa'); };
+    const onBlur = () => {
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      triggerFraudBlock('Saliste de la ventana del examen');
+    };
+    const onVisibility = () => {
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador');
+    };
+    const onFullscreen = () => {
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        triggerFraudBlock('Saliste del modo pantalla completa');
+      }
+    };
     const onContext = (e) => {
       // Permitir clic derecho dentro de campos MathQuill para no bloquear al escribir
       const isMathField = e.target.closest('.mq-editable-field');
@@ -1206,6 +1224,7 @@ function renderStudent(app) {
     removeFraudListeners();
     window.onbeforeunload = null;
     listenerReady = false;
+    enteringFullscreen = false;
     showJoin();
   }
 
@@ -1549,7 +1568,7 @@ function renderStudent(app) {
 
     const goBack = () => {
       resumeFraudGuard();
-      requestFullscreen();
+      requestFullscreen(); // requestFullscreen ya setea enteringFullscreen=true
       setTimeout(() => { startTimer(); showExam(); }, 400);
     };
 
