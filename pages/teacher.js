@@ -5,6 +5,7 @@ function renderTeacher(app) {
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
   let questions = [], qtext = '', qtype = 'mc';
   let options = ['', ''], correctIndex = 0;
+  let mathEditorInstance = null; // instancia del editor de ecuaciones activo
   const user = getUser();
 
   async function loadExams() {
@@ -30,6 +31,7 @@ function renderTeacher(app) {
     title = ''; code = generateCode(); dur = 30; questions = [];
     qtext = ''; options = ['', '']; correctIndex = 0;
     showCorrectAnswers = false; selectedExam = null; qtype = 'mc';
+    mathEditorInstance = null;
   }
 
   function openExam(exam) {
@@ -84,7 +86,17 @@ function renderTeacher(app) {
       if (!opts[correctIndex]?.trim()) return alert('Selecciona una opción correcta válida');
       q.options = opts; q.correctIndex = Number(correctIndex);
     }
-    questions.push(q); qtext = ''; options = ['', '']; correctIndex = 0; render();
+    if (qtype === 'eq') {
+      // Guardar ecuación de referencia del profesor (opcional)
+      const eqWrap = document.getElementById('eq-answer-editor-wrap');
+      if (eqWrap && mathEditorInstance) {
+        const refLatex = mathEditorInstance.getValue();
+        if (refLatex) q.referenceLatex = refLatex;
+      }
+    }
+    questions.push(q); qtext = ''; options = ['', '']; correctIndex = 0;
+    mathEditorInstance = null;
+    render();
   }
 
   function removeQuestion(id) { questions = questions.filter(q => q.id !== id); render(); }
@@ -181,20 +193,29 @@ function renderTeacher(app) {
             <h3 class="font-bold mb-3" style="font-size:1rem"><i class="fa-solid fa-circle-plus" style="margin-right:.4rem;color:#2563eb"></i>Nueva pregunta</h3>
             <div class="form-group mb-3">
               <label class="label">Texto de la pregunta</label>
-              <textarea class="input" id="f-qtext" rows="3" placeholder="Escribe aquí la pregunta..." style="resize:none">${qtext}</textarea>
+              <div style="position:relative">
+                <textarea class="input" id="f-qtext" rows="3" placeholder="Escribe aquí la pregunta..." style="resize:none;padding-right:2.8rem">${qtext.replace(/\{\{(.+?)\}\}/gs, (_,l)=>`[EQ: ${l}]`)}</textarea>
+                <button type="button" id="open-math-inline" title="Insertar ecuación" style="position:absolute;right:.5rem;top:.5rem;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:.5rem;color:#fff;width:2rem;height:2rem;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">∑</button>
+              </div>
+              <p class="text-xs text-gray mt-1"><i class="fa-solid fa-circle-info" style="margin-right:.3rem"></i>Las ecuaciones aparecen como [EQ: ...] en el editor. Usa ∑ para insertar una.</p>
             </div>
             <div class="form-group mb-3">
               <label class="label">Tipo</label>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem">
                 <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
                   <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
                   <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.3rem"></i>
-                  <span class="text-sm font-bold">Múltiple opción</span>
+                  <span class="text-sm font-bold">Múltiple</span>
                 </label>
                 <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
                   <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
                   <i class="fa-solid fa-pen-to-square" style="color:#2563eb;margin-right:.3rem"></i>
-                  <span class="text-sm font-bold">Pregunta abierta</span>
+                  <span class="text-sm font-bold">Abierta</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='eq'?'#7c3aed':'#e2e8f0'};cursor:pointer;background:${qtype==='eq'?'#fdf4ff':'#fff'}">
+                  <input type="radio" name="qtype" value="eq" ${qtype==='eq'?'checked':''} style="accent-color:#7c3aed"/>
+                  <span style="color:#7c3aed;margin-right:.3rem;font-size:1rem">∑</span>
+                  <span class="text-sm font-bold">Ecuación</span>
                 </label>
               </div>
             </div>
@@ -210,6 +231,12 @@ function renderTeacher(app) {
                   </div>
                 `).join('')}
                 ${options.length < 6 ? `<button class="btn btn-outline text-xs mt-2" id="add-opt-btn" style="width:100%"><i class="fa-solid fa-plus" style="margin-right:.3rem"></i>Agregar opción</button>` : ''}
+              </div>
+            ` : qtype === 'eq' ? `
+              <div style="background:#fdf4ff;border-radius:.75rem;padding:.85rem;border:1.5px solid #e9d5ff;margin-bottom:.75rem">
+                <p class="section-label" style="color:#7c3aed">✦ Pregunta de ecuación — campo de respuesta matemático</p>
+                <p class="text-xs" style="color:#7c3aed;margin-bottom:.75rem">El estudiante usará el teclado matemático para responder. Escribe la ecuación esperada como referencia (opcional):</p>
+                <div id="eq-answer-editor-wrap"></div>
               </div>
             ` : `<div class="info-box info-box-blue mb-3"><p class="text-xs"><i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>Las preguntas abiertas serán respondidas con texto libre.</p></div>`}
             <button class="btn btn-full mb-2" id="rag-btn" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">
