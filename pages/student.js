@@ -1022,17 +1022,70 @@ function renderStudent(app) {
     blockState.unlocking = true;
     blockState.remote = false; blockState.local = false;
     blockState.isBlocked = false; blockState.reason = '';
-    setTimeout(() => {
-      blockState.unlocking = false;
-      if (submitted || finished) return;
-      alert('✅ Has sido desbloqueado. Puedes continuar.');
-      requestFullscreen();
-      setTimeout(() => {
-        resumeFraudGuard();
-        if (!timerInterval && timer > 0) startTimer();
-        showExam();
-      }, 600);
-    }, 800);
+    blockState.unlocking = false;
+    if (submitted || finished) return;
+    showReturnToFullscreenScreen();
+  }
+
+  function showReturnToFullscreenScreen() {
+    app.innerHTML = `
+      <div style="
+        position:fixed;inset:0;z-index:9999;
+        background:linear-gradient(135deg,#1e3a5f,#2563eb);
+        display:flex;align-items:center;justify-content:center;
+        padding:1rem;
+      ">
+        <div style="
+          background:#fff;border-radius:1.5rem;
+          padding:2.5rem 2rem;max-width:440px;width:100%;
+          text-align:center;
+          box-shadow:0 24px 64px rgba(0,0,0,.25);
+        ">
+          <div style="
+            width:72px;height:72px;border-radius:50%;
+            background:linear-gradient(135deg,#16a34a,#15803d);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 1.25rem;font-size:2rem;
+            box-shadow:0 8px 24px rgba(22,163,74,.35);
+          ">✅</div>
+
+          <h2 style="
+            font-family:'Fraunces',Georgia,serif;
+            font-size:1.5rem;font-weight:600;
+            color:#0f172a;margin-bottom:.5rem;
+          ">Has sido desbloqueado</h2>
+
+          <p style="color:#64748b;font-size:.9rem;margin-bottom:2rem;line-height:1.6">
+            El docente te ha desbloqueado.<br/>
+            Para continuar el examen debes volver a pantalla completa.
+          </p>
+
+          <button id="reenter-fs-btn" style="
+            width:100%;padding:.95rem;
+            background:linear-gradient(135deg,#1e3a5f,#2563eb);
+            color:#fff;border:none;border-radius:1rem;
+            font-size:1rem;font-weight:600;cursor:pointer;
+            font-family:'DM Sans',sans-serif;
+            transition:all .2s;
+          ">
+            Volver a pantalla completa →
+          </button>
+
+          <p style="margin-top:1rem;font-size:.78rem;color:#94a3b8">
+            Debes hacer clic para activar el modo examen seguro
+          </p>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('reenter-fs-btn').onclick = reEnterFullscreen;
+  }
+
+  function reEnterFullscreen() {
+    requestFullscreen();
+    resumeFraudGuard();
+    if (!timerInterval && timer > 0) startTimer();
+    showExam();
   }
 
   // ─────────────────────────────────────────────
