@@ -1287,70 +1287,148 @@ function renderStudent(app) {
   function showBlocked() {
     injectStyles();
     app.innerHTML = `
-      <div class="blocked-screen">
-        <div style="max-width:600px;width:100%">
-          <div class="blocked-icon">🚫</div>
-          <h1 style="font-family:'Fraunces',Georgia,serif;font-size:clamp(2rem,6vw,3rem);font-weight:600;margin:.5rem 0">Examen bloqueado</h1>
-          <div style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px);padding:1.25rem;border-radius:1rem;margin:1rem 0;border:2px solid rgba(255,255,255,.3)">
-            <p style="font-size:.85rem;font-weight:700;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.07em;opacity:.8">Razón del bloqueo</p>
-            <p style="font-size:1rem">${safeText(blockState.reason)}</p>
+      <div class="blocked-screen" style="align-items:flex-start;overflow-y:auto;padding:2rem 1rem">
+        <div style="max-width:560px;width:100%;margin:auto">
+
+          <!-- Cabecera -->
+          <div style="text-align:center;margin-bottom:1.5rem">
+            <div style="
+              width:80px;height:80px;border-radius:50%;
+              background:rgba(255,255,255,.15);
+              border:3px solid rgba(255,255,255,.4);
+              display:flex;align-items:center;justify-content:center;
+              margin:0 auto 1rem;font-size:2.5rem;
+            ">🚫</div>
+            <h1 style="
+              font-family:'Fraunces',Georgia,serif;
+              font-size:clamp(1.75rem,5vw,2.5rem);
+              font-weight:600;margin:0 0 .5rem;
+            ">Examen bloqueado</h1>
+            <p style="opacity:.8;font-size:.9rem">
+              El docente ha sido notificado. Solo él puede desbloquearte.
+            </p>
           </div>
+
+          <!-- Razón -->
+          <div style="
+            background:rgba(255,255,255,.15);
+            border:1px solid rgba(255,255,255,.3);
+            border-radius:1rem;padding:1rem 1.25rem;margin-bottom:1rem;
+          ">
+            <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.7;margin-bottom:.35rem">
+              Razón del bloqueo
+            </p>
+            <p style="font-size:.95rem">${safeText(blockState.reason)}</p>
+          </div>
+
+          <!-- Historial de infracciones -->
           ${violations.length > 0 ? `
-            <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;margin-bottom:1rem;text-align:left;max-height:180px;overflow-y:auto">
-              <p style="font-weight:700;margin-bottom:.5rem;font-size:.85rem">Historial de infracciones (${violations.length})</p>
+            <div style="
+              background:rgba(255,255,255,.1);border-radius:1rem;
+              padding:1rem;margin-bottom:1rem;
+              max-height:160px;overflow-y:auto;text-align:left;
+            ">
+              <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.7;margin-bottom:.5rem">
+                Infracciones (${violations.length})
+              </p>
               ${violations.map((v, i) => `
-                <div style="font-size:.82rem;background:rgba(255,255,255,.1);padding:.5rem;border-radius:.5rem;margin-bottom:.35rem">
-                  <b>${i + 1}.</b> ${safeText(v.reason)}
-                </div>
+                <div style="
+                  font-size:.82rem;background:rgba(255,255,255,.1);
+                  padding:.45rem .75rem;border-radius:.5rem;margin-bottom:.35rem;
+                "><b>${i + 1}.</b> ${safeText(v.reason)}</div>
               `).join('')}
             </div>
           ` : ''}
-          <button id="msg-btn" style="width:100%;padding:.9rem;background:#fff;color:#dc2626;border:none;border-radius:1rem;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:1rem">
-            💬 Enviar mensaje al docente
-          </button>
-          <div style="background:rgba(255,255,255,.1);padding:1rem;border-radius:.75rem;font-size:.82rem;text-align:left;line-height:1.8">
-            <p style="font-weight:700;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.07em;font-size:.75rem">Información importante</p>
-            <p>• El docente ha sido notificado automáticamente</p>
+
+          <!-- Formulario de mensaje — integrado directamente, sin modal -->
+          <div style="
+            background:rgba(255,255,255,.12);
+            border:1px solid rgba(255,255,255,.25);
+            border-radius:1rem;padding:1.25rem;margin-bottom:1rem;
+          ">
+            <p style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.8;margin-bottom:.75rem">
+              <i class="fa-solid fa-comment-dots" style="margin-right:.4rem"></i>
+              Enviar mensaje al docente
+            </p>
+            <textarea
+              id="msg-text"
+              rows="3"
+              placeholder="Explica tu situación al docente..."
+              style="
+                width:100%;padding:.75rem 1rem;
+                border-radius:.75rem;border:1.5px solid rgba(255,255,255,.3);
+                background:rgba(255,255,255,.15);
+                color:#fff;font-size:.9rem;resize:none;
+                font-family:'DM Sans',sans-serif;
+                box-sizing:border-box;
+              "
+            ></textarea>
+            <p id="msg-feedback" style="font-size:.8rem;margin-top:.4rem;min-height:1.2em;opacity:.85"></p>
+            <button id="msg-send" style="
+              width:100%;margin-top:.5rem;padding:.8rem;
+              background:#fff;color:#dc2626;
+              border:none;border-radius:.85rem;
+              font-size:.9rem;font-weight:700;cursor:pointer;
+              font-family:'DM Sans',sans-serif;
+              transition:opacity .2s;
+            ">
+              <i class="fa-solid fa-paper-plane" style="margin-right:.4rem"></i>
+              Enviar mensaje
+            </button>
+          </div>
+
+          <!-- Info -->
+          <div style="
+            background:rgba(255,255,255,.08);
+            border-radius:.85rem;padding:.85rem 1rem;
+            font-size:.8rem;line-height:1.9;opacity:.85;
+          ">
             <p>• Tu progreso está guardado</p>
             <p>• Solo el docente puede desbloquearte</p>
+            <p>• Puedes enviarle un mensaje explicando tu situación</p>
           </div>
-        </div>
-      </div>
 
-      <div id="msg-modal" class="modal-overlay" style="display:none">
-        <div class="modal-box" style="max-width:440px">
-          <h3 style="font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:600;margin-bottom:.75rem">Mensaje al docente</h3>
-          <p style="color:#64748b;font-size:.875rem;margin-bottom:1rem">Explica tu situación. El docente lo recibirá en tiempo real.</p>
-          <textarea class="input" id="msg-text" rows="5" placeholder="Escribe tu mensaje aquí..." style="resize:none"></textarea>
-          <div class="flex-row mt-4">
-            <button class="btn btn-outline" style="flex:1" id="msg-cancel">Cancelar</button>
-            <button class="btn btn-primary" style="flex:1" id="msg-send">Enviar</button>
-          </div>
         </div>
       </div>
     `;
 
-    const modal = document.getElementById('msg-modal');
-    document.getElementById('msg-btn').onclick    = () => { modal.style.display = 'flex'; };
-    document.getElementById('msg-cancel').onclick = () => { modal.style.display = 'none'; };
-    document.getElementById('msg-send').onclick   = async () => {
-      const msg     = document.getElementById('msg-text').value.trim();
-      const sendBtn = document.getElementById('msg-send');
-      if (!msg) { alert('Escribe un mensaje'); return; }
-      sendBtn.disabled = true; sendBtn.textContent = 'Enviando...';
+    bindBlockScreenEvents();
+  }
+
+  function bindBlockScreenEvents() {
+    const sendBtn    = document.getElementById('msg-send');
+    const textarea   = document.getElementById('msg-text');
+    const feedback   = document.getElementById('msg-feedback');
+
+    sendBtn.onclick = async () => {
+      const msg = textarea.value.trim();
+      if (!msg) {
+        feedback.style.color = '#fca5a5';
+        feedback.textContent = 'Escribe un mensaje antes de enviar.';
+        return;
+      }
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Enviando...';
+      feedback.textContent = '';
       try {
         await sendMessageToTeacher(
           exam.code, studentId, msg,
           user.name || 'Estudiante',
           user.email || ''
         );
-        modal.style.display = 'none';
-        document.getElementById('msg-text').value = '';
-        alert('✅ Mensaje enviado. Espera la respuesta del docente.');
+        textarea.value = '';
+        feedback.style.color = '#86efac';
+        feedback.textContent = '✔ Mensaje enviado. El docente lo recibirá en tiempo real.';
+        sendBtn.innerHTML = '<i class="fa-solid fa-check" style="margin-right:.4rem"></i>Enviado';
+        setTimeout(() => {
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:.4rem"></i>Enviar otro mensaje';
+        }, 3000);
       } catch (err) {
-        alert('❌ Error al enviar el mensaje: ' + (err?.message || 'intenta de nuevo'));
-      } finally {
-        sendBtn.disabled = false; sendBtn.textContent = 'Enviar';
+        feedback.style.color = '#fca5a5';
+        feedback.textContent = '❌ Error al enviar: ' + (err?.message || 'intenta de nuevo');
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:.4rem"></i>Enviar mensaje';
       }
     };
   }
