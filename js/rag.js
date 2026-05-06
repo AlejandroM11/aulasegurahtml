@@ -15,11 +15,29 @@ async function extractTextFromPDF(file) {
   return text.trim();
 }
 
-function chunkText(text, maxChars = 4000) {
+function chunkTextSmart(text, maxChars = 1800) {
+  const paragraphs = text.split('\n').filter(p => p.trim().length > 0);
   const chunks = [];
-  for (let i = 0; i < text.length; i += maxChars) {
-    chunks.push(text.slice(i, i + maxChars));
+  let current  = '';
+
+  for (const p of paragraphs) {
+    // Si el párrafo solo ya excede el límite, lo forzamos como chunk propio
+    if (p.length > maxChars) {
+      if (current) { chunks.push(current.trim()); current = ''; }
+      // Dividir el párrafo largo en trozos sin cortar palabras
+      for (let i = 0; i < p.length; i += maxChars) {
+        chunks.push(p.slice(i, i + maxChars));
+      }
+      continue;
+    }
+    if ((current + '\n' + p).length > maxChars) {
+      if (current) chunks.push(current.trim());
+      current = p;
+    } else {
+      current = current ? current + '\n' + p : p;
+    }
   }
+  if (current.trim()) chunks.push(current.trim());
   return chunks;
 }
 
@@ -254,14 +272,49 @@ function openRAGModal(onQuestionsSelected) {
 
     errorBox.style.display = 'none';
     generateBtn.disabled = true;
-    generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Generando...';
+
+    // Dividir en chunks seguros por párrafos
+    const chunks = chunkTextSmart(text, 1800);
+
+    // Distribuir preguntas entre chunks (mínimo 1 por chunk)
+    const questionsPerChunk = Math.max(1, Math.ceil(numQ / chunks.length));
+
+    let allQuestions = [];
+
+    const setProgress = (msg) => {
+      generateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>${msg}`;
+    };
 
     try {
-      generatedQuestions = await generateQuestionsFromText(text, numQ);
+      for (let i = 0; i < chunks.length; i++) {
+        // Parar si ya tenemos suficientes preguntas
+        if (allQuestions.length >= numQ) break;
+
+        const remaining = numQ - allQuestions.length;
+        const toGenerate = Math.min(questionsPerChunk, remaining);
+
+        setProgress(`Procesando parte ${i + 1} de ${chunks.length}...`);
+
+        try {
+          const questions = await generateQuestionsFromText(chunks[i], toGenerate);
+          if (Array.isArray(questions)) allQuestions.push(...questions);
+        } catch (chunkErr) {
+          // Si un chunk falla, loguear y continuar con el siguiente
+          console.warn(`Chunk ${i + 1} falló:`, chunkErr.message);
+        }
+      }
+
+      if (allQuestions.length === 0) {
+        throw new Error('No se pudieron generar preguntas. Intenta con menos preguntas o un texto más corto.');
+      }
+
+      // Recortar al número solicitado
+      generatedQuestions = allQuestions.slice(0, numQ);
       selectedIndexes    = new Set(generatedQuestions.map((_, i) => i));
       renderGeneratedQuestions();
       step1.style.display = 'none';
       step2.style.display = '';
+
     } catch (err) {
       errorBox.style.display = '';
       errorBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right:.4rem"></i>${err.message}`;
@@ -271,36 +324,86 @@ function openRAGModal(onQuestionsSelected) {
     }
   };
 
+  // ── Helpers MathQuill para el modal ──
+  function getMQ() {
+    return window.MathQuill ? window.MathQuill.getInterface(2) : null;
+  }
+
+  function renderLatexInEl(el, latex) {
+    if (!el || !latex) return;
+    const MQ = getMQ();
+    if (MQ) {
+      try { el.innerHTML = ''; MQ.StaticMath(el).latex(latex); return; } catch (_) {}
+    }
+    el.innerHTML = `<code style="font-family:monospace;font-size:.85rem;color:#7c3aed;background:#f5f3ff;padding:.1rem .35rem;border-radius:.3rem">${latex}</code>`;
+  }
+
   // ── Render de preguntas ──
   function renderGeneratedQuestions() {
     const list = document.getElementById('rag-questions-list');
     if (!list) return;
     document.getElementById('rag-selected-count').textContent = selectedIndexes.size;
 
-    list.innerHTML = generatedQuestions.map((q, idx) => `
-      <div style="padding:.75rem;border-radius:.75rem;border:2px solid ${selectedIndexes.has(idx) ? '#7c3aed' : '#e2e8f0'};
-        background:${selectedIndexes.has(idx) ? '#f5f3ff' : '#f8fafc'};cursor:pointer;transition:all .2s"
-        data-qidx="${idx}">
-        <div style="display:flex;align-items:flex-start;gap:.6rem">
-          <input type="checkbox" ${selectedIndexes.has(idx) ? 'checked' : ''}
-            style="margin-top:.2rem;width:1rem;height:1rem;accent-color:#7c3aed;flex-shrink:0"
-            data-cb="${idx}"/>
-          <div style="flex:1">
-            <p class="font-bold text-sm mb-1">${idx + 1}. ${q.text}</p>
-            <div style="display:flex;flex-wrap:wrap;gap:.25rem">
-              ${q.options.map((opt, i) => `
-                <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
-                  background:${i === q.correctIndex ? '#ede9fe' : '#f1f5f9'};
-                  color:${i === q.correctIndex ? '#7c3aed' : '#475569'};
-                  font-weight:${i === q.correctIndex ? '700' : '400'}">
-                  ${i === q.correctIndex ? '<i class="fa-solid fa-check" style="margin-right:.2rem"></i>' : ''}${opt}
-                </span>
-              `).join('')}
+    list.innerHTML = generatedQuestions.map((q, idx) => {
+      const isOpen   = q.type === 'open';
+      const typeBadge = isOpen
+        ? `<span style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+            padding:.15rem .45rem;border-radius:999px;background:#dcfce7;color:#15803d;margin-left:.4rem">
+            Abierta</span>`
+        : `<span style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+            padding:.15rem .45rem;border-radius:999px;background:#dbeafe;color:#1d4ed8;margin-left:.4rem">
+            Múltiple</span>`;
+
+      const mathLatexId = `rag-q-latex-${idx}`;
+
+      return `
+        <div style="padding:.75rem;border-radius:.75rem;border:2px solid ${selectedIndexes.has(idx) ? '#7c3aed' : '#e2e8f0'};
+          background:${selectedIndexes.has(idx) ? '#f5f3ff' : '#f8fafc'};cursor:pointer;transition:all .2s"
+          data-qidx="${idx}">
+          <div style="display:flex;align-items:flex-start;gap:.6rem">
+            <input type="checkbox" ${selectedIndexes.has(idx) ? 'checked' : ''}
+              style="margin-top:.2rem;width:1rem;height:1rem;accent-color:#7c3aed;flex-shrink:0"
+              data-cb="${idx}"/>
+            <div style="flex:1;min-width:0">
+              <p class="font-bold text-sm mb-1">
+                ${idx + 1}. ${q.text} ${typeBadge}
+              </p>
+              ${q.isMath && q.latex ? `
+                <div id="${mathLatexId}" style="
+                  background:#f5f3ff;border:1px solid #ddd6fe;border-radius:.5rem;
+                  padding:.35rem .65rem;margin-bottom:.5rem;font-size:1rem;
+                "></div>
+              ` : ''}
+              ${!isOpen ? `
+                <div style="display:flex;flex-wrap:wrap;gap:.25rem">
+                  ${(q.options || []).map((opt, i) => `
+                    <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
+                      background:${i === q.correctIndex ? '#ede9fe' : '#f1f5f9'};
+                      color:${i === q.correctIndex ? '#7c3aed' : '#475569'};
+                      font-weight:${i === q.correctIndex ? '700' : '400'}">
+                      ${i === q.correctIndex ? '<i class="fa-solid fa-check" style="margin-right:.2rem"></i>' : ''}${opt}
+                    </span>
+                  `).join('')}
+                </div>
+              ` : `
+                <p style="font-size:.72rem;color:#64748b;font-style:italic">
+                  <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta del estudiante
+                </p>
+              `}
             </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    // Renderizar LaTeX después del innerHTML
+    setTimeout(() => {
+      generatedQuestions.forEach((q, idx) => {
+        if (q.isMath && q.latex) {
+          renderLatexInEl(document.getElementById(`rag-q-latex-${idx}`), q.latex);
+        }
+      });
+    }, 50);
 
     list.querySelectorAll('[data-qidx]').forEach(el => {
       el.onclick = () => {
@@ -370,9 +473,12 @@ function openRAGModal(onQuestionsSelected) {
     ragChatAddMessage('user', text);
 
     // Construir contexto: preguntas actuales + instrucción
-    const questionsContext = generatedQuestions.map((q, i) =>
-      `Pregunta ${i + 1}: ${q.text}\nOpciones: ${q.options.map((o, j) => `${j === q.correctIndex ? '✓' : ''}${o}`).join(' | ')}`
-    ).join('\n\n');
+    const questionsContext = generatedQuestions.map((q, i) => {
+      let line = `Pregunta ${i + 1} [${q.type === 'open' ? 'ABIERTA' : 'MÚLTIPLE'}]: ${q.text}`;
+      if (q.isMath && q.latex) line += `\nLaTeX: ${q.latex}`;
+      if (q.type === 'mc' && q.options) line += `\nOpciones: ${q.options.map((o, j) => `${j === q.correctIndex ? '✓' : ''}${o}`).join(' | ')}`;
+      return line;
+    }).join('\n\n');
 
     const systemPrompt = `Eres un asistente educativo integrado en un generador de preguntas de examen.
 
@@ -382,18 +488,29 @@ ${questionsContext}
 Tu tarea es ayudar a EDITAR o MEJORAR esas preguntas según lo que pida el docente.
 
 IMPORTANTE:
-- Cuando te pidan editar una o varias preguntas, devuelve SOLO el JSON actualizado de TODAS las preguntas (incluso las que no cambiaron), en este formato exacto, sin texto adicional:
+- Cuando te pidan editar preguntas, devuelve SOLO el JSON actualizado de TODAS las preguntas, en este formato exacto, sin texto adicional:
 [
   {
     "text": "¿Pregunta?",
+    "type": "mc",
     "options": ["A", "B", "C", "D"],
-    "correctIndex": 0
+    "correctIndex": 0,
+    "isMath": false
+  },
+  {
+    "text": "Resuelve:",
+    "type": "open",
+    "isMath": true,
+    "latex": "\\\\frac{d}{dx}(x^2)"
   }
 ]
 
-- Si el docente hace una pregunta general o pide explicación, responde de forma conversacional breve en español.
-- NO incluyas bloques de código markdown, NO uses triple backtick.
-- Si devuelves JSON, que sea solo el array, empezando con [ y terminando con ].`;
+- Para preguntas matemáticas: incluir "isMath": true y "latex" con LaTeX válido (sin $$ ni \\[\\])
+- Para preguntas abiertas: type "open", sin "options" ni "correctIndex"
+- Para opción múltiple: type "mc", con "options" y "correctIndex"
+- Si el docente hace una pregunta general, responde brevemente en español.
+- NO uses triple backtick ni bloques de código.
+- Si devuelves JSON, que empiece con [ y termine con ].`;
 
     ragChatHistory.push({ role: 'user', content: text });
     ragChatTyping = true;
@@ -484,13 +601,20 @@ IMPORTANTE:
     }
     const selected = generatedQuestions
       .filter((_, i) => selectedIndexes.has(i))
-      .map(q => ({
-        id: crypto.randomUUID(),
-        text: q.text,
-        type: 'mc',
-        options: q.options,
-        correctIndex: q.correctIndex
-      }));
+      .map(q => {
+        const base = {
+          id:     crypto.randomUUID(),
+          text:   q.text,
+          type:   q.type || 'mc',
+          isMath: q.isMath || false,
+        };
+        if (q.isMath && q.latex) base.latex = q.latex;
+        if (base.type === 'mc') {
+          base.options      = q.options      || [];
+          base.correctIndex = q.correctIndex ?? 0;
+        }
+        return base;
+      });
     onQuestionsSelected(selected);
     modal.remove();
   };

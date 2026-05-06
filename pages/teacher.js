@@ -676,7 +676,9 @@ function renderTeacher(app) {
     // Mostrar LaTeX como fórmula renderizada
     const displayText = q.type === 'eq'
       ? `\\(${q.text}\\)`
-      : q.text;
+      : q.isMath && q.latex
+        ? `${q.text} &nbsp;<span style="font-size:.8rem;color:#7c3aed">\\(${q.latex}\\)</span>`
+        : q.text;
 
     return `
       <div class="q-chip">

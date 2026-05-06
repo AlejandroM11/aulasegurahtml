@@ -148,27 +148,61 @@ app.post('/api/groq/generate', async (req, res) => {
 
   try {
     const fetch = (await import('node-fetch')).default;
-    const prompt = `Eres un asistente educativo. Basándote ÚNICAMENTE en el siguiente texto, genera exactamente ${numQuestions} preguntas de opción múltiple para un examen.
+
+    // Detectar si el contenido tiene matemáticas para ajustar el prompt
+    const mathKeywords = /integral|derivad|ecuaci[oó]n|fórmula|formula|álgebra|algebra|trigonometr|cálculo|calculo|límite|limite|matriz|vector|polinomio|logaritmo|exponencial|fracción|fraccion|raíz|raiz|∫|∑|∂|√|π|∞/i;
+    const hasMath = mathKeywords.test(text);
+
+    const prompt = `Eres un asistente educativo experto. Basándote ÚNICAMENTE en el siguiente texto, genera exactamente ${numQuestions} preguntas para un examen.
 
 TEXTO DEL TEMARIO:
 """
 ${text.slice(0, 4000)}
 """
 
-INSTRUCCIONES:
-- Genera exactamente ${numQuestions} preguntas
-- Cada pregunta debe tener exactamente 4 opciones (A, B, C, D)
-- Solo una opción es correcta
-- Responde ÚNICAMENTE con un array JSON válido, sin texto adicional
+INSTRUCCIONES GENERALES:
+- Genera exactamente ${numQuestions} preguntas variadas
+- Mezcla preguntas de opción múltiple ("mc") y preguntas abiertas ("open") según el contenido
+- Responde ÚNICAMENTE con un array JSON válido, sin texto adicional, sin markdown
 
-FORMATO EXACTO:
+${hasMath ? `INSTRUCCIONES PARA CONTENIDO MATEMÁTICO (MUY IMPORTANTE):
+- El texto contiene matemáticas. Cuando una pregunta involucre una expresión matemática:
+  - Agrega el campo "isMath": true
+  - Agrega el campo "latex" con la expresión en formato LaTeX válido (sin $$ ni \\[\\])
+  - Ejemplo de latex válido: "\\frac{x^2 + 1}{2}" o "\\int_0^1 x^2 dx"
+- Para preguntas abiertas con matemáticas, usa type "open" con isMath y latex
+` : ''}
+
+FORMATO EXACTO (devuelve SOLO este JSON):
 [
   {
-    "text": "¿Pregunta aquí?",
+    "text": "¿Pregunta de opción múltiple?",
+    "type": "mc",
     "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-    "correctIndex": 0
+    "correctIndex": 0,
+    "isMath": false
+  },
+  {
+    "text": "Resuelve la siguiente expresión:",
+    "type": "open",
+    "isMath": true,
+    "latex": "\\frac{d}{dx}(x^3 + 2x)"
+  },
+  {
+    "text": "¿Cuál es el resultado de la integral?",
+    "type": "mc",
+    "options": ["x²/2 + C", "2x + C", "x³/3 + C", "x + C"],
+    "correctIndex": 2,
+    "isMath": true,
+    "latex": "\\int x^2 \\, dx"
   }
-]`;
+]
+
+REGLAS:
+- Para type "mc": incluir "options" (4 elementos) y "correctIndex"
+- Para type "open": NO incluir "options" ni "correctIndex"
+- "isMath" es true solo si la pregunta involucra una expresión matemática
+- "latex" solo cuando isMath es true`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -180,7 +214,7 @@ FORMATO EXACTO:
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 2048
+        max_tokens: 3000
       })
     });
 
