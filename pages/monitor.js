@@ -88,6 +88,118 @@ function renderMonitor(app) {
     } catch { alert('❌ Error al eliminar el mensaje'); }
   }
 
+  // ── Helpers de render ──
+
+  function renderStudentRow(s) {
+    const violationColor  = (s.violations || 0) > 2 ? '#dc2626' : '#374151';
+    const violationWeight = (s.violations || 0) > 2 ? '700' : '400';
+    const violationIcon   = (s.violations || 0) > 2
+      ? '<i class="fa-solid fa-triangle-exclamation" style="margin-right:.3rem"></i>' : '';
+
+    return `
+      <tr style="${s.isBlocked ? 'background:#fef2f2' : ''}">
+        <td>
+          <p class="font-bold text-sm">${s.name || 'Sin nombre'}</p>
+          <p class="text-xs text-gray">${s.email || ''}</p>
+        </td>
+        <td>
+          ${s.isBlocked
+            ? `<span class="badge badge-red"><i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloqueado</span>`
+            : `<span class="badge badge-green"><i class="fa-solid fa-circle-check" style="margin-right:.3rem"></i>Activo</span>`}
+        </td>
+        <td class="font-mono">${fmt(s.timeLeft)}</td>
+        <td>${s.answeredCount || 0} / ${selectedExam.questions?.length || 0}</td>
+        <td>
+          <span style="color:${violationColor};font-weight:${violationWeight}">
+            ${violationIcon}${s.violations || 0}
+          </span>
+        </td>
+        <td class="text-xs text-gray">${fmtTs(s.lastActivity || s.joinedAt)}</td>
+        <td>
+          ${s.isBlocked
+            ? `<button class="btn btn-primary text-xs" data-unblock="${s.id}" ${unblocking ? 'disabled' : ''}>
+                ${unblocking
+                  ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.3rem"></i>Espera...'
+                  : '<i class="fa-solid fa-lock-open" style="margin-right:.3rem"></i>Desbloquear'}
+              </button>`
+            : `<button class="btn btn-danger text-xs" data-block="${s.id}">
+                <i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloquear
+              </button>`}
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderMessageCard(m) {
+    const isUnread    = !m.read;
+    const bgColor     = isUnread ? '#eff6ff' : '#f8fafc';
+    const borderColor = isUnread ? '#93c5fd' : '#e2e8f0';
+    const accentColor = isUnread ? '#2563eb' : '#cbd5e1';
+    const iconColor   = isUnread ? '#2563eb' : '#64748b';
+    const iconBg      = isUnread ? '#dbeafe' : '#e2e8f0';
+
+    const replyForm = selectedMsg === m.id
+      ? `<div style="display:flex;gap:.4rem;margin-top:.25rem">
+          <input class="input text-sm" id="resp-input"
+            placeholder="Escribe tu respuesta al estudiante..."
+            value="${responseText}"
+            style="flex:1;border-radius:.65rem;font-size:.82rem"/>
+          <button class="btn btn-primary text-xs" data-send="${m.id}" style="border-radius:.65rem;white-space:nowrap">
+            <i class="fa-solid fa-paper-plane" style="margin-right:.3rem"></i>Enviar
+          </button>
+          <button class="btn btn-outline text-xs" id="cancel-resp" style="border-radius:.65rem">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>`
+      : `<button class="btn btn-outline text-xs" data-reply="${m.id}" style="border-radius:.65rem">
+          <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Responder
+        </button>`;
+
+    return `
+      <div style="
+        background:${bgColor};
+        border:1.5px solid ${borderColor};
+        border-left:4px solid ${accentColor};
+        border-radius:.85rem;padding:.9rem 1rem;
+        transition:border-color .2s;
+      ">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <div style="width:2rem;height:2rem;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fa-solid fa-user" style="font-size:.75rem;color:${iconColor}"></i>
+            </div>
+            <div>
+              <p style="font-weight:700;font-size:.875rem;color:#1e293b">${m.studentName || m.studentUid || 'Estudiante'}</p>
+              ${m.studentEmail ? `<p style="font-size:.7rem;color:#94a3b8">${m.studentEmail}</p>` : ''}
+            </div>
+            ${isUnread ? `<span style="width:.5rem;height:.5rem;border-radius:50%;background:#2563eb;flex-shrink:0;margin-left:.25rem"></span>` : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+            <span style="font-size:.72rem;color:#94a3b8">
+              <i class="fa-solid fa-clock" style="margin-right:.25rem"></i>${fmtTs(m.timestamp)}
+            </span>
+            <button class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem;border-radius:.5rem"
+              data-delete="${m.id}" title="Eliminar mensaje">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <p style="font-size:.875rem;color:#374151;line-height:1.5;margin-bottom:.6rem;padding-left:2.5rem">${m.message}</p>
+
+        ${m.response
+          ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.6rem;padding:.6rem .85rem;margin-left:2.5rem">
+              <p style="font-size:.7rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">
+                <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Tu respuesta
+              </p>
+              <p style="font-size:.82rem;color:#166534">${m.response}</p>
+            </div>`
+          : `<div style="padding-left:2.5rem">${replyForm}</div>`
+        }
+      </div>
+    `;
+  }
+
   function render() {
     if (loading) {
       app.innerHTML = `<div class="text-center" style="padding:4rem"><div class="spinner"></div><p class="text-gray mt-3">Cargando exámenes...</p></div>`;
@@ -214,39 +326,7 @@ function renderMonitor(app) {
                     <th>Respondidas</th><th>Infracciones</th><th>Última actividad</th><th>Acción</th>
                   </tr></thead>
                   <tbody>
-                    ${allStudents.map(s => `
-                      <tr style="${s.isBlocked ? 'background:#fef2f2' : ''}">
-                        <td>
-                          <p class="font-bold text-sm">${s.name || 'Sin nombre'}</p>
-                          <p class="text-xs text-gray">${s.email || ''}</p>
-                        </td>
-                        <td>
-                          ${s.isBlocked
-                            ? `<span class="badge badge-red"><i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloqueado</span>`
-                            : `<span class="badge badge-green"><i class="fa-solid fa-circle-check" style="margin-right:.3rem"></i>Activo</span>`}
-                        </td>
-                        <td class="font-mono">${fmt(s.timeLeft)}</td>
-                        <td>${s.answeredCount || 0} / ${selectedExam.questions?.length || 0}</td>
-                        <td>
-                          <span style="color:${(s.violations||0) > 2 ? '#dc2626' : '#374151'};font-weight:${(s.violations||0) > 2 ? '700' : '400'}">
-                            ${(s.violations||0) > 2 ? '<i class="fa-solid fa-triangle-exclamation" style="margin-right:.3rem"></i>' : ''}
-                            ${s.violations || 0}
-                          </span>
-                        </td>
-                        <td class="text-xs text-gray">${fmtTs(s.lastActivity || s.joinedAt)}</td>
-                        <td>
-                          ${s.isBlocked
-                            ? `<button class="btn btn-primary text-xs" data-unblock="${s.id}" ${unblocking ? 'disabled' : ''}>
-                                ${unblocking
-                                  ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.3rem"></i>Espera...'
-                                  : '<i class="fa-solid fa-lock-open" style="margin-right:.3rem"></i>Desbloquear'}
-                              </button>`
-                            : `<button class="btn btn-danger text-xs" data-block="${s.id}">
-                                <i class="fa-solid fa-lock" style="margin-right:.3rem"></i>Bloquear
-                              </button>`}
-                        </td>
-                      </tr>
-                    `).join('')}
+                    ${allStudents.map(s => renderStudentRow(s)).join('')}
                   </tbody>
                 </table>
               </div>`
@@ -272,71 +352,7 @@ function renderMonitor(app) {
                 <p class="text-sm">No hay mensajes</p>
               </div>`
             : `<div style="display:flex;flex-direction:column;gap:.6rem;max-height:480px;overflow-y:auto;padding-right:.25rem">
-                ${messages.map(m => `
-                  <div style="
-                    background:${m.read ? '#f8fafc' : '#eff6ff'};
-                    border:1.5px solid ${m.read ? '#e2e8f0' : '#93c5fd'};
-                    border-left:4px solid ${m.read ? '#cbd5e1' : '#2563eb'};
-                    border-radius:.85rem;padding:.9rem 1rem;
-                    transition:border-color .2s;
-                  ">
-                    <!-- Header del mensaje -->
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
-                      <div style="display:flex;align-items:center;gap:.5rem">
-                        <div style="width:2rem;height:2rem;border-radius:50%;background:${m.read ? '#e2e8f0' : '#dbeafe'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                          <i class="fa-solid fa-user" style="font-size:.75rem;color:${m.read ? '#64748b' : '#2563eb'}"></i>
-                        </div>
-                        <div>
-                          <p style="font-weight:700;font-size:.875rem;color:#1e293b">${m.studentName || m.studentUid || 'Estudiante'}</p>
-                          ${m.studentEmail ? `<p style="font-size:.7rem;color:#94a3b8">${m.studentEmail}</p>` : ''}
-                        </div>
-                        ${!m.read ? `<span style="width:.5rem;height:.5rem;border-radius:50%;background:#2563eb;flex-shrink:0;margin-left:.25rem"></span>` : ''}
-                      </div>
-                      <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
-                        <span style="font-size:.72rem;color:#94a3b8">
-                          <i class="fa-solid fa-clock" style="margin-right:.25rem"></i>${fmtTs(m.timestamp)}
-                        </span>
-                        <button class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem;border-radius:.5rem"
-                          data-delete="${m.id}" title="Eliminar mensaje">
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Contenido del mensaje -->
-                    <p style="font-size:.875rem;color:#374151;line-height:1.5;margin-bottom:.6rem;padding-left:2.5rem">${m.message}</p>
-
-                    <!-- Respuesta enviada -->
-                    ${m.response ? `
-                      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.6rem;padding:.6rem .85rem;margin-left:2.5rem">
-                        <p style="font-size:.7rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">
-                          <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Tu respuesta
-                        </p>
-                        <p style="font-size:.82rem;color:#166534">${m.response}</p>
-                      </div>
-                    ` : `
-                      <!-- Formulario de respuesta -->
-                      <div style="padding-left:2.5rem">
-                        ${selectedMsg === m.id
-                          ? `<div style="display:flex;gap:.4rem;margin-top:.25rem">
-                              <input class="input text-sm" id="resp-input"
-                                placeholder="Escribe tu respuesta al estudiante..."
-                                value="${responseText}"
-                                style="flex:1;border-radius:.65rem;font-size:.82rem"/>
-                              <button class="btn btn-primary text-xs" data-send="${m.id}" style="border-radius:.65rem;white-space:nowrap">
-                                <i class="fa-solid fa-paper-plane" style="margin-right:.3rem"></i>Enviar
-                              </button>
-                              <button class="btn btn-outline text-xs" id="cancel-resp" style="border-radius:.65rem">
-                                <i class="fa-solid fa-xmark"></i>
-                              </button>
-                            </div>`
-                          : `<button class="btn btn-outline text-xs" data-reply="${m.id}" style="border-radius:.65rem">
-                              <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Responder
-                            </button>`}
-                      </div>
-                    `}
-                  </div>
-                `).join('')}
+                ${messages.map(m => renderMessageCard(m)).join('')}
               </div>`
           }
         </div>

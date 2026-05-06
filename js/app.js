@@ -10,12 +10,15 @@ const ROUTES = {
   '/monitor':    renderMonitor,
   '/resultados': renderResults,
   '/examenes':   renderExamenes,
-  '/perfil': renderPerfil, 
+  '/perfil':     renderPerfil,
 };
 
-const TEACHER_ROUTES = ['/docente', '/monitor', '/resultados', '/examenes', '/perfil'];
-const STUDENT_ROUTES  = ['/estudiante'];
+const TEACHER_ROUTES   = ['/docente', '/monitor', '/resultados', '/examenes', '/perfil'];
+const STUDENT_ROUTES   = ['/estudiante'];
 const AUTH_ONLY_ROUTES = ['/login', '/register'];
+
+// Rutas donde el chat flotante debe permanecer visible
+const CHAT_ROUTES = ['/docente', '/monitor', '/resultados'];
 
 function navigate(path) {
   location.hash = path;
@@ -30,19 +33,17 @@ function router() {
   const user = getUser();
   const app  = document.getElementById('app');
 
-  // Redirigir desde home si ya hay sesión
   if (path === '/' && user) {
     navigate(user.role === 'docente' ? '/docente' : '/estudiante');
     return;
   }
 
-  // Rutas protegidas
   if (TEACHER_ROUTES.includes(path)) {
-    if (!user) { navigate('/login'); return; }
-    if (user.role !== 'docente') { navigate('/estudiante'); return; }
+    if (!user)                    { navigate('/login');      return; }
+    if (user.role !== 'docente')  { navigate('/estudiante'); return; }
   }
   if (STUDENT_ROUTES.includes(path)) {
-    if (!user) { navigate('/login'); return; }
+    if (!user)                      { navigate('/login');   return; }
     if (user.role !== 'estudiante') { navigate('/docente'); return; }
   }
   if (AUTH_ONLY_ROUTES.includes(path) && user) {
@@ -50,46 +51,44 @@ function router() {
     return;
   }
 
+  if (!CHAT_ROUTES.includes(path)) destroyChat?.();
+
   const renderPage = ROUTES[path] || renderHome;
   app.innerHTML = '';
-  if (path !== '/docente' && path !== '/monitor' && path !== '/resultados') {
-    destroyChat?.();
-  }
   renderPage(app);
   updateNavbar();
 }
 
-// ── Reemplaza la función updateNavbar en js/app.js ──
+// ===== NAVBAR =====
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function getAvatarColor(str) {
+  const colors = ['#2563eb', '#7c3aed', '#0891b2', '#059669', '#dc2626', '#d97706'];
+  let hash = 0;
+  for (const c of (str || '')) hash = c.charCodeAt(0) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function buildAvatarHTML(user) {
+  const initials = getInitials(user.name);
+  const color    = getAvatarColor(user.email);
+  const fallback = `<div style="display:none;width:2rem;height:2rem;border-radius:50%;background:${color};align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff">${initials}</div>`;
+
+  if (user.photo) {
+    return `<img src="${user.photo}" style="width:2rem;height:2rem;border-radius:50%;object-fit:cover;display:block"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>${fallback}`;
+  }
+  return `<div style="width:2rem;height:2rem;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff">${initials}</div>`;
+}
 
 function updateNavbar() {
   const user    = getUser();
   const actions = document.getElementById('nav-actions');
   const isDark  = document.body.classList.contains('dark');
-
-  function getInitials(name) {
-    if (!name) return '?';
-    return name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-  }
-
-  function getAvatarColor(str) {
-    const colors = ['#2563eb','#7c3aed','#0891b2','#059669','#dc2626','#d97706'];
-    let hash = 0;
-    for (let c of (str||'')) hash = c.charCodeAt(0) + ((hash << 5) - hash);
-    return colors[Math.abs(hash) % colors.length];
-  }
-
-  function avatarHTML(user) {
-    if (user.photo) {
-      return `<img src="${user.photo}" style="width:2rem;height:2rem;border-radius:50%;object-fit:cover;display:block"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-              <div style="display:none;width:2rem;height:2rem;border-radius:50%;background:${getAvatarColor(user.email)};align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff">
-                ${getInitials(user.name)}
-              </div>`;
-    }
-    return `<div style="width:2rem;height:2rem;border-radius:50%;background:${getAvatarColor(user.email)};display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff">
-              ${getInitials(user.name)}
-            </div>`;
-  }
 
   actions.innerHTML = `
     <style>
@@ -108,19 +107,16 @@ function updateNavbar() {
         max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       body.dark .nav-profile-name { color: #e2e8f0; }
-      .nav-role-dot {
-        width: .45rem; height: .45rem; border-radius: 50%;
-        display: inline-block; margin-right: .3rem;
-      }
+      .nav-role-dot { width: .45rem; height: .45rem; border-radius: 50%; display: inline-block; margin-right: .3rem; }
     </style>
     <button class="btn btn-outline" id="theme-toggle">${isDark ? '☀️ Claro' : '🌙 Oscuro'}</button>
     ${user ? `
       <a href="#/perfil" class="nav-profile-btn" id="nav-profile">
-        ${avatarHTML(user)}
+        ${buildAvatarHTML(user)}
         <div style="display:flex;flex-direction:column;line-height:1.2">
           <span class="nav-profile-name">${user.name || user.email.split('@')[0]}</span>
           <span style="font-size:.68rem;color:#94a3b8">
-            <span class="nav-role-dot" style="background:${user.role==='docente'?'#2563eb':'#16a34a'}"></span>${user.role}
+            <span class="nav-role-dot" style="background:${user.role === 'docente' ? '#2563eb' : '#16a34a'}"></span>${user.role}
           </span>
         </div>
         <i class="fa-solid fa-chevron-down" style="font-size:.65rem;color:#94a3b8"></i>
@@ -135,8 +131,7 @@ function updateNavbar() {
   `;
 
   document.getElementById('theme-toggle').onclick = toggleTheme;
-  const logoutBtn = document.getElementById('nav-logout');
-  if (logoutBtn) logoutBtn.onclick = () => { logout(); navigate('/login'); };
+  document.getElementById('nav-logout')?.addEventListener('click', () => { logout(); navigate('/login'); });
 }
 
 function toggleTheme() {
