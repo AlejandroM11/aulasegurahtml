@@ -1334,14 +1334,24 @@ function renderStudent(app) {
     document.getElementById('msg-btn').onclick    = () => { modal.style.display = 'flex'; };
     document.getElementById('msg-cancel').onclick = () => { modal.style.display = 'none'; };
     document.getElementById('msg-send').onclick   = async () => {
-      const msg = document.getElementById('msg-text').value.trim();
+      const msg     = document.getElementById('msg-text').value.trim();
+      const sendBtn = document.getElementById('msg-send');
       if (!msg) { alert('Escribe un mensaje'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = 'Enviando...';
       try {
-        await sendMessageToTeacher(exam.code, studentId, msg);
-        alert('✅ Mensaje enviado. Espera la respuesta del docente.');
+        await sendMessageToTeacher(
+          exam.code, studentId, msg,
+          user.name || 'Estudiante',
+          user.email || ''
+        );
         modal.style.display = 'none';
         document.getElementById('msg-text').value = '';
-      } catch { alert('❌ Error al enviar el mensaje'); }
+        alert('✅ Mensaje enviado. Espera la respuesta del docente.');
+      } catch (err) {
+        alert('❌ Error al enviar el mensaje: ' + (err?.message || 'intenta de nuevo'));
+      } finally {
+        sendBtn.disabled = false; sendBtn.textContent = 'Enviar';
+      }
     };
   }
 

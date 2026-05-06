@@ -71,10 +71,14 @@ function removeActiveStudent(examCode, uid) {
 }
 
 /** Envía un mensaje del estudiante al docente */
-function sendMessageToTeacher(examCode, uid, message) {
+function sendMessageToTeacher(examCode, uid, message, studentName, studentEmail) {
   return messagesRef(examCode).push({
-    studentUid: uid, message,
-    timestamp: Date.now(), read: false
+    studentUid: uid,
+    studentName: studentName || uid,
+    studentEmail: studentEmail || '',
+    message,
+    timestamp: Date.now(),
+    read: false
   });
 }
 
