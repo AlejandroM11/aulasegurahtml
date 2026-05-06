@@ -262,6 +262,34 @@ function renderResults(app) {
     });
   }
 
+  // Renderiza LaTeX como matemática estática usando MathQuill.
+  // Mismo patrón que student.js — fallback a código si MathQuill no está.
+  function renderStaticMath(el, latex) {
+    if (!el || !latex) return;
+    if (window.MathQuill) {
+      try {
+        el.innerHTML = '';
+        window.MathQuill.getInterface(2).StaticMath(el).latex(latex);
+        return;
+      } catch (_) { /* fallback */ }
+    }
+    el.innerHTML = `<code style="font-family:monospace;font-size:.9rem;color:#1d4ed8;background:#eff6ff;padding:.15rem .4rem;border-radius:.35rem">${latex}</code>`;
+  }
+
+  // Aplica renderStaticMath a todos los elementos eq del detalle ya renderizado.
+  function renderMathInResults(questions, answers) {
+    questions.forEach(q => {
+      if (q.type !== 'eq') return;
+      const given = answers?.[q.id];
+      if (given) {
+        renderStaticMath(document.getElementById(`res-eq-student-${q.id}`), given);
+      }
+      if (q.referenceLatex) {
+        renderStaticMath(document.getElementById(`res-eq-ref-${q.id}`), q.referenceLatex);
+      }
+    });
+  }
+
   function renderDetail() {
     const s          = selectedSub;
     const sc         = score(s);
@@ -378,6 +406,7 @@ function renderResults(app) {
                       <span style="font-size:.8rem;font-weight:700;color:#94a3b8;flex-shrink:0;margin-top:.1rem">${idx + 1}</span>
                       <div style="flex:1">
                         <p class="font-bold text-sm mb-1">${q.text}</p>
+
                         ${q.type === 'mc' ? `
                           <p class="text-sm">
                             ${answered
@@ -392,10 +421,33 @@ function renderResults(app) {
                               Correcta: ${q.options[q.correctIndex]}
                             </p>
                           ` : ''}
+
+                        ` : q.type === 'eq' ? `
+                          ${q.referenceLatex ? `
+                            <p class="text-xs" style="color:#1d4ed8;font-weight:600;margin-bottom:.25rem">
+                              <i class="fa-solid fa-square-root-variable" style="margin-right:.3rem"></i>Referencia:
+                            </p>
+                            <div id="res-eq-ref-${q.id}" style="
+                              background:#eff6ff;border:1px solid #bfdbfe;
+                              border-radius:.5rem;padding:.4rem .75rem;
+                              margin-bottom:.5rem;font-size:1rem;
+                            "></div>
+                          ` : ''}
+                          <p class="text-xs" style="color:#64748b;font-weight:600;margin-bottom:.25rem">
+                            <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta del estudiante:
+                          </p>
+                          ${answered
+                            ? `<div id="res-eq-student-${q.id}" style="
+                                background:#f8fafc;border:1px solid #e2e8f0;
+                                border-radius:.5rem;padding:.4rem .75rem;
+                                font-size:1rem;
+                              "></div>`
+                            : `<span class="text-gray text-sm"><i class="fa-solid fa-minus" style="margin-right:.3rem"></i>Sin responder</span>`}
+
                         ` : `
                           <p class="text-sm">
                             ${answered
-                              ? given
+                              ? `<span style="white-space:pre-wrap">${given}</span>`
                               : `<span class="text-gray"><i class="fa-solid fa-minus" style="margin-right:.3rem"></i>Sin responder</span>`}
                           </p>
                         `}
@@ -409,6 +461,9 @@ function renderResults(app) {
       </div>`;
 
     document.getElementById('back-detail').onclick = () => { selectedSub = null; render(); };
+
+    // Renderizar expresiones matemáticas (tipo eq) después de que el DOM esté listo
+    setTimeout(() => renderMathInResults(questions, s.answers), 60);
   }
 
   load();
