@@ -76,9 +76,16 @@ function renderMonitor(app) {
     if (!responseText.trim()) { alert('Escribe una respuesta'); return; }
     try {
       await respondToStudent(selectedExam.code, msgId, responseText);
-      alert('✅ Respuesta enviada al estudiante');
       responseText = ''; selectedMsg = null; render();
     } catch { alert('❌ Error al enviar la respuesta'); }
+  }
+
+  async function handleDeleteMessage(msgId) {
+    if (!confirm('¿Eliminar este mensaje del inbox?')) return;
+    try {
+      await deleteMessage(selectedExam.code, msgId);
+      // render se dispara automáticamente por el listener de Firebase
+    } catch { alert('❌ Error al eliminar el mensaje'); }
   }
 
   function render() {
@@ -247,51 +254,87 @@ function renderMonitor(app) {
         </div>
 
         <div class="card">
-          <h2 class="font-bold mb-3" style="font-size:1.1rem">
-            <i class="fa-solid fa-comments" style="margin-right:.4rem;color:#2563eb"></i>Mensajes de estudiantes
-            ${unread.length > 0 ? `<span class="badge badge-red" style="margin-left:.5rem">${unread.length} nuevos</span>` : ''}
-          </h2>
+          <div class="flex-between mb-3">
+            <h2 class="font-bold" style="font-size:1.1rem">
+              <i class="fa-solid fa-inbox" style="margin-right:.4rem;color:#2563eb"></i>Bandeja de mensajes
+              ${messages.length > 0 ? `<span style="background:#e2e8f0;color:#475569;border-radius:999px;padding:.1rem .55rem;font-size:.75rem;font-weight:700;margin-left:.4rem">${messages.length}</span>` : ''}
+              ${unread.length > 0 ? `<span class="badge badge-red" style="margin-left:.4rem">${unread.length} sin leer</span>` : ''}
+            </h2>
+            ${messages.length > 0 ? `
+              <button class="btn btn-outline text-xs" id="clear-read-btn">
+                <i class="fa-solid fa-check-double" style="margin-right:.3rem"></i>Limpiar leídos
+              </button>` : ''}
+          </div>
+
           ${messages.length === 0
-            ? `<div class="text-center text-gray" style="padding:2rem">
-                <i class="fa-solid fa-inbox" style="font-size:1.75rem;color:#cbd5e1"></i>
-                <p class="mt-2 text-sm">No hay mensajes</p>
+            ? `<div class="text-center text-gray" style="padding:2.5rem">
+                <i class="fa-solid fa-inbox" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:.5rem"></i>
+                <p class="text-sm">No hay mensajes</p>
               </div>`
-            : `<div class="space-y">
+            : `<div style="display:flex;flex-direction:column;gap:.6rem;max-height:480px;overflow-y:auto;padding-right:.25rem">
                 ${messages.map(m => `
-                  <div class="info-box ${m.read ? '' : 'info-box-blue'}" style="border-left:3px solid ${m.read ? '#e2e8f0' : '#2563eb'}">
-                    <div class="flex-between mb-1">
-                      <p class="font-bold text-sm">
-                        <i class="fa-solid fa-user" style="margin-right:.3rem;color:#64748b"></i>
-                        ${m.studentName || m.studentUid}
-                      </p>
-                      <p class="text-xs text-gray">
-                        <i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${fmtTs(m.timestamp)}
-                      </p>
+                  <div style="
+                    background:${m.read ? '#f8fafc' : '#eff6ff'};
+                    border:1.5px solid ${m.read ? '#e2e8f0' : '#93c5fd'};
+                    border-left:4px solid ${m.read ? '#cbd5e1' : '#2563eb'};
+                    border-radius:.85rem;padding:.9rem 1rem;
+                    transition:border-color .2s;
+                  ">
+                    <!-- Header del mensaje -->
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+                      <div style="display:flex;align-items:center;gap:.5rem">
+                        <div style="width:2rem;height:2rem;border-radius:50%;background:${m.read ? '#e2e8f0' : '#dbeafe'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                          <i class="fa-solid fa-user" style="font-size:.75rem;color:${m.read ? '#64748b' : '#2563eb'}"></i>
+                        </div>
+                        <div>
+                          <p style="font-weight:700;font-size:.875rem;color:#1e293b">${m.studentName || m.studentUid || 'Estudiante'}</p>
+                          ${m.studentEmail ? `<p style="font-size:.7rem;color:#94a3b8">${m.studentEmail}</p>` : ''}
+                        </div>
+                        ${!m.read ? `<span style="width:.5rem;height:.5rem;border-radius:50%;background:#2563eb;flex-shrink:0;margin-left:.25rem"></span>` : ''}
+                      </div>
+                      <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+                        <span style="font-size:.72rem;color:#94a3b8">
+                          <i class="fa-solid fa-clock" style="margin-right:.25rem"></i>${fmtTs(m.timestamp)}
+                        </span>
+                        <button class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem;border-radius:.5rem"
+                          data-delete="${m.id}" title="Eliminar mensaje">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
                     </div>
-                    <p class="text-sm mb-2">${m.message}</p>
-                    ${m.response
-                      ? `<div style="background:#f0fdf4;border-radius:.4rem;padding:.5rem .75rem;margin-top:.5rem">
-                          <p class="text-xs text-gray mb-1">
-                            <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Tu respuesta:
-                          </p>
-                          <p class="text-sm">${m.response}</p>
-                        </div>`
-                      : `<div>
-                          ${selectedMsg === m.id
-                            ? `<div style="display:flex;gap:.5rem;margin-top:.5rem">
-                                <input class="input text-sm" id="resp-input" placeholder="Escribe tu respuesta..." value="${responseText}" style="flex:1"/>
-                                <button class="btn btn-primary text-xs" data-send="${m.id}">
-                                  <i class="fa-solid fa-paper-plane" style="margin-right:.3rem"></i>Enviar
-                                </button>
-                                <button class="btn btn-outline text-xs" id="cancel-resp">
-                                  <i class="fa-solid fa-xmark"></i>
-                                </button>
-                              </div>`
-                            : `<button class="btn btn-outline text-xs" data-reply="${m.id}">
-                                <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Responder
-                              </button>`}
-                        </div>`
-                    }
+
+                    <!-- Contenido del mensaje -->
+                    <p style="font-size:.875rem;color:#374151;line-height:1.5;margin-bottom:.6rem;padding-left:2.5rem">${m.message}</p>
+
+                    <!-- Respuesta enviada -->
+                    ${m.response ? `
+                      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.6rem;padding:.6rem .85rem;margin-left:2.5rem">
+                        <p style="font-size:.7rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem">
+                          <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Tu respuesta
+                        </p>
+                        <p style="font-size:.82rem;color:#166534">${m.response}</p>
+                      </div>
+                    ` : `
+                      <!-- Formulario de respuesta -->
+                      <div style="padding-left:2.5rem">
+                        ${selectedMsg === m.id
+                          ? `<div style="display:flex;gap:.4rem;margin-top:.25rem">
+                              <input class="input text-sm" id="resp-input"
+                                placeholder="Escribe tu respuesta al estudiante..."
+                                value="${responseText}"
+                                style="flex:1;border-radius:.65rem;font-size:.82rem"/>
+                              <button class="btn btn-primary text-xs" data-send="${m.id}" style="border-radius:.65rem;white-space:nowrap">
+                                <i class="fa-solid fa-paper-plane" style="margin-right:.3rem"></i>Enviar
+                              </button>
+                              <button class="btn btn-outline text-xs" id="cancel-resp" style="border-radius:.65rem">
+                                <i class="fa-solid fa-xmark"></i>
+                              </button>
+                            </div>`
+                          : `<button class="btn btn-outline text-xs" data-reply="${m.id}" style="border-radius:.65rem">
+                              <i class="fa-solid fa-reply" style="margin-right:.3rem"></i>Responder
+                            </button>`}
+                      </div>
+                    `}
                   </div>
                 `).join('')}
               </div>`
@@ -324,12 +367,29 @@ function renderMonitor(app) {
     const respInput = document.getElementById('resp-input');
     if (respInput) {
       respInput.oninput = e => { responseText = e.target.value; };
+      // Restaurar el valor y el foco después del re-render
+      respInput.value = responseText;
       respInput.focus();
+      respInput.setSelectionRange(respInput.value.length, respInput.value.length);
     }
 
     document.querySelectorAll('[data-send]').forEach(btn => {
       btn.onclick = () => handleRespond(btn.dataset.send);
     });
+
+    document.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.onclick = () => handleDeleteMessage(btn.dataset.delete);
+    });
+
+    const clearReadBtn = document.getElementById('clear-read-btn');
+    if (clearReadBtn) clearReadBtn.onclick = async () => {
+      const readMsgs = messages.filter(m => m.read);
+      if (readMsgs.length === 0) return;
+      if (!confirm(`¿Eliminar ${readMsgs.length} mensaje${readMsgs.length !== 1 ? 's' : ''} ya respondido${readMsgs.length !== 1 ? 's' : ''}?`)) return;
+      try {
+        await Promise.all(readMsgs.map(m => deleteMessage(selectedExam.code, m.id)));
+      } catch { alert('❌ Error al limpiar mensajes'); }
+    };
   }
 
   loadExams();

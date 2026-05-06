@@ -89,6 +89,16 @@ function respondToStudent(examCode, messageId, response) {
   });
 }
 
+/** Elimina un mensaje del inbox */
+function deleteMessage(examCode, messageId) {
+  return messagesRef(examCode).child(messageId).remove();
+}
+
+/** Marca un mensaje como leído */
+function markMessageRead(examCode, messageId) {
+  return messagesRef(examCode).child(messageId).update({ read: true });
+}
+
 /** Escucha en tiempo real los estudiantes activos de un examen */
 function listenToActiveStudents(examCode, callback) {
   const ref = dbRef(`active_exams/${examCode}/students`);

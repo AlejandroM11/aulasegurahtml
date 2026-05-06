@@ -34,8 +34,9 @@ function renderStudent(app) {
   let timerInterval  = null;
   let statusInterval = null;
   let unsubBlock     = null;
+  let unsubMessages  = null; // listener de respuestas del profesor
   let listenerReady  = false;
-  let enteringFullscreen = false; // suprime el guard durante transición de entrada a FS
+  let enteringFullscreen = false;
 
   const user      = getUser() || {};
   const studentId = user.uid || user.email;
@@ -1023,6 +1024,8 @@ function renderStudent(app) {
     blockState.remote = false; blockState.local = false;
     blockState.isBlocked = false; blockState.reason = '';
     blockState.unlocking = false;
+    // Detener listener de mensajes al salir de la pantalla de bloqueo
+    if (unsubMessages) { try { unsubMessages(); } catch (_) {} unsubMessages = null; }
     if (submitted || finished) return;
     showReturnToFullscreenScreen();
   }
@@ -1272,8 +1275,9 @@ function renderStudent(app) {
     mqStudentFields = {};
     blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
     stopTimer();
-    if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-    if (unsubBlock) { try { unsubBlock(); } catch (_) {} unsubBlock = null; }
+    if (statusInterval)  { clearInterval(statusInterval); statusInterval = null; }
+    if (unsubBlock)      { try { unsubBlock(); }      catch (_) {} unsubBlock = null; }
+    if (unsubMessages)   { try { unsubMessages(); }   catch (_) {} unsubMessages = null; }
     removeFraudListeners();
     window.onbeforeunload = null;
     listenerReady = false;
@@ -1340,19 +1344,28 @@ function renderStudent(app) {
             </div>
           ` : ''}
 
-          <!-- Formulario de mensaje — integrado directamente, sin modal -->
+          <!-- Conversación con el docente -->
           <div style="
             background:rgba(255,255,255,.12);
             border:1px solid rgba(255,255,255,.25);
             border-radius:1rem;padding:1.25rem;margin-bottom:1rem;
           ">
             <p style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.8;margin-bottom:.75rem">
-              <i class="fa-solid fa-comment-dots" style="margin-right:.4rem"></i>
-              Enviar mensaje al docente
+              <i class="fa-solid fa-comments" style="margin-right:.4rem"></i>
+              Mensajes con el docente
             </p>
+
+            <!-- Hilo de mensajes (se actualiza en tiempo real) -->
+            <div id="msg-thread" style="
+              max-height:220px;overflow-y:auto;
+              display:flex;flex-direction:column;gap:.5rem;
+              margin-bottom:.75rem;
+            "></div>
+
+            <!-- Input para enviar -->
             <textarea
               id="msg-text"
-              rows="3"
+              rows="2"
               placeholder="Explica tu situación al docente..."
               style="
                 width:100%;padding:.75rem 1rem;
@@ -1385,7 +1398,7 @@ function renderStudent(app) {
           ">
             <p>• Tu progreso está guardado</p>
             <p>• Solo el docente puede desbloquearte</p>
-            <p>• Puedes enviarle un mensaje explicando tu situación</p>
+            <p>• Las respuestas del docente aparecen arriba en tiempo real</p>
           </div>
 
         </div>
@@ -1393,12 +1406,79 @@ function renderStudent(app) {
     `;
 
     bindBlockScreenEvents();
+    startMessageListener();
+  }
+
+  /** Renderiza el hilo de mensajes en la pantalla de bloqueo */
+  function renderMessageThread(msgs) {
+    const thread = document.getElementById('msg-thread');
+    if (!thread) return;
+
+    // Filtrar solo los mensajes de este estudiante
+    const mine = msgs.filter(m => m.studentUid === studentId);
+
+    if (mine.length === 0) {
+      thread.innerHTML = `
+        <p style="font-size:.78rem;opacity:.6;text-align:center;padding:.5rem 0">
+          Aún no has enviado mensajes. Escribe abajo para contactar al docente.
+        </p>`;
+      return;
+    }
+
+    thread.innerHTML = mine.map(m => `
+      <!-- Mensaje del estudiante -->
+      <div style="display:flex;justify-content:flex-end">
+        <div style="
+          background:rgba(255,255,255,.2);
+          border-radius:.85rem .85rem 0 .85rem;
+          padding:.55rem .85rem;max-width:85%;
+          font-size:.85rem;color:#fff;
+        ">
+          <p>${safeText(m.message)}</p>
+          <p style="font-size:.68rem;opacity:.6;margin-top:.2rem;text-align:right">
+            ${fmtTs(m.timestamp)}
+          </p>
+        </div>
+      </div>
+      <!-- Respuesta del docente (si existe) -->
+      ${m.response ? `
+        <div style="display:flex;justify-content:flex-start">
+          <div style="
+            background:#fff;
+            border-radius:.85rem .85rem .85rem 0;
+            padding:.55rem .85rem;max-width:85%;
+            font-size:.85rem;color:#1e293b;
+            box-shadow:0 2px 8px rgba(0,0,0,.15);
+          ">
+            <p style="font-size:.68rem;font-weight:700;color:#2563eb;margin-bottom:.2rem">
+              <i class="fa-solid fa-chalkboard-user" style="margin-right:.3rem"></i>Docente
+            </p>
+            <p>${safeText(m.response)}</p>
+            <p style="font-size:.68rem;opacity:.5;margin-top:.2rem">
+              ${fmtTs(m.respondedAt)}
+            </p>
+          </div>
+        </div>
+      ` : ''}
+    `).join('');
+
+    // Scroll al final para ver el mensaje más reciente
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  /** Inicia el listener de mensajes para mostrar respuestas del docente */
+  function startMessageListener() {
+    if (unsubMessages) { try { unsubMessages(); } catch (_) {} }
+    if (!exam?.code) return;
+    unsubMessages = listenToMessages(exam.code, (msgs) => {
+      renderMessageThread(msgs);
+    });
   }
 
   function bindBlockScreenEvents() {
-    const sendBtn    = document.getElementById('msg-send');
-    const textarea   = document.getElementById('msg-text');
-    const feedback   = document.getElementById('msg-feedback');
+    const sendBtn  = document.getElementById('msg-send');
+    const textarea = document.getElementById('msg-text');
+    const feedback = document.getElementById('msg-feedback');
 
     sendBtn.onclick = async () => {
       const msg = textarea.value.trim();
@@ -1423,6 +1503,7 @@ function renderStudent(app) {
         setTimeout(() => {
           sendBtn.disabled = false;
           sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:.4rem"></i>Enviar otro mensaje';
+          feedback.textContent = '';
         }, 3000);
       } catch (err) {
         feedback.style.color = '#fca5a5';
