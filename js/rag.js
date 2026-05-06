@@ -705,18 +705,30 @@ Si el docente hace una pregunta general sin pedir edición, responde brevemente 
     const selected = generatedQuestions
       .filter((_, i) => selectedIndexes.has(i))
       .map(q => {
+        // Si la IA marcó la pregunta como matemática, convertirla a type "eq"
+        // para que student.js active MathQuill y el teclado matemático
+        const isMathQuestion = (q.isMath === true) && q.latex;
+        const resolvedType   = isMathQuestion ? 'eq' : (q.type || 'mc');
+
         const base = {
           id:     crypto.randomUUID(),
           text:   q.text,
-          type:   q.type || 'mc',
-          isMath: q.isMath || false,
+          type:   resolvedType,
+          isMath: isMathQuestion || false,
         };
-        if (q.isMath && q.latex)        base.latex        = q.latex;
-        if (q.isMath && q.correctLatex) base.correctLatex = q.correctLatex;
-        if (base.type === 'mc') {
+
+        if (isMathQuestion) {
+          // "latex" de la IA → "referenceLatex" que student.js muestra como referencia del profesor
+          base.referenceLatex = q.latex;
+        }
+
+        if (resolvedType === 'mc') {
           base.options      = q.options      || [];
           base.correctIndex = q.correctIndex ?? 0;
         }
+
+        if (q.correctAnswer) base.correctAnswer = q.correctAnswer;
+
         return base;
       });
     onQuestionsSelected(selected);
