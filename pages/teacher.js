@@ -26,7 +26,7 @@ function renderTeacher(app) {
   let selectedExam = null;
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
   let questions = [], qtext = '', qtype = 'mc';
-  let options = ['', ''], correctIndex = 0;
+  let options = ['', ''], correctIndex = 0, correctIndexes = [];
   let mathEditorInstance = null;   // MathQuill instance para el campo de ecuación inline
   let mathModalInstance = null;    // MathQuill instance del modal de inserción
   const user = getUser();
@@ -51,7 +51,7 @@ function renderTeacher(app) {
 
   function resetForm() {
     title = ''; code = generateCode(); dur = 30; questions = [];
-    qtext = ''; options = ['', '']; correctIndex = 0;
+    qtext = ''; options = ['', '']; correctIndex = 0; correctIndexes = [];
     showCorrectAnswers = false; selectedExam = null; qtype = 'mc';
     mathEditorInstance = null; mathModalInstance = null;
   }
@@ -121,8 +121,15 @@ function renderTeacher(app) {
       q.options = opts; q.correctIndex = Number(correctIndex);
     }
 
+    if (qtype === 'multi') {
+      const opts = options.map(o => o.trim()).filter(Boolean);
+      if (opts.length < 2) return alert('Agrega al menos 2 opciones');
+      if (correctIndexes.length === 0) return alert('Marca al menos una respuesta correcta');
+      q.options = opts;
+      q.correctIndexes = [...correctIndexes];
+    }
+
     if (qtype === 'eq') {
-      // Capturar LaTeX de referencia del editor MathQuill
       if (mathEditorInstance) {
         const refLatex = mathEditorInstance.latex();
         if (refLatex) q.referenceLatex = refLatex;
@@ -130,7 +137,7 @@ function renderTeacher(app) {
     }
 
     questions.push(q);
-    qtext = ''; options = ['', '']; correctIndex = 0;
+    qtext = ''; options = ['', '']; correctIndex = 0; correctIndexes = [];
     mathEditorInstance = null;
     render();
   }
@@ -561,7 +568,12 @@ function renderTeacher(app) {
                     <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
                       <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
                       <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.3rem"></i>
-                      <span class="text-sm font-bold">Múltiple opción</span>
+                      <span class="text-sm font-bold">Una correcta</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='multi'?'#0891b2':'#e2e8f0'};cursor:pointer;background:${qtype==='multi'?'#ecfeff':'#fff'}">
+                      <input type="radio" name="qtype" value="multi" ${qtype==='multi'?'checked':''} style="accent-color:#0891b2"/>
+                      <i class="fa-solid fa-square-check" style="color:#0891b2;margin-right:.3rem"></i>
+                      <span class="text-sm font-bold">Varias correctas</span>
                     </label>
                     <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
                       <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
@@ -577,9 +589,10 @@ function renderTeacher(app) {
                 </div>
               </div>
 
-              ${qtype === 'mc' ? renderMcOptions() : ''}
-              ${qtype === 'eq' ? renderEqSection() : ''}
-              ${qtype === 'open' ? `
+              ${qtype === 'mc'    ? renderMcOptions()    : ''}
+              ${qtype === 'multi' ? renderMultiOptions() : ''}
+              ${qtype === 'eq'    ? renderEqSection()    : ''}
+              ${qtype === 'open'  ? `
                 <div class="info-box info-box-blue mb-3">
                   <p class="text-xs">
                     <i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>
@@ -703,6 +716,48 @@ function renderTeacher(app) {
     `;
   }
 
+  /** Opciones para preguntas con varias respuestas correctas (checkboxes) */
+  function renderMultiOptions() {
+    return `
+      <div style="background:#ecfeff;border-radius:.75rem;padding:.85rem;border:1.5px solid #a5f3fc;margin-bottom:.75rem">
+        <p class="section-label" style="color:#0891b2">Opciones — marca TODAS las correctas</p>
+        <p class="text-xs mb-2" style="color:#0e7490">
+          <i class="fa-solid fa-circle-info" style="margin-right:.3rem"></i>
+          El estudiante debe seleccionar exactamente las mismas opciones marcadas aquí.
+        </p>
+        ${options.map((opt, i) => `
+          <div class="opt-row">
+            <input type="checkbox" class="correct-multi-cb" value="${i}"
+              ${correctIndexes.includes(i)?'checked':''}
+              id="multi-correct-${i}"
+              style="width:1.1rem;height:1.1rem;accent-color:#0891b2;flex-shrink:0;cursor:pointer"/>
+            <input class="input text-sm" id="opt-${i}" value="${opt}"
+              placeholder="Opción ${String.fromCharCode(65+i)}" style="flex:1"/>
+            ${options.length > 2
+              ? `<button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem" data-remove-opt="${i}">
+                   <i class="fa-solid fa-xmark"></i>
+                 </button>`
+              : ''}
+          </div>
+        `).join('')}
+        ${options.length < 6
+          ? `<button class="btn btn-outline text-xs mt-2" id="add-opt-btn" style="width:100%">
+               <i class="fa-solid fa-plus" style="margin-right:.3rem"></i>Agregar opción
+             </button>`
+          : ''}
+        ${correctIndexes.length > 0
+          ? `<p class="text-xs mt-2" id="multi-hint" style="color:#0891b2;font-weight:600">
+               <i class="fa-solid fa-check" style="margin-right:.3rem"></i>
+               ${correctIndexes.length} respuesta${correctIndexes.length !== 1 ? 's' : ''} correcta${correctIndexes.length !== 1 ? 's' : ''} marcada${correctIndexes.length !== 1 ? 's' : ''}
+             </p>`
+          : `<p class="text-xs mt-2" id="multi-hint" style="color:#dc2626;font-weight:600">
+               <i class="fa-solid fa-triangle-exclamation" style="margin-right:.3rem"></i>
+               Marca al menos una respuesta correcta
+             </p>`}
+      </div>
+    `;
+  }
+
   function renderEqSection() {
     return `
       <div style="background:#fdf4ff;border-radius:.75rem;padding:.85rem;border:1.5px solid #e9d5ff;margin-bottom:.75rem">
@@ -719,10 +774,67 @@ function renderTeacher(app) {
 
   function renderQuestionChip(q, idx) {
     const typeBadge = {
-      mc:   { bg:'#dbeafe', color:'#1d4ed8', icon:'fa-list-check',    label:'MÚLTIPLE' },
-      open: { bg:'#dcfce7', color:'#15803d', icon:'fa-pen-to-square', label:'ABIERTA' },
-      eq:   { bg:'#ede9fe', color:'#6d28d9', icon:'fa-square-root-variable', label:'ECUACIÓN' },
+      mc:    { bg:'#dbeafe', color:'#1d4ed8', icon:'fa-list-check',    label:'MÚLTIPLE' },
+      multi: { bg:'#cffafe', color:'#0e7490', icon:'fa-square-check',  label:'VARIAS CORRECTAS' },
+      open:  { bg:'#dcfce7', color:'#15803d', icon:'fa-pen-to-square', label:'ABIERTA' },
+      eq:    { bg:'#ede9fe', color:'#6d28d9', icon:'fa-square-root-variable', label:'ECUACIÓN' },
     }[q.type] || { bg:'#f1f5f9', color:'#475569', icon:'fa-question', label:'?' };
+
+    const displayText = q.type === 'eq'
+      ? `\\(${q.text}\\)`
+      : q.isMath && q.latex
+        ? `${q.text} &nbsp;<span style="font-size:.8rem;color:#7c3aed">\\(${q.latex}\\)</span>`
+        : q.text;
+
+    return `
+      <div class="q-chip">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">
+            <span style="background:${typeBadge.bg};color:${typeBadge.color};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px">
+              <i class="fa-solid ${typeBadge.icon}" style="margin-right:.3rem"></i>${typeBadge.label}
+            </span>
+            <span class="text-xs text-gray">#${idx+1}</span>
+          </div>
+          <p class="text-sm font-bold">${displayText}</p>
+          ${q.type === 'mc' ? `
+            <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
+              ${q.options.map((o,i) => `
+                <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
+                  background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};
+                  color:${i===q.correctIndex?'#15803d':'#475569'};
+                  font-weight:${i===q.correctIndex?'700':'400'}">
+                  ${i===q.correctIndex?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
+                </span>
+              `).join('')}
+            </div>
+          ` : q.type === 'multi' ? `
+            <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
+              ${(q.options||[]).map((o,i) => {
+                const isCorrect = (q.correctIndexes||[]).includes(i);
+                return `<span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
+                  background:${isCorrect?'#cffafe':'#f1f5f9'};
+                  color:${isCorrect?'#0e7490':'#475569'};
+                  font-weight:${isCorrect?'700':'400'}">
+                  ${isCorrect?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
+                </span>`;
+              }).join('')}
+            </div>
+          ` : q.type === 'eq' && q.referenceLatex ? `
+            <p class="text-xs" style="color:#7c3aed;margin-top:.3rem">
+              <i class="fa-solid fa-superscript" style="margin-right:.3rem"></i>
+              Ref: \\(${q.referenceLatex}\\)
+            </p>
+          ` : q.type === 'open' ? `
+            <p class="text-xs text-gray mt-1">
+              <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta
+            </p>
+          ` : ''}
+        </div>
+        <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
+          data-del="${q.id}"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `;
+  }
 
     // Mostrar LaTeX como fórmula renderizada
     const displayText = q.type === 'eq'
@@ -887,8 +999,38 @@ function renderTeacher(app) {
       options.forEach((_, i) => {
         const inp   = document.getElementById(`opt-${i}`);
         const radio = document.getElementById(`correct-${i}`);
-        if (inp)   inp.oninput  = e => { options[i] = e.target.value; };
+        if (inp)   inp.oninput    = e => { options[i] = e.target.value; };
         if (radio) radio.onchange = () => { correctIndex = i; };
+      });
+      const addOptBtn = document.getElementById('add-opt-btn');
+      if (addOptBtn) addOptBtn.onclick = addOption;
+      document.querySelectorAll('[data-remove-opt]').forEach(btn => {
+        btn.onclick = () => removeOption(Number(btn.dataset.removeOpt));
+      });
+    }
+
+    // ─── Opciones varias correctas ───
+    if (qtype === 'multi') {
+      options.forEach((_, i) => {
+        const inp = document.getElementById(`opt-${i}`);
+        const cb  = document.getElementById(`multi-correct-${i}`);
+        if (inp) inp.oninput = e => { options[i] = e.target.value; };
+        if (cb)  cb.onchange = () => {
+          const idx = Number(cb.value);
+          if (cb.checked) {
+            if (!correctIndexes.includes(idx)) correctIndexes.push(idx);
+          } else {
+            correctIndexes = correctIndexes.filter(x => x !== idx);
+          }
+          // Actualizar solo el feedback visual sin re-render completo
+          const hint = document.getElementById('multi-hint');
+          if (hint) {
+            hint.style.color = correctIndexes.length > 0 ? '#0891b2' : '#dc2626';
+            hint.innerHTML = correctIndexes.length > 0
+              ? `<i class="fa-solid fa-check" style="margin-right:.3rem"></i>${correctIndexes.length} respuesta${correctIndexes.length !== 1 ? 's' : ''} correcta${correctIndexes.length !== 1 ? 's' : ''} marcada${correctIndexes.length !== 1 ? 's' : ''}`
+              : `<i class="fa-solid fa-triangle-exclamation" style="margin-right:.3rem"></i>Marca al menos una respuesta correcta`;
+          }
+        };
       });
       const addOptBtn = document.getElementById('add-opt-btn');
       if (addOptBtn) addOptBtn.onclick = addOption;

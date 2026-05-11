@@ -727,6 +727,11 @@ Si el docente hace una pregunta general sin pedir edición, responde brevemente 
           base.correctIndex = q.correctIndex ?? 0;
         }
 
+        if (resolvedType === 'multi') {
+          base.options        = q.options        || [];
+          base.correctIndexes = q.correctIndexes || [];
+        }
+
         if (q.correctAnswer) base.correctAnswer = q.correctAnswer;
 
         return base;

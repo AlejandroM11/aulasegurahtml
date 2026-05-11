@@ -790,7 +790,7 @@ function renderStudent(app) {
   function renderQuestion(q, idx) {
     const answer = answers[q.id];
 
-    // ── OPCIÓN MÚLTIPLE ──
+    // ── OPCIÓN MÚLTIPLE (una correcta) ──
     if (q.type === 'mc') {
       return `
         <div class="st-question-card" style="animation-delay:${idx * 0.05}s">
@@ -807,6 +807,40 @@ function renderStudent(app) {
                 <span class="st-option-text">${safeText(opt)}</span>
               </label>
             `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── VARIAS CORRECTAS (multi) ──
+    if (q.type === 'multi') {
+      // answer es un array de índices seleccionados
+      const selected = Array.isArray(answer) ? answer : [];
+      return `
+        <div class="st-question-card" style="animation-delay:${idx * 0.05}s">
+          <div style="display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.5rem">
+            <span class="st-q-number">${idx + 1}</span>
+            <p class="st-q-text">${safeText(q.text)}</p>
+          </div>
+          <p style="font-size:.75rem;color:#0891b2;font-weight:600;margin-bottom:.75rem;padding-left:.25rem">
+            <i class="fa-solid fa-square-check" style="margin-right:.35rem"></i>
+            Selecciona todas las respuestas correctas
+          </p>
+          <div>
+            ${(q.options || []).map((opt, i) => {
+              const isChecked = selected.includes(i);
+              return `
+                <label id="lbl-${q.id}-${i}" class="st-option${isChecked ? ' selected' : ''}"
+                  style="cursor:pointer;border-color:${isChecked ? '#0891b2' : ''}">
+                  <input type="checkbox" id="opt-${q.id}-${i}" data-qid="${q.id}" data-idx="${i}"
+                    ${isChecked ? 'checked' : ''} style="display:none"/>
+                  <span class="st-option-letter" style="${isChecked ? 'background:#0891b2;border-color:#0891b2' : ''}">
+                    ${isChecked ? '<i class="fa-solid fa-check" style="font-size:.65rem"></i>' : String.fromCharCode(65 + i)}
+                  </span>
+                  <span class="st-option-text">${safeText(opt)}</span>
+                </label>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
@@ -1221,7 +1255,11 @@ function renderStudent(app) {
   }
 
   function countAnswered() {
-    return Object.keys(answers).filter(k => answers[k] !== undefined && answers[k] !== '').length;
+    return Object.keys(answers).filter(k => {
+      const v = answers[k];
+      if (Array.isArray(v)) return v.length > 0;
+      return v !== undefined && v !== '';
+    }).length;
   }
 
   function syncStatus() {
@@ -1583,8 +1621,17 @@ function renderStudent(app) {
   function showRetroalimentacion() {
     injectStyles();
     const questions = Array.isArray(exam?.questions) ? exam.questions : [];
-    const mc = questions.filter(q => q.type === 'mc');
-    const correct = mc.filter(q => answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex).length;
+    const mc = questions.filter(q => q.type === 'mc' || q.type === 'multi');
+    const correct = mc.filter(q => {
+      if (q.type === 'mc') {
+        return answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex;
+      }
+      const given    = Array.isArray(answers[q.id]) ? answers[q.id] : [];
+      const expected = q.correctIndexes || [];
+      return expected.length > 0 &&
+        given.length === expected.length &&
+        expected.every(i => given.includes(i));
+    }).length;
     const pct = mc.length ? Math.round((correct / mc.length) * 100) : null;
     const total = questions.length;
     const answeredCount = countAnswered();
@@ -1616,7 +1663,7 @@ function renderStudent(app) {
         <div id="retro-questions-list">
           ${questions.map((q, idx) => {
             const given    = answers[q.id];
-            const answered = given !== undefined && given !== '';
+            const answered = Array.isArray(given) ? given.length > 0 : (given !== undefined && given !== '');
             let cardClass  = 'st-retro-card';
             let iconHtml   = '';
             let statusHtml = '';
@@ -1638,6 +1685,42 @@ function renderStudent(app) {
                 statusHtml = `<span style="color:#dc2626;font-size:.82rem">Incorrecto · Respondiste: ${safeText(q.options?.[given])}</span>`;
                 extraHtml  = `<p style="font-size:.8rem;color:#16a34a;margin-top:.35rem;font-weight:600">✓ Correcta: ${safeText(q.options?.[q.correctIndex])}</p>`;
               }
+
+            } else if (q.type === 'multi') {
+              const givenArr    = Array.isArray(given) ? given : [];
+              const expected    = q.correctIndexes || [];
+              const isFullMatch = expected.length > 0 &&
+                givenArr.length === expected.length &&
+                expected.every(i => givenArr.includes(i));
+              const isPartial   = givenArr.length > 0 && !isFullMatch;
+
+              if (!answered) {
+                cardClass += ' unanswered';
+                iconHtml   = `<span style="color:#d97706;font-size:1rem">—</span>`;
+                statusHtml = `<span style="color:#d97706;font-size:.82rem">Sin responder</span>`;
+              } else if (isFullMatch) {
+                cardClass += ' correct';
+                iconHtml   = `<span style="color:#16a34a;font-size:1rem">✓</span>`;
+                statusHtml = `<span style="color:#16a34a;font-size:.82rem">Correcto — seleccionaste todas las respuestas correctas</span>`;
+              } else {
+                cardClass += ' wrong';
+                iconHtml   = `<span style="color:#dc2626;font-size:1rem">✗</span>`;
+                statusHtml = `<span style="color:#dc2626;font-size:.82rem">${isPartial ? 'Incompleto' : 'Incorrecto'} · Seleccionaste: ${givenArr.map(i => safeText(q.options?.[i])).join(', ')}</span>`;
+                extraHtml  = `<p style="font-size:.8rem;color:#16a34a;margin-top:.35rem;font-weight:600">
+                  ✓ Correctas: ${expected.map(i => safeText(q.options?.[i])).join(', ')}
+                </p>`;
+              }
+              // Mostrar todas las opciones con indicador visual
+              extraHtml += `<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.3rem">
+                ${(q.options||[]).map((o,i) => {
+                  const wasSelected = givenArr.includes(i);
+                  const isRight     = expected.includes(i);
+                  const bg    = isRight && wasSelected ? '#dcfce7' : isRight ? '#fef9c3' : wasSelected ? '#fee2e2' : '#f1f5f9';
+                  const color = isRight && wasSelected ? '#15803d' : isRight ? '#92400e' : wasSelected ? '#991b1b' : '#475569';
+                  const icon  = isRight && wasSelected ? '✓' : isRight ? '○' : wasSelected ? '✗' : '';
+                  return `<span style="font-size:.72rem;padding:.2rem .55rem;border-radius:999px;background:${bg};color:${color};font-weight:600">${icon ? icon + ' ' : ''}${safeText(o)}</span>`;
+                }).join('')}
+              </div>`;
 
             } else if (q.type === 'eq') {
               // Preguntas de ecuación
@@ -1855,6 +1938,39 @@ function renderStudent(app) {
               const lbl = document.getElementById(`lbl-${q.id}-${j}`);
               if (lbl) lbl.classList.toggle('selected', j === i);
             });
+            updateTimerDisplay();
+          };
+        });
+      }
+
+      // Listeners de varias correctas (multi) — checkboxes
+      if (q.type === 'multi' && q.options) {
+        q.options.forEach((_, i) => {
+          const cb = document.getElementById(`opt-${q.id}-${i}`);
+          if (!cb) return;
+          cb.onchange = () => {
+            const current = Array.isArray(answers[q.id]) ? [...answers[q.id]] : [];
+            if (cb.checked) {
+              if (!current.includes(i)) current.push(i);
+            } else {
+              const pos = current.indexOf(i);
+              if (pos !== -1) current.splice(pos, 1);
+            }
+            answers[q.id] = current;
+            // Actualizar estilos de la opción
+            const lbl = document.getElementById(`lbl-${q.id}-${i}`);
+            if (lbl) {
+              lbl.classList.toggle('selected', cb.checked);
+              lbl.style.borderColor = cb.checked ? '#0891b2' : '';
+              const letter = lbl.querySelector('.st-option-letter');
+              if (letter) {
+                letter.style.background    = cb.checked ? '#0891b2' : '';
+                letter.style.borderColor   = cb.checked ? '#0891b2' : '';
+                letter.innerHTML = cb.checked
+                  ? '<i class="fa-solid fa-check" style="font-size:.65rem"></i>'
+                  : String.fromCharCode(65 + i);
+              }
+            }
             updateTimerDisplay();
           };
         });

@@ -5,12 +5,20 @@ function renderResults(app) {
 
   function score(sub) {
     if (!sub.answers || !sub.examQuestions) return null;
-    const mc = sub.examQuestions.filter(q => q.type === 'mc');
-    if (!mc.length) return null;
-    const correct = mc.filter(q =>
-      sub.answers[q.id] !== undefined && Number(sub.answers[q.id]) === q.correctIndex
-    ).length;
-    return { correct, total: mc.length, pct: Math.round((correct / mc.length) * 100) };
+    const scoreable = sub.examQuestions.filter(q => q.type === 'mc' || q.type === 'multi');
+    if (!scoreable.length) return null;
+    const correct = scoreable.filter(q => {
+      if (q.type === 'mc') {
+        return sub.answers[q.id] !== undefined && Number(sub.answers[q.id]) === q.correctIndex;
+      }
+      // multi: coincidencia exacta
+      const given    = Array.isArray(sub.answers[q.id]) ? sub.answers[q.id] : [];
+      const expected = q.correctIndexes || [];
+      return expected.length > 0 &&
+        given.length === expected.length &&
+        expected.every(i => given.includes(i));
+    }).length;
+    return { correct, total: scoreable.length, pct: Math.round((correct / scoreable.length) * 100) };
   }
 
   function fmtDate(iso) {
@@ -342,6 +350,7 @@ function renderResults(app) {
         .rd-q-type-badge{font-size:.68rem;font-weight:700;text-transform:uppercase;
           letter-spacing:.07em;padding:.2rem .55rem;border-radius:999px}
         .rd-q-type-mc{background:#dbeafe;color:#1d4ed8}
+        .rd-q-type-multi{background:#cffafe;color:#0e7490}
         .rd-q-type-open{background:#dcfce7;color:#15803d}
         .rd-q-type-eq{background:#f3e8ff;color:#7c3aed}
         .rd-q-text{font-size:.95rem;font-weight:600;color:#1e293b;line-height:1.5;flex:1}
@@ -463,18 +472,29 @@ function renderResults(app) {
             </div>
           ` : questions.map((q, idx) => {
               const given    = answers[q.id];
-              const answered = given !== undefined && given !== '';
+              const answered = Array.isArray(given) ? given.length > 0 : (given !== undefined && given !== '');
               let isCorrect  = null;
-              if (q.type === 'mc' && answered) isCorrect = Number(given) === q.correctIndex;
+              if (q.type === 'mc' && answered) {
+                isCorrect = Number(given) === q.correctIndex;
+              } else if (q.type === 'multi') {
+                const givenArr = Array.isArray(given) ? given : [];
+                const expected = q.correctIndexes || [];
+                isCorrect = expected.length > 0 &&
+                  givenArr.length === expected.length &&
+                  expected.every(i => givenArr.includes(i));
+              }
 
-              const typeLabel = q.type === 'mc' ? 'Múltiple opción'
-                              : q.type === 'eq' ? 'Ecuación'
+              const typeLabel = q.type === 'mc'    ? 'Múltiple opción'
+                              : q.type === 'multi'  ? 'Varias correctas'
+                              : q.type === 'eq'     ? 'Ecuación'
                               : 'Abierta';
-              const typeClass = q.type === 'mc' ? 'rd-q-type-mc'
-                              : q.type === 'eq' ? 'rd-q-type-eq'
+              const typeClass = q.type === 'mc'    ? 'rd-q-type-mc'
+                              : q.type === 'multi'  ? 'rd-q-type-multi'
+                              : q.type === 'eq'     ? 'rd-q-type-eq'
                               : 'rd-q-type-open';
-              const typeIcon  = q.type === 'mc' ? 'fa-circle-question'
-                              : q.type === 'eq' ? 'fa-square-root-variable'
+              const typeIcon  = q.type === 'mc'    ? 'fa-circle-question'
+                              : q.type === 'multi'  ? 'fa-square-check'
+                              : q.type === 'eq'     ? 'fa-square-root-variable'
                               : 'fa-pen-to-square';
 
               return `
@@ -506,7 +526,34 @@ function renderResults(app) {
                       </div>
                     ` : ''}
 
-                  ` : q.type === 'eq' ? `
+                  ` : q.type === 'multi' ? (() => {
+                    const givenArr = Array.isArray(given) ? given : [];
+                    const expected = q.correctIndexes || [];
+                    return `
+                      <div class="rd-answer-box ${!answered ? 'rd-answer-empty' : isCorrect ? 'rd-answer-correct' : 'rd-answer-wrong'}">
+                        <i class="fa-solid ${!answered ? 'fa-minus' : isCorrect ? 'fa-check' : 'fa-xmark'}" style="margin-right:.5rem"></i>
+                        ${!answered ? 'Sin responder' : isCorrect ? '<strong>Correcto</strong> — todas las respuestas correctas seleccionadas' : '<strong>Incorrecto</strong> — selección incorrecta o incompleta'}
+                      </div>
+                      <div style="margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.35rem">
+                        ${(q.options||[]).map((o,i) => {
+                          const sel   = givenArr.includes(i);
+                          const right = expected.includes(i);
+                          const bg    = right && sel ? '#dcfce7' : right ? '#fef9c3' : sel ? '#fee2e2' : '#f1f5f9';
+                          const color = right && sel ? '#15803d' : right ? '#92400e' : sel ? '#991b1b' : '#64748b';
+                          const icon  = right && sel ? 'fa-check' : right ? 'fa-circle' : sel ? 'fa-xmark' : '';
+                          return `<span style="font-size:.78rem;padding:.25rem .65rem;border-radius:999px;background:${bg};color:${color};font-weight:600;display:inline-flex;align-items:center;gap:.3rem">
+                            ${icon ? `<i class="fa-solid ${icon}" style="font-size:.65rem"></i>` : ''}${safeText(o)}
+                          </span>`;
+                        }).join('')}
+                      </div>
+                      ${!isCorrect && s.showCorrectAnswers ? `
+                        <div class="rd-correct-hint" style="margin-top:.5rem">
+                          <i class="fa-solid fa-check"></i>
+                          <span><strong>Correctas:</strong> ${expected.map(i => safeText(q.options?.[i])).join(', ')}</span>
+                        </div>
+                      ` : ''}
+                    `;
+                  })() : q.type === 'eq' ? `
                     ${q.referenceLatex ? `
                       <p style="font-size:.72rem;font-weight:700;color:#1d4ed8;
                         text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">
