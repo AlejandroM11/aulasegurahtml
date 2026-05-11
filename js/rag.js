@@ -117,7 +117,7 @@ function openRAGModal(onQuestionsSelected) {
 
   document.body.insertAdjacentHTML('beforeend', `
     <div id="rag-modal" class="modal-overlay">
-      <div class="modal-box" style="max-width:720px">
+      <div class="modal-box" style="max-width:1100px">
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
           <div>
@@ -224,7 +224,7 @@ function openRAGModal(onQuestionsSelected) {
             </p>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 340px;gap:1rem;align-items:start">
+          <div style="display:grid;grid-template-columns:1fr 420px;gap:1.5rem;align-items:start">
 
             <!-- Lista de preguntas -->
             <div>
@@ -241,7 +241,7 @@ function openRAGModal(onQuestionsSelected) {
             </div>
 
             <!-- Chat del asistente -->
-            <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:1rem;display:flex;flex-direction:column;height:460px;" id="rag-chat-panel">
+            <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:1rem;display:flex;flex-direction:column;height:560px;" id="rag-chat-panel">
               <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);padding:.75rem 1rem;border-radius:.85rem .85rem 0 0;flex-shrink:0">
                 <p style="color:#fff;font-weight:700;font-size:.875rem;">
                   <i class="fa-solid fa-robot" style="margin-right:.4rem"></i>Asistente de edición ARDI
