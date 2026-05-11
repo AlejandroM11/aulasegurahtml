@@ -478,151 +478,200 @@ function renderTeacher(app) {
   // ──────────────────────────────────────────────────────────
   function renderTabCrear() {
     return `
-      <div style="display:flex;flex-direction:column;gap:1.5rem;max-width:1100px;margin:0 auto">
+      <div style="max-width:1100px;margin:0 auto">
 
-        <!-- Fila 1: Info del examen — ancho completo -->
-        <div class="card">
-          <div class="flex-between mb-4">
-            <h2 class="font-bold" style="font-size:1.15rem">
-              ${selectedExam
-                ? `<i class="fa-solid fa-pen" style="margin-right:.4rem;color:#2563eb"></i><span class="text-blue">${selectedExam.title}</span>`
-                : '<i class="fa-solid fa-file-lines" style="margin-right:.4rem;color:#2563eb"></i>Información del examen'}
-            </h2>
-            ${selectedExam ? `<button class="btn btn-outline text-xs" id="cancel-edit"><i class="fa-solid fa-xmark" style="margin-right:.3rem"></i>Cancelar</button>` : ''}
-          </div>
-          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem;align-items:end">
-            <div class="form-group">
-              <label class="label">Título del examen</label>
-              <input class="input" id="f-title" placeholder="Ej: Parcial de Matemáticas" value="${title}"/>
+        <!-- Layout dashboard: izquierda formularios | derecha panel preguntas -->
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 360px;
+          gap:1.5rem;
+          align-items:start;
+        " class="crear-layout">
+
+          <!-- ── Columna izquierda: formularios apilados ── -->
+          <div style="display:flex;flex-direction:column;gap:1.25rem;min-width:0">
+
+            <!-- Info del examen -->
+            <div class="card">
+              <div class="flex-between mb-4">
+                <h2 class="font-bold" style="font-size:1.15rem">
+                  ${selectedExam
+                    ? `<i class="fa-solid fa-pen" style="margin-right:.4rem;color:#2563eb"></i><span class="text-blue">${selectedExam.title}</span>`
+                    : '<i class="fa-solid fa-file-lines" style="margin-right:.4rem;color:#2563eb"></i>Información del examen'}
+                </h2>
+                ${selectedExam ? `<button class="btn btn-outline text-xs" id="cancel-edit"><i class="fa-solid fa-xmark" style="margin-right:.3rem"></i>Cancelar</button>` : ''}
+              </div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem;align-items:end">
+                <div class="form-group">
+                  <label class="label">Título del examen</label>
+                  <input class="input" id="f-title" placeholder="Ej: Parcial de Matemáticas" value="${title}"/>
+                </div>
+                <div class="form-group">
+                  <label class="label">Código</label>
+                  <div style="display:flex;gap:.5rem">
+                    <input class="input font-mono" id="f-code" value="${code}"
+                      ${selectedExam ? 'disabled' : 'readonly'}
+                      style="text-transform:uppercase;letter-spacing:.1em;background:${selectedExam ? '' : '#f8fafc'}"/>
+                    ${!selectedExam ? `
+                      <button class="btn btn-outline" id="regen-code-btn" style="flex-shrink:0;padding:.5rem .75rem" title="Generar nuevo código">
+                        <i class="fa-solid fa-rotate"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="label">Duración (min)</label>
+                  <input class="input" id="f-dur" type="number" min="1" value="${dur}"/>
+                </div>
+              </div>
+              <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;padding:.85rem 1rem;background:#f8fafc;border-radius:.75rem;border:1.5px solid #e2e8f0;margin-top:1rem">
+                <input type="checkbox" id="f-show-answers" ${showCorrectAnswers ? 'checked' : ''} style="width:1.1rem;height:1.1rem;accent-color:#2563eb;flex-shrink:0"/>
+                <div>
+                  <p class="font-bold text-sm">Mostrar respuestas al finalizar</p>
+                  <p class="text-xs text-gray">El estudiante verá las correctas al terminar</p>
+                </div>
+              </label>
             </div>
-            <div class="form-group">
-              <label class="label">Código</label>
-              <div style="display:flex;gap:.5rem">
-                <input class="input font-mono" id="f-code" value="${code}"
-                  ${selectedExam ? 'disabled' : 'readonly'}
-                  style="text-transform:uppercase;letter-spacing:.1em;background:${selectedExam ? '' : '#f8fafc'}"/>
-                ${!selectedExam ? `
-                  <button class="btn btn-outline" id="regen-code-btn" style="flex-shrink:0;padding:.5rem .75rem" title="Generar nuevo código">
-                    <i class="fa-solid fa-rotate"></i>
-                  </button>
-                ` : ''}
+
+            <!-- Nueva pregunta -->
+            <div class="card">
+              <h3 class="font-bold mb-4" style="font-size:1.05rem">
+                <i class="fa-solid fa-circle-plus" style="margin-right:.4rem;color:#2563eb"></i>Nueva pregunta
+              </h3>
+
+              <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;margin-bottom:1rem">
+                <div class="form-group">
+                  <label class="label">Texto de la pregunta</label>
+                  <div style="position:relative">
+                    <textarea class="input" id="f-qtext" rows="4"
+                      placeholder="Escribe aquí la pregunta..."
+                      style="resize:none;padding-right:2.8rem">${escapeHtmlForAttr(qtext)}</textarea>
+                    <button type="button" id="open-math-inline"
+                      title="Insertar ecuación en el texto"
+                      style="position:absolute;right:.5rem;top:.5rem;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:.5rem;color:#fff;width:2rem;height:2rem;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">∑</button>
+                  </div>
+                  <p class="text-xs text-gray mt-1">
+                    <i class="fa-solid fa-circle-info" style="margin-right:.3rem"></i>
+                    Presiona <strong>∑</strong> para insertar una ecuación en el texto.
+                  </p>
+                </div>
+                <div class="form-group" style="min-width:190px">
+                  <label class="label">Tipo</label>
+                  <div style="display:flex;flex-direction:column;gap:.4rem">
+                    <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
+                      <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
+                      <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.3rem"></i>
+                      <span class="text-sm font-bold">Múltiple opción</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
+                      <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
+                      <i class="fa-solid fa-pen-to-square" style="color:#2563eb;margin-right:.3rem"></i>
+                      <span class="text-sm font-bold">Pregunta abierta</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='eq'?'#7c3aed':'#e2e8f0'};cursor:pointer;background:${qtype==='eq'?'#fdf4ff':'#fff'}">
+                      <input type="radio" name="qtype" value="eq" ${qtype==='eq'?'checked':''} style="accent-color:#7c3aed"/>
+                      <span style="color:#7c3aed;margin-right:.3rem;font-size:1rem">∑</span>
+                      <span class="text-sm font-bold">Ecuación</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              ${qtype === 'mc' ? renderMcOptions() : ''}
+              ${qtype === 'eq' ? renderEqSection() : ''}
+              ${qtype === 'open' ? `
+                <div class="info-box info-box-blue mb-3">
+                  <p class="text-xs">
+                    <i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>
+                    Las preguntas abiertas serán respondidas con texto libre.
+                  </p>
+                </div>
+              ` : ''}
+
+              <div style="display:flex;gap:.75rem;margin-top:.5rem">
+                <button class="btn btn-full" id="rag-btn"
+                  style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">
+                  <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:.4rem"></i>Generar con IA
+                </button>
+                <button class="btn btn-primary btn-full" id="add-q-btn">
+                  <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Agregar pregunta
+                </button>
               </div>
             </div>
-            <div class="form-group">
-              <label class="label">Duración (min)</label>
-              <input class="input" id="f-dur" type="number" min="1" value="${dur}"/>
-            </div>
-          </div>
-          <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer;padding:.85rem 1rem;background:#f8fafc;border-radius:.75rem;border:1.5px solid #e2e8f0;margin-top:1rem">
-            <input type="checkbox" id="f-show-answers" ${showCorrectAnswers ? 'checked' : ''} style="width:1.1rem;height:1.1rem;accent-color:#2563eb;flex-shrink:0"/>
-            <div>
-              <p class="font-bold text-sm">Mostrar respuestas al finalizar</p>
-              <p class="text-xs text-gray">El estudiante verá las correctas al terminar</p>
-            </div>
-          </label>
-        </div>
 
-        <!-- Fila 2: Nueva pregunta — ancho completo -->
-        <div class="card">
-          <h3 class="font-bold mb-4" style="font-size:1.05rem">
-            <i class="fa-solid fa-circle-plus" style="margin-right:.4rem;color:#2563eb"></i>Nueva pregunta
-          </h3>
+          </div><!-- /columna izquierda -->
 
-          <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;margin-bottom:1rem">
-            <div class="form-group">
-              <label class="label">Texto de la pregunta</label>
-              <div style="position:relative">
-                <textarea class="input" id="f-qtext" rows="3"
-                  placeholder="Escribe aquí la pregunta..."
-                  style="resize:none;padding-right:2.8rem">${escapeHtmlForAttr(qtext)}</textarea>
-                <button type="button" id="open-math-inline"
-                  title="Insertar ecuación en el texto"
-                  style="position:absolute;right:.5rem;top:.5rem;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:.5rem;color:#fff;width:2rem;height:2rem;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">∑</button>
+          <!-- ── Columna derecha: panel de preguntas sticky ── -->
+          <div style="
+            position:sticky;
+            top:calc(var(--nav-height, 64px) + 1rem);
+            display:flex;
+            flex-direction:column;
+            gap:1rem;
+            max-height:calc(100vh - var(--nav-height, 64px) - 2rem);
+          ">
+
+            <!-- Panel preguntas -->
+            <div class="card" style="
+              display:flex;
+              flex-direction:column;
+              flex:1;
+              overflow:hidden;
+              padding:0;
+              min-height:0;
+            ">
+              <!-- Header del panel -->
+              <div style="
+                padding:1.1rem 1.4rem;
+                border-bottom:1px solid var(--border, #e2e8f0);
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                flex-shrink:0;
+              ">
+                <h3 class="font-bold" style="font-size:.95rem">
+                  <i class="fa-solid fa-clipboard-list" style="margin-right:.4rem;color:#2563eb"></i>Preguntas
+                </h3>
+                <span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:.15rem .65rem;font-size:.78rem;font-weight:700">
+                  ${questions.length}
+                </span>
               </div>
-              <p class="text-xs text-gray mt-1">
-                <i class="fa-solid fa-circle-info" style="margin-right:.3rem"></i>
-                Presiona <strong>∑</strong> para abrir el editor de ecuaciones e insertarla en el texto.
-              </p>
-            </div>
-            <div class="form-group" style="min-width:200px">
-              <label class="label">Tipo</label>
-              <div style="display:flex;flex-direction:column;gap:.4rem">
-                <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='mc'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='mc'?'#eff6ff':'#fff'}">
-                  <input type="radio" name="qtype" value="mc" ${qtype==='mc'?'checked':''} style="accent-color:#2563eb"/>
-                  <i class="fa-solid fa-list-check" style="color:#2563eb;margin-right:.3rem"></i>
-                  <span class="text-sm font-bold">Múltiple opción</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='open'?'#2563eb':'#e2e8f0'};cursor:pointer;background:${qtype==='open'?'#eff6ff':'#fff'}">
-                  <input type="radio" name="qtype" value="open" ${qtype==='open'?'checked':''} style="accent-color:#2563eb"/>
-                  <i class="fa-solid fa-pen-to-square" style="color:#2563eb;margin-right:.3rem"></i>
-                  <span class="text-sm font-bold">Pregunta abierta</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;border-radius:.6rem;border:2px solid ${qtype==='eq'?'#7c3aed':'#e2e8f0'};cursor:pointer;background:${qtype==='eq'?'#fdf4ff':'#fff'}">
-                  <input type="radio" name="qtype" value="eq" ${qtype==='eq'?'checked':''} style="accent-color:#7c3aed"/>
-                  <span style="color:#7c3aed;margin-right:.3rem;font-size:1rem">∑</span>
-                  <span class="text-sm font-bold">Ecuación</span>
-                </label>
+
+              <!-- Lista con scroll independiente -->
+              <div style="
+                flex:1;
+                overflow-y:auto;
+                padding:1rem 1.1rem;
+                display:flex;
+                flex-direction:column;
+                gap:.65rem;
+                max-height:calc(100vh - var(--nav-height, 64px) - 14rem);
+              ">
+                ${questions.length === 0 ? `
+                  <div class="text-center text-gray" style="padding:3rem 1rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <i class="fa-solid fa-inbox" style="font-size:2.25rem;color:#cbd5e1;margin-bottom:.75rem"></i>
+                    <p class="text-sm font-bold" style="color:#94a3b8">Sin preguntas aún</p>
+                    <p class="text-xs" style="color:#cbd5e1;margin-top:.3rem">Agrégalas desde el panel izquierdo</p>
+                  </div>
+                ` : questions.map((q, idx) => renderQuestionChip(q, idx)).join('')}
               </div>
             </div>
-          </div>
 
-          <!-- Opciones según tipo -->
-          ${qtype === 'mc' ? renderMcOptions() : ''}
-          ${qtype === 'eq' ? renderEqSection() : ''}
-          ${qtype === 'open' ? `
-            <div class="info-box info-box-blue mb-3">
-              <p class="text-xs">
-                <i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>
-                Las preguntas abiertas serán respondidas con texto libre.
-              </p>
-            </div>
-          ` : ''}
-
-          <div style="display:flex;gap:.75rem;margin-top:.5rem">
-            <button class="btn btn-full" id="rag-btn"
-              style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff">
-              <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:.4rem"></i>Generar con IA
+            <!-- Botón guardar -->
+            <button class="btn btn-primary btn-full" id="save-btn"
+              style="padding:.85rem;font-size:.95rem;flex-shrink:0"
+              ${saving || questions.length === 0 || !title.trim() || !code.trim() ? 'disabled' : ''}>
+              ${saving
+                ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Guardando...'
+                : selectedExam
+                  ? '<i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Guardar cambios'
+                  : '<i class="fa-solid fa-circle-check" style="margin-right:.4rem"></i>Crear examen'}
             </button>
-            <button class="btn btn-primary btn-full" id="add-q-btn">
-              <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Agregar pregunta
-            </button>
-          </div>
-        </div>
+            ${questions.length === 0 ? `<p class="text-center text-xs text-gray" style="margin-top:-.25rem">Agrega al menos una pregunta</p>` : ''}
 
-        <!-- Fila 3: Lista de preguntas — ancho completo -->
-        <div class="card">
-          <div class="flex-between mb-4">
-            <h3 class="font-bold" style="font-size:1.05rem">
-              <i class="fa-solid fa-clipboard-list" style="margin-right:.4rem;color:#2563eb"></i>Preguntas del examen
-            </h3>
-            <span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:.2rem .75rem;font-size:.82rem;font-weight:700">${questions.length} pregunta${questions.length !== 1 ? 's' : ''}</span>
-          </div>
-          ${questions.length === 0 ? `
-            <div class="text-center text-gray" style="padding:3rem 1rem">
-              <i class="fa-solid fa-inbox" style="font-size:2.5rem;color:#cbd5e1"></i>
-              <p class="text-sm mt-2">Aún no hay preguntas. Agrégalas desde el panel de arriba.</p>
-            </div>
-          ` : `
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:.85rem">
-              ${questions.map((q, idx) => renderQuestionChip(q, idx)).join('')}
-            </div>
-          `}
-        </div>
+          </div><!-- /columna derecha -->
 
-        <!-- Fila 4: Guardar -->
-        <div style="display:flex;align-items:center;gap:1rem">
-          <button class="btn btn-primary" id="save-btn"
-            style="padding:.85rem 2.5rem;font-size:1rem;flex-shrink:0"
-            ${saving || questions.length === 0 || !title.trim() || !code.trim() ? 'disabled' : ''}>
-            ${saving
-              ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Guardando...'
-              : selectedExam
-                ? '<i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Guardar cambios'
-                : '<i class="fa-solid fa-circle-check" style="margin-right:.4rem"></i>Crear examen'}
-          </button>
-          ${questions.length === 0 ? `<p class="text-xs text-gray">Agrega al menos una pregunta para guardar</p>` : ''}
-        </div>
-
+        </div><!-- /crear-layout -->
       </div>
     `;
   }

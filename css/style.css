@@ -919,3 +919,21 @@ code, pre {
   .modal-box { padding: 1.5rem; border-radius: var(--radius-xl); }
   .card-table td, .card-table th { padding: .85rem 1rem; }
 }
+
+/* ============================================================
+   TEACHER — Layout crear examen (sidebar derecha sticky)
+   ============================================================ */
+
+/* En tablet y móvil: columna única, sin sticky */
+@media (max-width: 900px) {
+  .crear-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .crear-layout > div:last-child {
+    position: static !important;
+    max-height: none !important;
+  }
+  .crear-layout > div:last-child > .card {
+    max-height: 400px;
+  }
+}
