@@ -147,7 +147,7 @@ function renderTeacher(app) {
   // ─── RENDER principal ─────────────────────────────────────
   function render() {
     app.innerHTML = `
-      <div style="max-width:1100px;margin:0 auto">
+      <div style="max-width:100%;margin:0 auto">
         <div style="display:flex;gap:.5rem;margin-bottom:1.5rem;background:#fff;padding:.4rem;border-radius:1rem;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid #e2e8f0">
           <button class="tab-pill${activeTab==='crear'?' active':''}" id="tab-crear" style="flex:1">
             ${selectedExam
@@ -478,7 +478,7 @@ function renderTeacher(app) {
   // ──────────────────────────────────────────────────────────
   function renderTabCrear() {
     return `
-      <div style="max-width:1100px;margin:0 auto">
+      <div style="max-width:100%;margin:0 auto">
 
         <!-- Layout dashboard: izquierda formularios | derecha panel preguntas -->
         <div style="

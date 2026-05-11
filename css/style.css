@@ -78,10 +78,10 @@
   --transition-slow: all .3s cubic-bezier(.4,0,.2,1);
 
   /* Layout — fluido y amplio */
-  --max-width: 1440px;
-  --content-width: min(1440px, 100%);
+  --max-width: 1600px;
+  --content-width: min(1600px, 100%);
   --nav-height: 64px;
-  --page-padding: clamp(1rem, 3vw, 2.5rem);
+  --page-padding: clamp(.75rem, 2vw, 1.5rem);
 }
 
 /* ── Dark mode tokens ── */

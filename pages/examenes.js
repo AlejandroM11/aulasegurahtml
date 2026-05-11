@@ -246,7 +246,7 @@ function renderExamenes(app) {
         @keyframes tipIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
       </style>
 
-      <div class="ex-page" style="max-width:1100px;margin:0 auto">
+      <div class="ex-page" style="max-width:100%;margin:0 auto">
 
         <div class="ex-header">
           <div class="ex-header-top">
