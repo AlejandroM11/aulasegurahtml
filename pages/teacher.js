@@ -174,7 +174,7 @@ function renderTeacher(app) {
 
       <!-- ══════════ MODAL ECUACIÓN ══════════ -->
       <div id="math-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center">
-        <div style="background:#fff;border-radius:1.25rem;padding:1.5rem;width:min(98vw,580px);box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto">
+        <div style="background:#fff;border-radius:1.25rem;padding:1.75rem 2rem;width:min(98vw,780px);box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:92vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
             <h3 style="font-size:1.05rem;font-weight:700;color:#1e293b">
               <span style="color:#7c3aed;margin-right:.4rem">∑</span> Editor de ecuación

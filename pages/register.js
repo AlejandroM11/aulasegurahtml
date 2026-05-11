@@ -43,7 +43,7 @@ function renderRegister(app) {
 
     <!-- Modal: crear contraseña tras Google -->
     <div id="google-pw-modal" class="modal-overlay" style="display:none">
-      <div class="modal-box" style="max-width:420px">
+      <div class="modal-box" style="max-width:520px">
         <div style="text-align:center;margin-bottom:1.25rem">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:2.5rem;margin-bottom:.75rem"/>
           <h3 class="font-bold" style="font-size:1.2rem">Crea tu contraseña</h3>

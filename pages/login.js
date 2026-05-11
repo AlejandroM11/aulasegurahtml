@@ -33,9 +33,7 @@ function renderLogin(app) {
 
     <!-- Modal: crear contraseña (usuarios que solo tenían Google) -->
     <div id="set-pw-modal" class="modal-overlay" style="display:none">
-      <div class="modal-box" style="max-width:420px">
-        <div style="text-align:center;margin-bottom:1.25rem">
-          <div style="width:3.5rem;height:3.5rem;background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem">
+      <div class="modal-box" style="max-width:520px">
             <i class="fa-solid fa-lock" style="color:#fff;font-size:1.4rem"></i>
           </div>
           <h3 class="font-bold" style="font-size:1.2rem">Crea tu contraseña</h3>

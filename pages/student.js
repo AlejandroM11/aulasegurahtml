@@ -1039,7 +1039,7 @@ function renderStudent(app) {
       ">
         <div style="
           background:#fff;border-radius:1.5rem;
-          padding:2.5rem 2rem;max-width:440px;width:100%;
+          padding:2.5rem 2.5rem;max-width:560px;width:100%;
           text-align:center;
           box-shadow:0 24px 64px rgba(0,0,0,.25);
         ">

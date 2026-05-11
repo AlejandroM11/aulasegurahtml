@@ -228,7 +228,7 @@ function openRAGModal(onQuestionsSelected) {
 
             <!-- Lista de preguntas -->
             <div>
-              <div id="rag-questions-list" class="space-y" style="max-height:380px;overflow-y:auto;padding-right:.25rem"></div>
+              <div id="rag-questions-list" class="space-y" style="max-height:520px;overflow-y:auto;padding-right:.25rem"></div>
               <div style="display:flex;gap:.75rem;margin-top:1rem">
                 <button class="btn btn-outline" style="flex:1" id="rag-back-btn">
                   <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
