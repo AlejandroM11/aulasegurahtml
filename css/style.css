@@ -3,8 +3,8 @@
    Futurista · Profesional · Accesible · Responsive
    ============================================================ */
 
-/* ── Google Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+/* ── Google Fonts — Inter única fuente del sistema ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,300;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ── Design Tokens ── */
 :root {
@@ -77,9 +77,11 @@
   --transition: all .18s cubic-bezier(.4,0,.2,1);
   --transition-slow: all .3s cubic-bezier(.4,0,.2,1);
 
-  /* Layout */
-  --max-width: 1280px;
+  /* Layout — fluido y amplio */
+  --max-width: 1440px;
+  --content-width: min(1440px, 100%);
   --nav-height: 64px;
+  --page-padding: clamp(1rem, 3vw, 2.5rem);
 }
 
 /* ── Dark mode tokens ── */
@@ -113,6 +115,8 @@ body {
   transition: background .3s, color .3s;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Forzar Inter en TODO el documento, incluyendo estilos inyectados */
+  font-feature-settings: 'cv02','cv03','cv04','cv11';
 }
 
 body.dark { background: #060d1a; }
@@ -153,7 +157,7 @@ nav {
 .nav-inner {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 var(--page-padding);
   height: 100%;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
@@ -189,7 +193,7 @@ body.dark .nav-brand { color: var(--blue-500); }
 #app {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 2rem 2rem;
+  padding: 2rem var(--page-padding);
   min-height: calc(100vh - var(--nav-height));
 }
 
@@ -740,3 +744,178 @@ body.dark ::-webkit-scrollbar-thumb { background: var(--gray-700); }
    SELECTION
    ============================================================ */
 ::selection { background: rgba(59,130,246,.2); color: var(--text-primary); }
+
+/* ============================================================
+   LAYOUT HORIZONTAL — Módulos amplios tipo dashboard
+   ============================================================ */
+
+/* Sección de página con header + contenido */
+.page-section {
+  margin-bottom: 2rem;
+}
+.page-section + .page-section {
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Card horizontal — ocupa todo el ancho disponible */
+.card-wide {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: 2rem 2.5rem;
+  border: 1px solid var(--border);
+  width: 100%;
+  transition: var(--transition-slow);
+}
+body.dark .card-wide {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+
+/* Grid de dashboard — 3 columnas en desktop, 1 en móvil */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Grid de 2 columnas asimétricas — contenido principal + sidebar */
+.layout-main-aside {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.75rem;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .layout-main-aside { grid-template-columns: 1fr; }
+}
+
+/* Fila de stats horizontales */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+/* Tabla dentro de card sin padding extra */
+.card-table {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+body.dark .card-table {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+.card-table-header {
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: var(--surface);
+}
+body.dark .card-table-header {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+.card-table table { border-radius: 0; }
+.card-table td, .card-table th { padding: 1rem 1.75rem; }
+
+/* ============================================================
+   TIPOGRAFÍA GLOBAL UNIFICADA
+   Sobreescribe cualquier fuente inyectada por student.js
+   ============================================================ */
+
+/* Forzar Inter en todos los elementos, incluyendo los de student.js */
+.st-page,
+.st-page *,
+.join-card,
+.join-card *,
+.st-question-card,
+.st-question-card *,
+.st-exam-header,
+.st-exam-header *,
+.st-sticky,
+.st-sticky *,
+.blocked-screen,
+.blocked-screen *,
+.st-success-wrap,
+.st-success-wrap *,
+.st-retro-header,
+.st-retro-header * {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+}
+
+/* Excepciones: monospace para timer y código */
+.st-timer,
+.st-code-input,
+.eq-key,
+.font-mono,
+code, pre {
+  font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+}
+
+/* Títulos de la pantalla de examen — usar Inter bold en lugar de Fraunces */
+.join-title,
+.st-exam-title,
+.st-success-title,
+.st-retro-title,
+.st-retro-score,
+.st-success-stat-val,
+.st-retro-q-text,
+.st-q-text {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  letter-spacing: -.02em;
+}
+
+/* Ajustar pesos para que se vean bien sin Fraunces */
+.join-title       { font-weight: 800 !important; }
+.st-exam-title    { font-weight: 700 !important; }
+.st-success-title { font-weight: 800 !important; }
+.st-retro-title   { font-weight: 700 !important; }
+.st-retro-score   { font-weight: 900 !important; }
+.st-q-text        { font-weight: 500 !important; }
+.st-retro-q-text  { font-weight: 500 !important; }
+
+/* ============================================================
+   MEJORAS DE ESPACIADO GLOBAL
+   ============================================================ */
+
+/* Más respiración entre secciones */
+.space-y-lg > * + * { margin-top: 1.5rem; }
+.space-y-xl > * + * { margin-top: 2rem; }
+
+/* Padding generoso para cards en desktop */
+@media (min-width: 1024px) {
+  .card { padding: 2rem 2.25rem; }
+  .card-wide { padding: 2.25rem 2.75rem; }
+}
+
+/* ============================================================
+   RESPONSIVE MEJORADO
+   ============================================================ */
+@media (min-width: 1280px) {
+  .grid-3-md { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .grid-2-md { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .hero { flex-direction: row; gap: 4rem; padding: 5rem 0 4rem; }
+  .hero-img { width: min(440px, 45%); }
+}
+
+@media (max-width: 1024px) {
+  :root { --max-width: 100%; }
+  .layout-main-aside { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .grid-2, .grid-3, .grid-4, .stats-row { grid-template-columns: 1fr; }
+  .hide-mobile { display: none; }
+  .card, .card-wide { padding: 1.25rem 1.25rem; }
+  .modal-box { padding: 1.5rem; border-radius: var(--radius-xl); }
+  .card-table td, .card-table th { padding: .85rem 1rem; }
+}

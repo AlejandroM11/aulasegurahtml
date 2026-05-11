@@ -208,7 +208,7 @@ function renderMonitor(app) {
 
     if (!selectedExam) {
       app.innerHTML = `
-        <div style="max-width:800px;margin:0 auto">
+        <div style="max-width:1100px;margin:0 auto">
           <div class="flex-between mb-4">
             <div>
               <h1 class="font-bold" style="font-size:1.75rem">
@@ -274,7 +274,7 @@ function renderMonitor(app) {
     const unread  = messages.filter(m => !m.read);
 
     app.innerHTML = `
-      <div style="max-width:1000px;margin:0 auto">
+      <div style="max-width:1100px;margin:0 auto">
         <div class="flex-between mb-4">
           <div>
             <h1 class="font-bold" style="font-size:1.5rem">

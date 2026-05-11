@@ -46,9 +46,8 @@ function renderStudent(app) {
   // ESTILOS GLOBALES DE LA PÁGINA ESTUDIANTE
   // ─────────────────────────────────────────────
   const STUDENT_STYLES = `
-    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-    .st-page { font-family: 'DM Sans', sans-serif; }
+    /* Fuente unificada con el resto del sistema */
+    .st-page { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
 
     /* ── JOIN SCREEN ── */
     .join-wrap {
@@ -84,7 +83,7 @@ function renderStudent(app) {
       box-shadow: 0 8px 24px rgba(37,99,235,.3);
     }
     .join-title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 2rem; font-weight: 600;
       text-align: center; line-height: 1.2;
       margin-bottom: .35rem;
@@ -106,7 +105,7 @@ function renderStudent(app) {
       width: 100%; padding: .8rem 1rem;
       border: 1.5px solid #e2e8f0; border-radius: 1rem;
       font-size: .95rem; background: #fafaf9;
-      color: #1e293b; font-family: 'DM Sans', sans-serif;
+      color: #1e293b; font-family: 'Inter', system-ui, sans-serif;
       transition: all .2s;
     }
     .st-input:focus {
@@ -120,7 +119,7 @@ function renderStudent(app) {
     .st-code-input {
       text-align: center; font-size: 1.6rem; font-weight: 700;
       letter-spacing: .2em; text-transform: uppercase;
-      font-family: 'DM Mono', 'Courier New', monospace;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
     }
     .st-btn-main {
       width: 100%; padding: .9rem;
@@ -128,7 +127,7 @@ function renderStudent(app) {
       color: #fff; border: none; border-radius: 1rem;
       font-size: 1rem; font-weight: 600;
       cursor: pointer; transition: all .22s;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       letter-spacing: .01em;
     }
     .st-btn-main:hover:not(:disabled) {
@@ -164,7 +163,7 @@ function renderStudent(app) {
       box-shadow: 0 6px 24px rgba(37,99,235,.3);
     }
     .st-exam-title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 1.3rem; font-weight: 600;
       color: #fff; line-height: 1.2;
     }
@@ -173,7 +172,7 @@ function renderStudent(app) {
       margin-top: .2rem;
     }
     .st-timer {
-      font-family: 'DM Mono', 'Courier New', monospace;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
       font-size: 2.2rem; font-weight: 700;
       color: #fff; letter-spacing: .04em;
     }
@@ -216,7 +215,7 @@ function renderStudent(app) {
       margin-right: .65rem; flex-shrink: 0;
     }
     .st-q-text {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 1.05rem; font-weight: 300;
       color: #1e293b; line-height: 1.5;
     }
@@ -330,7 +329,7 @@ function renderStudent(app) {
       background: #fff;
       font-size: .8rem;
       cursor: pointer;
-      font-family: 'DM Mono', 'Courier New', monospace;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
       color: #1e293b;
       transition: all .15s;
       white-space: nowrap;
@@ -390,7 +389,7 @@ function renderStudent(app) {
       border-radius: .85rem;
       font-size: .9rem; font-weight: 600;
       cursor: pointer; color: #374151;
-      transition: all .2s; font-family: 'DM Sans', sans-serif;
+      transition: all .2s; font-family: 'Inter', system-ui, sans-serif;
     }
     .st-btn-sec:hover { background: #f1f5f9; border-color: #2563eb; color: #2563eb; }
     body.dark .st-btn-sec { color: #e2e8f0; border-color: #334155; }
@@ -401,7 +400,7 @@ function renderStudent(app) {
       border: none; border-radius: .85rem;
       font-size: .9rem; font-weight: 600;
       cursor: pointer; color: #fff;
-      transition: all .2s; font-family: 'DM Sans', sans-serif;
+      transition: all .2s; font-family: 'Inter', system-ui, sans-serif;
     }
     .st-btn-prim:hover:not(:disabled) {
       transform: translateY(-1px);
@@ -433,7 +432,7 @@ function renderStudent(app) {
       to   { transform: scale(1); opacity: 1; }
     }
     .st-success-title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 2.2rem; font-weight: 600;
       color: #0f172a; margin-bottom: .5rem;
     }
@@ -453,7 +452,7 @@ function renderStudent(app) {
     }
     body.dark .st-success-stat { background: #1e293b; border-color: #334155; }
     .st-success-stat-val {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 1.8rem; font-weight: 600;
       color: #1e293b; display: block;
     }
@@ -471,7 +470,7 @@ function renderStudent(app) {
       background: linear-gradient(135deg, #1e3a5f, #2563eb);
       color: #fff; border: none; border-radius: 1rem;
       font-size: .95rem; font-weight: 600;
-      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
       transition: all .2s;
     }
     .st-btn-retro:hover {
@@ -484,7 +483,7 @@ function renderStudent(app) {
       border-radius: 1rem;
       font-size: .95rem; font-weight: 600;
       cursor: pointer; color: #374151;
-      font-family: 'DM Sans', sans-serif; transition: all .2s;
+      font-family: 'Inter', system-ui, sans-serif; transition: all .2s;
     }
     .st-btn-home:hover { background: #f1f5f9; border-color: #2563eb; color: #2563eb; }
     body.dark .st-btn-home { color: #e2e8f0; border-color: #334155; }
@@ -497,11 +496,11 @@ function renderStudent(app) {
       margin-bottom: 1.5rem; text-align: center;
     }
     .st-retro-title {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 1.5rem; font-weight: 600; color: #fff;
     }
     .st-retro-score {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: 3.5rem; font-weight: 700; color: #fff;
       line-height: 1; margin: .5rem 0;
     }
@@ -526,7 +525,7 @@ function renderStudent(app) {
       font-size: .85rem; flex-shrink: 0;
     }
     .st-retro-q-text {
-      font-family: 'Fraunces', Georgia, serif;
+      font-family: 'Inter', system-ui, sans-serif; letter-spacing: -.02em;
       font-size: .95rem; font-weight: 300;
       color: #1e293b; line-height: 1.4;
     }
@@ -1053,7 +1052,7 @@ function renderStudent(app) {
           ">✅</div>
 
           <h2 style="
-            font-family:'Fraunces',Georgia,serif;
+            font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;
             font-size:1.5rem;font-weight:600;
             color:#0f172a;margin-bottom:.5rem;
           ">Has sido desbloqueado</h2>
@@ -1068,7 +1067,7 @@ function renderStudent(app) {
             background:linear-gradient(135deg,#1e3a5f,#2563eb);
             color:#fff;border:none;border-radius:1rem;
             font-size:1rem;font-weight:600;cursor:pointer;
-            font-family:'DM Sans',sans-serif;
+            font-family:'Inter',system-ui,sans-serif;
             transition:all .2s;
           ">
             Volver a pantalla completa →
@@ -1304,7 +1303,7 @@ function renderStudent(app) {
               margin:0 auto 1rem;font-size:2.5rem;
             ">🚫</div>
             <h1 style="
-              font-family:'Fraunces',Georgia,serif;
+              font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;
               font-size:clamp(1.75rem,5vw,2.5rem);
               font-weight:600;margin:0 0 .5rem;
             ">Examen bloqueado</h1>
@@ -1372,7 +1371,7 @@ function renderStudent(app) {
                 border-radius:.75rem;border:1.5px solid rgba(255,255,255,.3);
                 background:rgba(255,255,255,.15);
                 color:#fff;font-size:.9rem;resize:none;
-                font-family:'DM Sans',sans-serif;
+                font-family:'Inter',system-ui,sans-serif;
                 box-sizing:border-box;
               "
             ></textarea>
@@ -1382,7 +1381,7 @@ function renderStudent(app) {
               background:#fff;color:#dc2626;
               border:none;border-radius:.85rem;
               font-size:.9rem;font-weight:700;cursor:pointer;
-              font-family:'DM Sans',sans-serif;
+              font-family:'Inter',system-ui,sans-serif;
               transition:opacity .2s;
             ">
               <i class="fa-solid fa-paper-plane" style="margin-right:.4rem"></i>
@@ -1601,15 +1600,15 @@ function renderStudent(app) {
 
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem">
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
-            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#16a34a">${correct}</div>
+            <div style="font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;font-size:1.6rem;font-weight:600;color:#16a34a">${correct}</div>
             <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Correctas MC</div>
           </div>
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
-            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#dc2626">${mc.length - correct}</div>
+            <div style="font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;font-size:1.6rem;font-weight:600;color:#dc2626">${mc.length - correct}</div>
             <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Incorrectas MC</div>
           </div>
           <div style="background:#fff;border:1px solid #e8e4df;border-radius:1rem;padding:1rem;text-align:center">
-            <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;color:#d97706">${total - answeredCount}</div>
+            <div style="font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;font-size:1.6rem;font-weight:600;color:#d97706">${total - answeredCount}</div>
             <div style="font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em">Sin responder</div>
           </div>
         </div>
@@ -1742,7 +1741,7 @@ function renderStudent(app) {
     app.innerHTML = `
       <div class="st-page" style="max-width:760px;margin:0 auto">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding:.75rem 0">
-          <h2 style="font-family:'Fraunces',Georgia,serif;font-size:1.3rem;font-weight:600;color:#1e293b">Revisar respuestas</h2>
+          <h2 style="font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;font-size:1.3rem;font-weight:600;color:#1e293b">Revisar respuestas</h2>
           <button id="back-btn" style="background:none;border:1.5px solid #e2e8f0;border-radius:.75rem;padding:.45rem .9rem;font-size:.85rem;cursor:pointer;color:#374151;font-family:'DM Sans',sans-serif">← Volver</button>
         </div>
         <div>
@@ -1761,7 +1760,7 @@ function renderStudent(app) {
             }
             return `
               <div style="background:${answered ? '#f0fdf4' : '#fef2f2'};border:1.5px solid ${answered ? '#86efac' : '#fca5a5'};border-radius:1rem;padding:1rem;margin-bottom:.6rem">
-                <p style="font-family:'Fraunces',Georgia,serif;font-size:.95rem;font-weight:300;color:#1e293b;margin-bottom:.4rem">${idx + 1}. ${safeText(q.text)}</p>
+                <p style="font-family:'Inter',system-ui,sans-serif;letter-spacing:-.02em;font-size:.95rem;font-weight:300;color:#1e293b;margin-bottom:.4rem">${idx + 1}. ${safeText(q.text)}</p>
                 ${answerHtml}
               </div>
             `;
