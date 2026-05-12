@@ -39,7 +39,9 @@ function renderMonitor(app) {
         if (snap.exists()) {
           snap.forEach(child => all.push({ id: child.key, ...child.val() }));
         }
-        console.log('[FETCH DIRECTO] Estudiantes en Firebase:', all.length, all.map(s => s.name + '/' + s.id));
+        console.log('[FETCH DIRECTO] Path: active_exams/' + exam.code + '/students');
+        console.log('[FETCH DIRECTO] Nodos encontrados:', all.length);
+        all.forEach((s, i) => console.log(`  [${i}] id=${s.id} name=${s.name} uid=${s.uid} lastActivity=${s.lastActivity}`));
         allStudents = all;
         render();
       } catch(e) { console.error('[FETCH DIRECTO] Error:', e); }
@@ -329,11 +331,13 @@ function renderMonitor(app) {
         <div class="card mb-4">
           <h2 class="font-bold mb-3" style="font-size:1.1rem">
             <i class="fa-solid fa-users" style="margin-right:.4rem;color:#2563eb"></i>Estudiantes en examen
+            <span style="background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:.1rem .55rem;font-size:.78rem;font-weight:700;margin-left:.5rem">${allStudents.length} en lista</span>
           </h2>
           ${allStudents.length === 0
             ? `<div class="text-center text-gray" style="padding:2.5rem">
                 <i class="fa-solid fa-hourglass-half" style="font-size:2rem;color:#cbd5e1"></i>
                 <p class="mt-2">Esperando estudiantes...</p>
+                <p class="text-xs mt-2" style="color:#94a3b8">Si hay estudiantes activos, presiona "Actualizar"</p>
               </div>`
             : `<div class="overflow-x">
                 <table>
