@@ -32,9 +32,12 @@ function renderMonitor(app) {
     selectedExam = exam;
     unsubStudents = listenToActiveStudents(exam.code, (students) => {
       const now = Date.now();
+      // Ventana de 90s: cubre 3 ciclos de syncStatus (cada 5s) + latencia de red
+      // Un estudiante se considera activo si se unió hace menos de 90s sin actividad,
+      // o si su última actividad fue hace menos de 90s
       allStudents = students.filter(s => {
-        const last = s.lastActivity || s.joinedAt;
-        return (now - last) < 30000;
+        const lastSeen = s.lastActivity || s.joinedAt || 0;
+        return (now - lastSeen) < 90000;
       });
       render();
     });
@@ -42,15 +45,16 @@ function renderMonitor(app) {
       messages = msgs.sort((a,b) => b.timestamp - a.timestamp);
       render();
     });
+    // Cleanup: eliminar estudiantes inactivos por más de 3 minutos (no 1 minuto)
     cleanupInterval = setInterval(() => {
       const now = Date.now();
       allStudents.forEach(async s => {
-        const last = s.lastActivity || s.joinedAt;
-        if ((now - last) > 60000) {
+        const lastSeen = s.lastActivity || s.joinedAt || 0;
+        if ((now - lastSeen) > 180000) {
           try { await removeActiveStudent(selectedExam.code, s.id); } catch {}
         }
       });
-    }, 10000);
+    }, 30000); // revisar cada 30s en lugar de 10s para reducir escrituras
     render();
   }
 
