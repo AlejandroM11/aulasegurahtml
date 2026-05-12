@@ -39,9 +39,10 @@ function renderStudent(app) {
   let enteringFullscreen = false;
 
   const user      = getUser() || {};
-  // sessionId: completamente aleatorio — garantiza nodo único en Firebase
-  // independiente del uid del usuario (evita colisiones entre invitados)
-  const sessionId = `s_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
+  // sessionId: UUID criptográfico — imposible de colisionar entre sesiones
+  const sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `s_${Date.now()}_${Math.random().toString(36).substr(2,9)}_${Math.random().toString(36).substr(2,9)}`;
   const studentId = sessionId;
   const guestCode = user.isGuest ? user.examCode : '';
 
