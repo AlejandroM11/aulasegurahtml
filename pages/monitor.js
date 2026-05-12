@@ -30,28 +30,38 @@ function renderMonitor(app) {
 
   function selectExam(exam) {
     selectedExam = exam;
+
+    // Lectura directa inicial para ver todos los estudiantes en Firebase ahora mismo
+    async function fetchStudentsNow() {
+      try {
+        const snap = await fbDB.ref(`active_exams/${exam.code}/students`).get();
+        const all = [];
+        if (snap.exists()) {
+          snap.forEach(child => all.push({ id: child.key, ...child.val() }));
+        }
+        console.log('[FETCH DIRECTO] Estudiantes en Firebase:', all.length, all.map(s => s.name + '/' + s.id));
+        allStudents = all;
+        render();
+      } catch(e) { console.error('[FETCH DIRECTO] Error:', e); }
+    }
+
+    // Listener en tiempo real
     unsubStudents = listenToActiveStudents(exam.code, (students) => {
-      const now = Date.now();
-      console.log('[MONITOR] Snapshot recibido. Total en Firebase:', students.length, students.map(s => ({id: s.id, name: s.name, last: now - (s.lastActivity || s.joinedAt || 0)})));
-      // SIN FILTRO DE TIEMPO — mostrar TODOS los que están en Firebase
+      console.log('[LISTENER] Estudiantes recibidos:', students.length, students.map(s => s.name + '/' + s.id));
       allStudents = students;
-      console.log('[MONITOR] allStudents:', allStudents.length);
       render();
     });
+
     unsubMessages = listenToMessages(exam.code, (msgs) => {
       messages = msgs.sort((a,b) => b.timestamp - a.timestamp);
       render();
     });
-    // Cleanup: eliminar estudiantes inactivos por más de 3 minutos (no 1 minuto)
-    cleanupInterval = setInterval(() => {
-      const now = Date.now();
-      allStudents.forEach(async s => {
-        const lastSeen = s.lastActivity || s.joinedAt || 0;
-        if ((now - lastSeen) > 180000) {
-          try { await removeActiveStudent(selectedExam.code, s.id); } catch {}
-        }
-      });
-    }, 30000); // revisar cada 30s en lugar de 10s para reducir escrituras
+
+    // Polling cada 15s como respaldo al listener
+    cleanupInterval = setInterval(fetchStudentsNow, 15000);
+
+    // Lectura inmediata
+    fetchStudentsNow();
     render();
   }
 
@@ -288,9 +298,14 @@ function renderMonitor(app) {
               <i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${selectedExam.durationMinutes} min
             </p>
           </div>
-          <button class="btn btn-outline" id="deselect-btn">
-            <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Cambiar examen
-          </button>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-outline" id="refresh-btn" title="Actualizar lista de estudiantes">
+              <i class="fa-solid fa-rotate" style="margin-right:.4rem"></i>Actualizar
+            </button>
+            <button class="btn btn-outline" id="deselect-btn">
+              <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Cambiar examen
+            </button>
+          </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">
@@ -360,6 +375,21 @@ function renderMonitor(app) {
       </div>`;
 
     document.getElementById('deselect-btn').onclick = deselectExam;
+
+    // Botón actualizar — lee directamente de Firebase
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (refreshBtn) refreshBtn.onclick = async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Actualizando...';
+      try {
+        const snap = await fbDB.ref(`active_exams/${selectedExam.code}/students`).get();
+        const all = [];
+        if (snap.exists()) snap.forEach(child => all.push({ id: child.key, ...child.val() }));
+        allStudents = all;
+        render();
+      } catch(e) { console.error('Error al actualizar:', e); }
+      // El render ya reemplazó el botón, no necesitamos restaurarlo
+    };
 
     document.querySelectorAll('[data-unblock]').forEach(btn => {
       btn.onclick = () => { const s = allStudents.find(x => x.id === btn.dataset.unblock); if (s) handleUnblock(s); };
