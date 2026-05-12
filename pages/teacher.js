@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 //  teacher.js  —  AulaSegura
 //  CORRECCIÓN: tablero de símbolos matemáticos completamente
 //  funcional usando MathQuill + teclado on-screen
@@ -818,51 +818,6 @@ function renderTeacher(app) {
                   ${isCorrect?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
                 </span>`;
               }).join('')}
-            </div>
-          ` : q.type === 'eq' && q.referenceLatex ? `
-            <p class="text-xs" style="color:#7c3aed;margin-top:.3rem">
-              <i class="fa-solid fa-superscript" style="margin-right:.3rem"></i>
-              Ref: \\(${q.referenceLatex}\\)
-            </p>
-          ` : q.type === 'open' ? `
-            <p class="text-xs text-gray mt-1">
-              <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta
-            </p>
-          ` : ''}
-        </div>
-        <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
-          data-del="${q.id}"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    `;
-  }
-
-    // Mostrar LaTeX como fórmula renderizada
-    const displayText = q.type === 'eq'
-      ? `\\(${q.text}\\)`
-      : q.isMath && q.latex
-        ? `${q.text} &nbsp;<span style="font-size:.8rem;color:#7c3aed">\\(${q.latex}\\)</span>`
-        : q.text;
-
-    return `
-      <div class="q-chip">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">
-            <span style="background:${typeBadge.bg};color:${typeBadge.color};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px">
-              <i class="fa-solid ${typeBadge.icon}" style="margin-right:.3rem"></i>${typeBadge.label}
-            </span>
-            <span class="text-xs text-gray">#${idx+1}</span>
-          </div>
-          <p class="text-sm font-bold">${displayText}</p>
-          ${q.type === 'mc' ? `
-            <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
-              ${q.options.map((o,i) => `
-                <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
-                  background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};
-                  color:${i===q.correctIndex?'#15803d':'#475569'};
-                  font-weight:${i===q.correctIndex?'700':'400'}">
-                  ${i===q.correctIndex?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
-                </span>
-              `).join('')}
             </div>
           ` : q.type === 'eq' && q.referenceLatex ? `
             <p class="text-xs" style="color:#7c3aed;margin-top:.3rem">
