@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────
 // IMPORTS Y CONFIG
 // ─────────────────────────────────────────────
 const express = require('express');
@@ -142,74 +142,66 @@ app.post('/api/notas', async (req, res) => {
 // GROQ — Generación de preguntas con IA
 // ─────────────────────────────────────────────
 app.post('/api/groq/generate', async (req, res) => {
-  const { text, numQuestions = 5 } = req.body;
+  const { text, numQuestions = 5, distribution } = req.body;
   if (!text || text.length < 50)
     return res.status(400).json({ ok: false, error: 'Texto muy corto' });
 
   try {
     const fetch = (await import('node-fetch')).default;
 
-    // Detectar si el contenido tiene matemáticas para ajustar el prompt
-    const mathKeywords = /integral|derivad|ecuaci[oó]n|fórmula|formula|álgebra|algebra|trigonometr|cálculo|calculo|límite|limite|matriz|vector|polinomio|logaritmo|exponencial|fracción|fraccion|raíz|raiz|∫|∑|∂|√|π|∞/i;
+    const mathKeywords = /integral|derivad|ecuaci[on]n|formula|algebra|trigonometr|calculo|limite|matriz|vector|polinomio|logaritmo|exponencial|fraccion|raiz/i;
     const hasMath = mathKeywords.test(text);
 
-    const prompt = `Eres un asistente educativo experto. Basándote ÚNICAMENTE en el siguiente texto, genera exactamente ${numQuestions} preguntas para un examen.
+    // distribution: { mc, multi, open, eq } — viene del frontend
+    const dist   = distribution || {};
+    const nMc    = dist.mc    ?? 0;
+    const nMulti = dist.multi ?? 0;
+    const nOpen  = dist.open  ?? 0;
+    const nEq    = dist.eq    ?? 0;
 
-TEXTO DEL TEMARIO:
+    const distLines = [
+      nMc    > 0 ? `- ${nMc} pregunta${nMc > 1 ? 's' : ''} de opcion multiple UNA correcta (type:"mc")` : '',
+      nMulti > 0 ? `- ${nMulti} pregunta${nMulti > 1 ? 's' : ''} de opcion multiple VARIAS correctas (type:"multi")` : '',
+      nOpen  > 0 ? `- ${nOpen} pregunta${nOpen > 1 ? 's' : ''} abierta${nOpen > 1 ? 's' : ''} de texto libre (type:"open", isMath:false)` : '',
+      nEq    > 0 ? `- ${nEq} pregunta${nEq > 1 ? 's' : ''} de ecuacion matematica (type:"open", isMath:true, con campo "latex")` : '',
+    ].filter(Boolean).join('\n');
+
+    const mathBlock = (hasMath || nEq > 0) ? `
+INSTRUCCIONES PARA ECUACIONES:
+- "isMath": true
+- "latex": expresion LaTeX valida SIN signos $ ni \\[\\]  (ej: "\\frac{x^2+1}{2}", "\\int_0^1 x^2\\,dx")
+- "correctLatex": solucion en LaTeX si aplica (opcional)
+` : '';
+
+    const prompt = `Eres un asistente educativo experto. Basandote UNICAMENTE en el siguiente texto, genera exactamente ${numQuestions} preguntas para un examen.
+
+TEXTO:
 """
 ${text.slice(0, 4000)}
 """
 
-INSTRUCCIONES GENERALES:
-- Genera exactamente ${numQuestions} preguntas variadas
-- Mezcla preguntas de opción múltiple ("mc") y preguntas abiertas ("open") según el contenido
-- Responde ÚNICAMENTE con un array JSON válido, sin texto adicional, sin markdown
+DISTRIBUCION OBLIGATORIA (debes cumplirla exactamente):
+${distLines}
+${mathBlock}
+REGLAS ESTRICTAS:
+- type "mc"   : "options" con exactamente 4 elementos unicos, "correctIndex" (0-3)
+- type "multi": "options" con exactamente 4 elementos unicos, "correctIndexes" (array con indices correctos, minimo 2)
+- type "open" sin isMath: solo "text"
+- type "open" con isMath:true: "latex" obligatorio
+- NO repetir opciones en una misma pregunta
+- Responde UNICAMENTE con el array JSON, sin texto adicional, sin markdown
 
-${hasMath ? `INSTRUCCIONES PARA CONTENIDO MATEMÁTICO (MUY IMPORTANTE):
-- El texto contiene matemáticas. Cuando una pregunta involucre una expresión matemática:
-  - Agrega el campo "isMath": true
-  - Agrega el campo "latex" con la expresión en formato LaTeX válido (sin $$ ni \\[\\])
-  - Ejemplo de latex válido: "\\frac{x^2 + 1}{2}" o "\\int_0^1 x^2 dx"
-- Para preguntas abiertas con matemáticas, usa type "open" con isMath y latex
-` : ''}
-
-FORMATO EXACTO (devuelve SOLO este JSON):
+FORMATO:
 [
-  {
-    "text": "¿Pregunta de opción múltiple?",
-    "type": "mc",
-    "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-    "correctIndex": 0,
-    "isMath": false
-  },
-  {
-    "text": "Resuelve la siguiente expresión:",
-    "type": "open",
-    "isMath": true,
-    "latex": "\\frac{d}{dx}(x^3 + 2x)"
-  },
-  {
-    "text": "¿Cuál es el resultado de la integral?",
-    "type": "mc",
-    "options": ["x²/2 + C", "2x + C", "x³/3 + C", "x + C"],
-    "correctIndex": 2,
-    "isMath": true,
-    "latex": "\\int x^2 \\, dx"
-  }
-]
-
-REGLAS:
-- Para type "mc": incluir "options" (4 elementos) y "correctIndex"
-- Para type "open": NO incluir "options" ni "correctIndex"
-- "isMath" es true solo si la pregunta involucra una expresión matemática
-- "latex" solo cuando isMath es true`;
+  {"text":"Pregunta mc?","type":"mc","options":["A","B","C","D"],"correctIndex":0,"isMath":false},
+  {"text":"Cuales son correctas?","type":"multi","options":["A","B","C","D"],"correctIndexes":[0,2],"isMath":false},
+  {"text":"Explica:","type":"open","isMath":false},
+  {"text":"Resuelve:","type":"open","isMath":true,"latex":"x^2-4=0","correctLatex":"x=2 o x=-2"}
+]`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.GROQ_API_KEY}` },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
@@ -221,22 +213,31 @@ REGLAS:
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || 'Error de Groq');
 
-    const content = data.choices[0].message.content
-      .replace(/```json/g, '').replace(/```/g, '').trim();
-    const start = content.indexOf('[');
-    const end   = content.lastIndexOf(']');
-    if (start === -1 || end === -1) throw new Error('Formato inválido de respuesta');
+    const raw = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+    const start = raw.indexOf('[');
+    const end   = raw.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('Formato invalido de respuesta');
 
-    const questions = JSON.parse(content.slice(start, end + 1));
+    const questions = JSON.parse(raw.slice(start, end + 1)).map(q => {
+      if (q.type === 'mc' && Array.isArray(q.options)) {
+        q.options = [...new Set(q.options)].slice(0, 4);
+        while (q.options.length < 4) q.options.push(`Opcion ${q.options.length + 1}`);
+        if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) q.correctIndex = 0;
+      }
+      if (q.type === 'multi' && Array.isArray(q.options)) {
+        q.options = [...new Set(q.options)].slice(0, 4);
+        while (q.options.length < 4) q.options.push(`Opcion ${q.options.length + 1}`);
+        if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length < 1) q.correctIndexes = [0, 1];
+        q.correctIndexes = q.correctIndexes.filter(i => i >= 0 && i < q.options.length);
+      }
+      return q;
+    });
+
     res.json({ ok: true, questions });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-
-// ─────────────────────────────────────────────
-// CHATBOT
-// ─────────────────────────────────────────────
 app.post('/api/chat', async (req, res) => {
   const { messages } = req.body;
   if (!messages || !messages.length)

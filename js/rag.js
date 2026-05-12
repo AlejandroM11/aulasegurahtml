@@ -1,4 +1,4 @@
-// ===== RAG SYSTEM — Groq + llama3 =====
+﻿// ===== RAG SYSTEM — Groq + llama3 =====
 
 const GROQ_API_KEY = null;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -39,72 +39,47 @@ function chunkTextSmart(text, maxChars = 1800) {
   return chunks;
 }
 
-// ── MODIFICADO: ahora recibe questionTypes para saber si incluir ecuaciones ──
-async function generateQuestionsFromText(text, numQuestions = 5, questionTypes = []) {
-  const wantsEquation = questionTypes.includes('eq');
-  const wantsOpen     = questionTypes.includes('open');
-  const wantsMC       = questionTypes.includes('mc') || questionTypes.length === 0;
+// ── Calcula distribución inteligente de tipos de pregunta ──
+// Garantiza al menos 1 de cada tipo cuando numQ >= 4.
+// Si el contenido tiene matemáticas, incluye ecuaciones.
+function calcDistribution(numQ, hasMath) {
+  const types = hasMath ? ['mc', 'multi', 'open', 'eq'] : ['mc', 'multi', 'open'];
+  const n = types.length;
+  const dist = {};
+  types.forEach(t => { dist[t] = 0; });
 
-  const typeInstruction = wantsEquation
-    ? `El docente REQUIERE que al menos la mitad de las preguntas sean de tipo ECUACIÓN matemática.
-Para preguntas de ecuación usa este formato:
-{
-  "text": "Enunciado de la pregunta en español (sin LaTeX aquí)",
-  "type": "open",
-  "isMath": true,
-  "latex": "expresión LaTeX de la ecuación, ej: \\\\frac{dy}{dx} + 2y = e^{-x}",
-  "correctLatex": "solución en LaTeX si aplica, ej: y = Ce^{-2x}"
+  if (numQ <= 0) return dist;
+
+  // Garantizar al menos 1 de cada tipo disponible
+  const guaranteed = Math.min(numQ, n);
+  for (let i = 0; i < guaranteed; i++) dist[types[i]] = 1;
+
+  // Distribuir el resto aleatoriamente con sesgo hacia mc (más común en exámenes)
+  let remaining = numQ - guaranteed;
+  const weights = hasMath
+    ? { mc: 3, multi: 2, open: 2, eq: 2 }
+    : { mc: 3, multi: 2, open: 2 };
+  const totalWeight = types.reduce((s, t) => s + weights[t], 0);
+
+  while (remaining > 0) {
+    let r = Math.random() * totalWeight;
+    for (const t of types) {
+      r -= weights[t];
+      if (r <= 0) { dist[t]++; remaining--; break; }
+    }
+  }
+  return dist;
 }
-El campo "latex" es obligatorio cuando isMath es true. Usa LaTeX estándar sin $$ ni \\[ \\].`
-    : `Genera preguntas variadas.${wantsOpen ? ' Incluye preguntas de respuesta abierta.' : ''}${wantsMC ? ' Incluye preguntas de opción múltiple.' : ''}
-Si el contenido es de matemáticas o física, puedes usar isMath:true con latex cuando sea apropiado.`;
-
-  const systemPrompt = `Eres un generador experto de preguntas de examen educativo.
-Genera exactamente ${numQuestions} preguntas basadas en el texto proporcionado.
-
-${typeInstruction}
-
-Responde ÚNICAMENTE con un array JSON válido. Sin texto adicional, sin backticks, sin comentarios.
-El array debe empezar con [ y terminar con ].
-
-Formatos válidos:
-
-Opción múltiple:
-{
-  "text": "¿Pregunta?",
-  "type": "mc",
-  "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-  "correctIndex": 0,
-  "isMath": false
-}
-
-Ecuación / respuesta abierta matemática:
-{
-  "text": "Resuelve la siguiente ecuación diferencial:",
-  "type": "open",
-  "isMath": true,
-  "latex": "\\\\frac{d^2y}{dx^2} + 4y = 0",
-  "correctLatex": "y = C_1\\\\cos(2x) + C_2\\\\sin(2x)"
-}
-
-Respuesta abierta sin ecuación:
-{
-  "text": "Explica con tus palabras el concepto de...",
-  "type": "open",
-  "isMath": false
-}`;
-
+async function generateQuestionsFromText(text, numQuestions = 5, distribution = {}) {
   const res = await fetch(`${API_BASE}/groq/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, numQuestions, systemPrompt })
+    body: JSON.stringify({ text, numQuestions, distribution })
   });
-
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Error al generar preguntas');
   }
-
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'Error al generar preguntas');
   return data.questions;
@@ -175,35 +150,14 @@ function openRAGModal(onQuestionsSelected) {
               </select>
             </div>
 
-            <!-- NUEVO: selector de tipos de pregunta -->
-            <div class="form-group" style="flex:1;min-width:200px">
-              <label class="label text-xs">Tipos de pregunta a generar</label>
-              <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem">
-                <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;cursor:pointer;
-                  padding:.35rem .65rem;border-radius:.5rem;border:1.5px solid #e2e8f0;background:#f8fafc">
-                  <input type="checkbox" value="mc" class="rag-qtype" checked style="accent-color:#7c3aed;width:.85rem;height:.85rem"/>
-                  <i class="fa-solid fa-list-ul" style="color:#2563eb;font-size:.75rem"></i>
-                  <span>Opción múltiple</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;cursor:pointer;
-                  padding:.35rem .65rem;border-radius:.5rem;border:1.5px solid #e2e8f0;background:#f8fafc">
-                  <input type="checkbox" value="open" class="rag-qtype" style="accent-color:#7c3aed;width:.85rem;height:.85rem"/>
-                  <i class="fa-solid fa-pen-to-square" style="color:#16a34a;font-size:.75rem"></i>
-                  <span>Abierta</span>
-                </label>
-                <label style="display:flex;align-items:center;gap:.35rem;font-size:.8rem;cursor:pointer;
-                  padding:.35rem .65rem;border-radius:.5rem;border:1.5px solid #ddd6fe;background:#f5f3ff">
-                  <input type="checkbox" value="eq" class="rag-qtype" style="accent-color:#7c3aed;width:.85rem;height:.85rem"/>
-                  <i class="fa-solid fa-square-root-variable" style="color:#7c3aed;font-size:.75rem"></i>
-                  <span style="color:#6d28d9;font-weight:600">Ecuación</span>
-                </label>
-              </div>
-              <p class="text-xs text-gray mt-1" style="font-style:italic">
-                "Ecuación" genera preguntas con fórmulas matemáticas que el estudiante responde con teclado matemático.
-              </p>
+            <!-- Info automática — sin checkboxes manuales -->
+            <div style="flex:1;display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;
+              background:#f5f3ff;border-radius:.75rem;border:1.5px solid #ddd6fe;font-size:.8rem;color:#6d28d9">
+              <i class="fa-solid fa-wand-magic-sparkles" style="font-size:.9rem;flex-shrink:0"></i>
+              <span>La IA generará automáticamente una mezcla de todos los tipos: opción múltiple, varias correctas, abierta y ecuación.</span>
             </div>
 
-            <div style="padding-top:1.5rem;flex-shrink:0">
+            <div style="padding-top:0;flex-shrink:0">
               <button class="btn btn-full" id="rag-generate-btn"
                 style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:.65rem 1.5rem">
                 <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:.4rem"></i>
@@ -342,9 +296,6 @@ function openRAGModal(onQuestionsSelected) {
     const numQ        = Number(document.getElementById('rag-num-questions').value);
     const generateBtn = document.getElementById('rag-generate-btn');
 
-    // Leer tipos de pregunta seleccionados
-    const questionTypes = [...document.querySelectorAll('.rag-qtype:checked')].map(cb => cb.value);
-
     let text = inputType === 'texto'
       ? document.getElementById('rag-text-input').value.trim()
       : pdfText;
@@ -358,8 +309,11 @@ function openRAGModal(onQuestionsSelected) {
     errorBox.style.display = 'none';
     generateBtn.disabled = true;
 
+    // Detectar matemáticas en el texto para incluir ecuaciones automáticamente
+    const mathKeywords = /integral|derivad|ecuaci[oó]n|f[oó]rmula|[aá]lgebra|trigonometr|c[aá]lculo|l[ií]mite|matriz|vector|polinomio|logaritmo|exponencial|fracci[oó]n|ra[ií]z|[∫∑∂√π∞]/i;
+    const hasMath = mathKeywords.test(text);
+
     const chunks = chunkTextSmart(text, 1800);
-    const questionsPerChunk = Math.max(1, Math.ceil(numQ / chunks.length));
     let allQuestions = [];
 
     const setProgress = (msg) => {
@@ -371,13 +325,13 @@ function openRAGModal(onQuestionsSelected) {
         if (allQuestions.length >= numQ) break;
 
         const remaining  = numQ - allQuestions.length;
-        const toGenerate = Math.min(questionsPerChunk, remaining);
+        // Calcular distribución inteligente para este chunk
+        const distribution = calcDistribution(remaining, hasMath);
 
         setProgress(`Procesando parte ${i + 1} de ${chunks.length}...`);
 
         try {
-          // MODIFICADO: se pasa questionTypes a la función
-          const questions = await generateQuestionsFromText(chunks[i], toGenerate, questionTypes);
+          const questions = await generateQuestionsFromText(chunks[i], remaining, distribution);
           if (Array.isArray(questions)) allQuestions.push(...questions);
         } catch (chunkErr) {
           console.warn(`Chunk ${i + 1} falló:`, chunkErr.message);
