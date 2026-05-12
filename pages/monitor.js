@@ -50,6 +50,7 @@ function renderMonitor(app) {
     // Listener en tiempo real
     unsubStudents = listenToActiveStudents(exam.code, (students) => {
       console.log('[LISTENER] Estudiantes recibidos:', students.length, students.map(s => s.name + '/' + s.id));
+      console.log('[LISTENER] selectedExam en este momento:', selectedExam?.code);
       allStudents = students;
       render();
     });
@@ -285,6 +286,7 @@ function renderMonitor(app) {
 
     const blocked = allStudents.filter(s => s.isBlocked);
     const unread  = messages.filter(m => !m.read);
+    console.log('[RENDER] allStudents al renderizar:', allStudents.length, allStudents.map(s => s.name));
 
     app.innerHTML = `
       <div style="max-width:100%;margin:0 auto">
