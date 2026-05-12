@@ -614,8 +614,10 @@ function renderStudent(app) {
     try {
       el.innerHTML = '';
       const mqField = MQ.MathField(el, {
-        spaceBehavesLikeTab: true,
+        spaceBehavesLikeTab: false,
         supSubsRequireOperand: false,
+        charsThatBreakOutOfSupSub: '+-=<>',
+        autoSubscriptNumerals: false,
         handlers: {
           edit: () => {
             answers[qId] = mqField.latex();
@@ -623,8 +625,13 @@ function renderStudent(app) {
           }
         }
       });
-      if (initialLatex) mqField.latex(initialLatex);
+      // Restaurar respuesta previa si existe
+      if (initialLatex) {
+        try { mqField.latex(initialLatex); } catch (_) {}
+      }
       mqStudentFields[qId] = mqField;
+      // Dar foco al campo para que el cursor sea visible
+      setTimeout(() => { try { mqField.focus(); } catch (_) {} }, 80);
       return mqField;
     } catch(e) {
       console.warn('MathField error:', e);
@@ -656,41 +663,41 @@ function renderStudent(app) {
     {
       label: 'Fracciones y potencias',
       keys: [
-        { show: 'a/b',   latex: '\\frac{□}{□}' },
+        { show: 'a/b',   latex: '\\frac{}{}' },
         { show: 'x²',    latex: '^{2}' },
-        { show: 'xⁿ',    latex: '^{□}' },
-        { show: 'x₀',    latex: '_{□}' },
-        { show: '√x',    latex: '\\sqrt{□}' },
-        { show: '∛x',    latex: '\\sqrt[3]{□}' },
-        { show: 'ⁿ√x',   latex: '\\sqrt[□]{□}' },
-        { show: 'eˣ',    latex: 'e^{□}' },
+        { show: 'xⁿ',    latex: '^{}' },
+        { show: 'x₀',    latex: '_{}' },
+        { show: '√x',    latex: '\\sqrt{}' },
+        { show: '∛x',    latex: '\\sqrt[3]{}' },
+        { show: 'ⁿ√x',   latex: '\\sqrt[]{}' },
+        { show: 'eˣ',    latex: 'e^{}' },
       ]
     },
     {
       label: 'Trigonometría',
       keys: [
-        { show: 'sin',   latex: '\\sin(□)' },
-        { show: 'cos',   latex: '\\cos(□)' },
-        { show: 'tan',   latex: '\\tan(□)' },
-        { show: 'csc',   latex: '\\csc(□)' },
-        { show: 'sec',   latex: '\\sec(□)' },
-        { show: 'cot',   latex: '\\cot(□)' },
-        { show: 'arcsin',latex: '\\arcsin(□)' },
-        { show: 'arccos',latex: '\\arccos(□)' },
-        { show: 'arctan',latex: '\\arctan(□)' },
+        { show: 'sin',   latex: '\\sin(' },
+        { show: 'cos',   latex: '\\cos(' },
+        { show: 'tan',   latex: '\\tan(' },
+        { show: 'csc',   latex: '\\csc(' },
+        { show: 'sec',   latex: '\\sec(' },
+        { show: 'cot',   latex: '\\cot(' },
+        { show: 'arcsin',latex: '\\arcsin(' },
+        { show: 'arccos',latex: '\\arccos(' },
+        { show: 'arctan',latex: '\\arctan(' },
       ]
     },
     {
       label: 'Cálculo',
       keys: [
-        { show: '∫',     latex: '\\int_{□}^{□}' },
+        { show: '∫',     latex: '\\int_{}^{}' },
         { show: '∮',     latex: '\\oint' },
         { show: 'd/dx',  latex: '\\frac{d}{dx}' },
         { show: '∂/∂x',  latex: '\\frac{\\partial}{\\partial x}' },
-        { show: 'lim',   latex: '\\lim_{x \\to □}' },
-        { show: 'Σ',     latex: '\\sum_{□}^{□}' },
-        { show: 'Π',     latex: '\\prod_{□}^{□}' },
-        { show: "f'",    latex: "f'(□)" },
+        { show: 'lim',   latex: '\\lim_{x \\to }' },
+        { show: 'Σ',     latex: '\\sum_{}^{}' },
+        { show: 'Π',     latex: '\\prod_{}^{}' },
+        { show: "f'",    latex: "f'(" },
       ]
     },
     {
@@ -703,7 +710,7 @@ function renderStudent(app) {
         { show: '≥',     latex: '\\geq' },
         { show: '≠',     latex: '\\neq' },
         { show: '≈',     latex: '\\approx' },
-        { show: '|x|',   latex: '\\left|□\\right|' },
+        { show: '|x|',   latex: '\\left|\\right|' },
         { show: 'α',     latex: '\\alpha' },
         { show: 'β',     latex: '\\beta' },
         { show: 'γ',     latex: '\\gamma' },
@@ -718,10 +725,10 @@ function renderStudent(app) {
     {
       label: 'Logaritmos',
       keys: [
-        { show: 'log',   latex: '\\log(□)' },
-        { show: 'ln',    latex: '\\ln(□)' },
-        { show: 'log₂',  latex: '\\log_{2}(□)' },
-        { show: 'logₙ',  latex: '\\log_{□}(□)' },
+        { show: 'log',   latex: '\\log(' },
+        { show: 'ln',    latex: '\\ln(' },
+        { show: 'log₂',  latex: '\\log_{2}(' },
+        { show: 'logₙ',  latex: '\\log_{}(' },
       ]
     },
   ];
@@ -754,19 +761,17 @@ function renderStudent(app) {
     container.querySelectorAll('.eq-key').forEach(btn => {
       btn.addEventListener('mousedown', e => {
         e.preventDefault(); // evitar que el campo de MQ pierda foco
-        const qId   = btn.dataset.qid;
-        const latex = btn.dataset.latex;
+        const qId    = btn.dataset.qid;
+        const latex  = btn.dataset.latex;
         const action = btn.dataset.action;
-        const mq = mqStudentFields[qId];
+        const mq     = mqStudentFields[qId];
 
         if (action === 'backspace') {
           if (mq) { mq.keystroke('Backspace'); mq.focus(); }
-          else {
-            const inp = document.getElementById(`mq-fallback-${qId}`);
-            if (inp) { inp.focus(); }
-          }
+          else { document.getElementById(`mq-fallback-${qId}`)?.focus(); }
           return;
         }
+
         if (action === 'clear') {
           if (mq) { mq.latex(''); mq.focus(); answers[qId] = ''; }
           else {
@@ -776,9 +781,41 @@ function renderStudent(app) {
           updateTimerDisplay();
           return;
         }
-        if (latex && mq) {
-          mq.write(latex);
+
+        if (!latex || !mq) return;
+
+        // Comandos que MathQuill maneja nativamente con cmd() —
+        // crean bloques vacíos navegables sin placeholders basura.
+        const CMD_ONLY = new Set([
+          '\\frac', '\\sqrt', '^', '_',
+          '\\sum', '\\prod', '\\int', '\\oint',
+          '\\vec', '\\hat', '\\bar', '\\dot',
+          '\\left(', '\\left[', '\\left|',
+        ]);
+
+        // Limpiar el placeholder □ del latex antes de insertar
+        // y decidir si usar cmd() o write()
+        const cleanLatex = latex.replace(/□/g, '');
+
+        // Detectar si es un comando simple que cmd() puede manejar
+        const isSimpleCmd = CMD_ONLY.has(cleanLatex) ||
+          /^\\[a-zA-Z]+$/.test(cleanLatex);   // \alpha, \pi, \infty, etc.
+
+        try {
+          if (isSimpleCmd) {
+            mq.cmd(cleanLatex);
+          } else if (latex.includes('□')) {
+            // Plantilla con placeholders: usar write() con {} vacíos
+            // MathQuill posiciona el cursor en el primer bloque vacío
+            mq.write(cleanLatex);
+          } else {
+            // Expresión sin placeholders: write() directo
+            mq.write(latex);
+          }
           mq.focus();
+        } catch (_) {
+          // Fallback seguro: write con latex limpio
+          try { mq.write(cleanLatex); mq.focus(); } catch (_) {}
         }
       });
     });
