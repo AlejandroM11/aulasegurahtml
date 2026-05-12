@@ -1085,7 +1085,7 @@ body.dark .modal-box {
 body.dark ::-webkit-scrollbar-thumb { background: rgba(71,85,105,.5); }
 
 /* ── Fuente global forzada — elimina cualquier override de student.js ── */
-*, *::before, *::after,
+/* IMPORTANTE: NO incluir *::before ni *::after — Font Awesome los necesita */
 .st-page, .st-page *,
 .join-card, .join-card *,
 .st-question-card, .st-question-card *,
