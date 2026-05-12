@@ -39,10 +39,8 @@ function renderStudent(app) {
   let enteringFullscreen = false;
 
   const user      = getUser() || {};
-  // sessionId: UUID criptográfico — imposible de colisionar entre sesiones
-  const sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-    ? crypto.randomUUID()
-    : `s_${Date.now()}_${Math.random().toString(36).substr(2,9)}_${Math.random().toString(36).substr(2,9)}`;
+  // sessionId: sin guiones para evitar que Firebase interprete como path anidado
+  const sessionId = `s${Date.now()}${Math.random().toString(36).substr(2,12)}`;
   const studentId = sessionId;
   const guestCode = user.isGuest ? user.examCode : '';
 
