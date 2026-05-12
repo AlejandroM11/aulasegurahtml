@@ -37,7 +37,7 @@ function safeText(value) {
 
 /** Genera un ID de invitado único */
 function guestUid() {
-  return `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /** Spinner HTML reutilizable */

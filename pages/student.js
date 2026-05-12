@@ -39,9 +39,9 @@ function renderStudent(app) {
   let enteringFullscreen = false;
 
   const user      = getUser() || {};
-  // sessionId: ID único por sesión de examen — garantiza que cada instancia
-  // sea independiente en Firebase aunque el mismo usuario abra dos pestañas
-  const sessionId = `${user.uid || user.email || 'anon'}_${Date.now()}_${Math.random().toString(36).substr(2,6)}`;
+  // sessionId: completamente aleatorio — garantiza nodo único en Firebase
+  // independiente del uid del usuario (evita colisiones entre invitados)
+  const sessionId = `s_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
   const studentId = sessionId;
   const guestCode = user.isGuest ? user.examCode : '';
 
