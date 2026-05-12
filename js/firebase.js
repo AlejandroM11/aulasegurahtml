@@ -31,7 +31,8 @@ function messagesRef(examCode) {
 /** Registra un estudiante como activo en el examen */
 function registerActiveStudent(examCode, studentData) {
   return studentRef(examCode, studentData.uid).set({
-    uid: studentData.uid,
+    uid: studentData.uid,           // sessionId único por sesión
+    displayUid: studentData.displayUid || studentData.uid, // uid real del usuario
     email: studentData.email,
     name: studentData.name,
     joinedAt: Date.now(),

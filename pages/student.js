@@ -39,7 +39,10 @@ function renderStudent(app) {
   let enteringFullscreen = false;
 
   const user      = getUser() || {};
-  const studentId = user.uid || user.email;
+  // sessionId: ID único por sesión de examen — garantiza que cada instancia
+  // sea independiente en Firebase aunque el mismo usuario abra dos pestañas
+  const sessionId = `${user.uid || user.email || 'anon'}_${Date.now()}_${Math.random().toString(36).substr(2,6)}`;
+  const studentId = sessionId;
   const guestCode = user.isGuest ? user.examCode : '';
 
   // Registrar limpieza global inmediatamente al montar el componente.
@@ -1100,7 +1103,9 @@ function renderStudent(app) {
     timer = (exam.durationMinutes || 0) * 60;
 
     registerActiveStudent(exam.code, {
-      uid: studentId, email: user.email, name: user.name, timeLeft: timer
+      uid: studentId,                              // sessionId único — key en Firebase
+      displayUid: user.uid || user.email || studentId, // uid real para identificación
+      email: user.email, name: user.name, timeLeft: timer
     }).catch(() => {});
 
     unsubBlock = listenToBlockStatus(exam.code, studentId, onRemoteBlockChange);
