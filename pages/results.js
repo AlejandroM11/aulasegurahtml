@@ -34,33 +34,39 @@ function renderResults(app) {
     try {
       const user = getUser();
       const [subs, allExams] = await Promise.all([apiGetSubmissions(), apiGetExams()]);
+
+      // Identificar exámenes del docente — comparar uid, email y fbAuth.currentUser
+      let fbUid = '';
+      try { fbUid = fbAuth?.currentUser?.uid || ''; } catch (_) {}
+      const myUids   = new Set([user?.uid, user?.email, fbUid].filter(Boolean));
       let myExams = allExams.filter(e =>
-        (user?.uid   && e.teacherId === user.uid) ||
-        (user?.email && e.teacherId === user.email)
+        e.teacherId && myUids.has(e.teacherId)
       );
-      const isFallback = myExams.length === 0 && allExams.length > 0;
-      if (isFallback) myExams = allExams;
+      // Fallback: si no hay coincidencia exacta, mostrar todos los exámenes
+      if (myExams.length === 0) myExams = allExams;
+
       const examMap = {};
       myExams.forEach(e => {
         if (e.id)   examMap[e.id]                        = e;
         if (e.code) examMap[e.code.trim().toUpperCase()] = e;
       });
-      const myIds   = new Set(myExams.map(e => e.id));
-      const myCodes = new Set(myExams.map(e => e.code?.trim().toUpperCase()));
+      const myIds   = new Set(myExams.map(e => e.id).filter(Boolean));
+      const myCodes = new Set(myExams.map(e => e.code?.trim().toUpperCase()).filter(Boolean));
+
       submissions = subs
         .filter(s => {
-          if (isFallback) return true;
-          const byId      = s.examId    && myIds.has(s.examId);
-          const byCode    = s.code      && myCodes.has(s.code?.trim().toUpperCase());
-          const byTeacher = s.teacherId && (s.teacherId === user?.uid || s.teacherId === user?.email);
-          return byId || byCode || byTeacher;
+          // Si el fallback está activo (myExams === allExams), mostrar todo
+          if (myExams === allExams) return true;
+          const byId   = s.examId && myIds.has(s.examId);
+          const byCode = s.code   && myCodes.has(s.code?.trim().toUpperCase());
+          return byId || byCode;
         })
         .map(s => {
           const exam = examMap[s.examId] || examMap[s.code?.trim().toUpperCase()];
           return { ...s, examQuestions: exam?.questions || [], showCorrectAnswers: exam?.showCorrectAnswers || false };
         });
     } catch (err) {
-      console.error('Error en load():', err);
+      console.error('Error al cargar resultados:', err);
       alert('Error al cargar resultados');
     } finally {
       loading = false; render();

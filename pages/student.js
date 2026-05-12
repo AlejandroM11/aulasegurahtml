@@ -47,6 +47,9 @@ function renderStudent(app) {
   // Registrar limpieza global inmediatamente al montar el componente.
   // Logout, router, beforeunload y pagehide pueden llamarla en cualquier momento.
   window._examCleanupFull = () => {
+    // Pausar el fraudGuard INMEDIATAMENTE para que ningún handler dispare durante la limpieza
+    fraudGuard.paused = true;
+    fraudGuard.active = false;
     // Guardar datos de limpieza pendiente en sessionStorage ANTES de limpiar
     // para que si hay un reload, la próxima carga los procese
     if (exam && !finished) {
@@ -1226,6 +1229,8 @@ function renderStudent(app) {
   // ANTIFRAUDE
   // ─────────────────────────────────────────────
   function mountFraudGuard() {
+    // Si hay un flag de reload activo, no activar el guard — el estudiante ya salió
+    try { if (sessionStorage.getItem('_examReloadFlag')) return; } catch (_) {}
     if (fraudGuard.listeners) removeFraudListeners();
 
     const BLOCKED_KEYS = {
@@ -1245,16 +1250,20 @@ function renderStudent(app) {
       else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); triggerFraudBlock('Intentaste copiar contenido'); }
       else if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); triggerFraudBlock('Intentaste ver el código fuente'); }
     };
+    const isReloading = () => {
+      try { return !!sessionStorage.getItem('_examReloadFlag'); } catch (_) { return false; }
+    };
+
     const onBlur = () => {
-      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen || isReloading()) return;
       triggerFraudBlock('Saliste de la ventana del examen');
     };
     const onVisibility = () => {
-      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen || isReloading()) return;
       if (document.hidden) triggerFraudBlock('Cambiaste de pestaña o minimizaste el navegador');
     };
     const onFullscreen = () => {
-      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen) return;
+      if (!fraudGuard.active || fraudGuard.paused || enteringFullscreen || isReloading()) return;
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         triggerFraudBlock('Saliste del modo pantalla completa');
       }
@@ -1299,8 +1308,11 @@ function renderStudent(app) {
     };
 
     fraudGuard.active = true; fraudGuard.paused = false;
-    // onbeforeunload: guardar flag de examen activo para que la próxima carga lo limpie
+    // onbeforeunload: pausar el guard INMEDIATAMENTE para que ningún handler
+    // (fullscreen, blur, visibility) dispare durante la descarga de la página
     window.onbeforeunload = () => {
+      fraudGuard.paused = true;
+      fraudGuard.active = false;
       if (exam && !finished) {
         try {
           sessionStorage.setItem('_examAbandoned', JSON.stringify({
