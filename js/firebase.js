@@ -107,8 +107,14 @@ function listenToActiveStudents(examCode, callback) {
   const ref = dbRef(`active_exams/${examCode}/students`);
   ref.on('value', snap => {
     const students = [];
-    console.log('[FIREBASE] active_exams/' + examCode + '/students — nodos:', snap.numChildren(), '— val:', JSON.stringify(snap.val()));
-    snap.forEach(child => students.push({ id: child.key, ...child.val() }));
+    const raw = snap.val();
+    console.log('[FIREBASE] numChildren:', snap.numChildren(), '| val keys:', raw ? Object.keys(raw) : []);
+    if (raw) {
+      Object.entries(raw).forEach(([key, val]) => {
+        students.push({ id: key, ...val });
+      });
+    }
+    console.log('[FIREBASE] students array length:', students.length);
     callback(students);
   });
   return () => ref.off('value');

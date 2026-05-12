@@ -36,12 +36,15 @@ function renderMonitor(app) {
       try {
         const snap = await fbDB.ref(`active_exams/${exam.code}/students`).get();
         const all = [];
-        if (snap.exists()) {
-          snap.forEach(child => all.push({ id: child.key, ...child.val() }));
-        }
+        const raw = snap.val();
         console.log('[FETCH DIRECTO] Path: active_exams/' + exam.code + '/students');
-        console.log('[FETCH DIRECTO] Nodos encontrados:', all.length);
-        all.forEach((s, i) => console.log(`  [${i}] id=${s.id} name=${s.name} uid=${s.uid} lastActivity=${s.lastActivity}`));
+        console.log('[FETCH DIRECTO] Nodos encontrados:', snap.numChildren(), '| keys:', raw ? Object.keys(raw) : []);
+        if (raw) {
+          Object.entries(raw).forEach(([key, val]) => {
+            all.push({ id: key, ...val });
+            console.log(`  [${all.length-1}] id=${key} name=${val.name} uid=${val.uid} lastActivity=${val.lastActivity}`);
+          });
+        }
         allStudents = all;
         render();
       } catch(e) { console.error('[FETCH DIRECTO] Error:', e); }
