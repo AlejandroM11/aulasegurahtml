@@ -272,22 +272,21 @@ function renderHome(app) {
 
   const container = document.getElementById('home-particles');
   if (container) {
-    // Menos partículas, más lentas y con opacidad reducida para evitar flickering
     for (let i = 0; i < 12; i++) {
       const p    = document.createElement('div');
       p.className = 'particle';
-      const size = 80 + Math.random() * 100;
-      const dur  = 18 + Math.random() * 16;   // 18–34s: movimiento lento y elegante
-      // delay negativo para que empiecen en distintos puntos del ciclo sin parpadeo inicial
-      const delay = -(Math.random() * dur);
-      p.style.cssText = `
-        width:${size}px;
-        height:${size}px;
-        left:${Math.random() * 100}%;
-        bottom:-${size}px;
-        animation-duration:${dur}s;
-        animation-delay:${delay}s;
-      `;
+      const size  = 90 + Math.random() * 110;
+      const dur   = 22 + Math.random() * 18;   // 22–40s: muy lento y cinematográfico
+      const delay = -(Math.random() * dur);     // delay negativo = ya en progreso, sin flash
+      p.style.cssText = [
+        `width:${size}px`,
+        `height:${size}px`,
+        `left:${5 + Math.random() * 90}%`,
+        `bottom:-${size}px`,
+        `animation-duration:${dur}s`,
+        `animation-delay:${delay}s`,
+        `opacity:0`,                            // empieza invisible, la animación lo muestra
+      ].join(';');
       container.appendChild(p);
     }
   }
