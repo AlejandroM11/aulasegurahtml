@@ -5,18 +5,20 @@ function renderHome(app) {
 
       .particles {
         position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+        will-change: transform;
       }
       .particle {
         position: absolute; border-radius: 50%;
-        background: radial-gradient(circle, rgba(37,99,235,.18), transparent 70%);
-        animation: floatUp linear infinite;
+        background: radial-gradient(circle, rgba(37,99,235,.12), transparent 70%);
+        animation: floatUp ease-in-out infinite;
+        will-change: transform, opacity;
       }
 
       @keyframes floatUp {
-        0%   { transform: translateY(100vh) scale(0);   opacity: 0; }
-        10%  { opacity: 1; }
-        90%  { opacity: .4; }
-        100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
+        0%   { transform: translateY(100vh); opacity: 0; }
+        15%  { opacity: .7; }
+        85%  { opacity: .3; }
+        100% { transform: translateY(-10vh); opacity: 0; }
       }
 
       .home-hero {
@@ -270,15 +272,21 @@ function renderHome(app) {
 
   const container = document.getElementById('home-particles');
   if (container) {
-    for (let i = 0; i < 18; i++) {
-      const p = document.createElement('div');
+    // Menos partículas, más lentas y con opacidad reducida para evitar flickering
+    for (let i = 0; i < 12; i++) {
+      const p    = document.createElement('div');
       p.className = 'particle';
-      const size = 60 + Math.random() * 120;
+      const size = 80 + Math.random() * 100;
+      const dur  = 18 + Math.random() * 16;   // 18–34s: movimiento lento y elegante
+      // delay negativo para que empiecen en distintos puntos del ciclo sin parpadeo inicial
+      const delay = -(Math.random() * dur);
       p.style.cssText = `
-        width:${size}px; height:${size}px;
+        width:${size}px;
+        height:${size}px;
         left:${Math.random() * 100}%;
-        animation-duration:${8 + Math.random() * 14}s;
-        animation-delay:${Math.random() * 10}s;
+        bottom:-${size}px;
+        animation-duration:${dur}s;
+        animation-delay:${delay}s;
       `;
       container.appendChild(p);
     }
