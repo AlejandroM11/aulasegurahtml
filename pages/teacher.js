@@ -772,6 +772,305 @@ function renderTeacher(app) {
     `;
   }
 
+  // ──────────────────────────────────────────────────────────
+  //  Modal de edición de pregunta individual
+  // ──────────────────────────────────────────────────────────
+  function openEditModal(originalQ) {
+    // Estado local del modal — copia profunda para no mutar el original
+    let eq = JSON.parse(JSON.stringify(originalQ));
+    let mqEditField = null;
+
+    function getModalEl() { return document.getElementById('edit-q-modal'); }
+
+    function buildOptionsHTML() {
+      if (eq.type === 'mc') {
+        return `
+          <div style="background:#f8fafc;border-radius:.75rem;padding:.85rem;border:1.5px solid #e2e8f0;margin-bottom:.75rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.5rem">
+              Opciones — marca la correcta
+            </p>
+            ${(eq.options||[]).map((opt, i) => `
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+                <input type="radio" name="eq-correct" value="${i}" ${eq.correctIndex===i?'checked':''}
+                  id="eq-radio-${i}" style="width:1rem;height:1rem;accent-color:#2563eb;flex-shrink:0;cursor:pointer"/>
+                <input class="input text-sm" id="eq-opt-${i}" value="${opt}"
+                  placeholder="Opción ${String.fromCharCode(65+i)}" style="flex:1"/>
+                ${(eq.options||[]).length > 2 ? `
+                  <button type="button" class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem" data-rm-opt="${i}">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>` : ''}
+              </div>
+            `).join('')}
+            ${(eq.options||[]).length < 6 ? `
+              <button type="button" class="btn btn-outline text-xs" id="eq-add-opt" style="width:100%;margin-top:.25rem">
+                <i class="fa-solid fa-plus" style="margin-right:.3rem"></i>Agregar opción
+              </button>` : ''}
+          </div>`;
+      }
+      if (eq.type === 'multi') {
+        return `
+          <div style="background:#ecfeff;border-radius:.75rem;padding:.85rem;border:1.5px solid #a5f3fc;margin-bottom:.75rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0891b2;margin-bottom:.5rem">
+              Opciones — marca TODAS las correctas
+            </p>
+            ${(eq.options||[]).map((opt, i) => `
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+                <input type="checkbox" value="${i}" ${(eq.correctIndexes||[]).includes(i)?'checked':''}
+                  id="eq-cb-${i}" style="width:1rem;height:1rem;accent-color:#0891b2;flex-shrink:0;cursor:pointer"/>
+                <input class="input text-sm" id="eq-opt-${i}" value="${opt}"
+                  placeholder="Opción ${String.fromCharCode(65+i)}" style="flex:1"/>
+                ${(eq.options||[]).length > 2 ? `
+                  <button type="button" class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem" data-rm-opt="${i}">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>` : ''}
+              </div>
+            `).join('')}
+            ${(eq.options||[]).length < 6 ? `
+              <button type="button" class="btn btn-outline text-xs" id="eq-add-opt" style="width:100%;margin-top:.25rem">
+                <i class="fa-solid fa-plus" style="margin-right:.3rem"></i>Agregar opción
+              </button>` : ''}
+          </div>`;
+      }
+      if (eq.type === 'eq') {
+        return `
+          <div style="background:#fdf4ff;border-radius:.75rem;padding:.85rem;border:1.5px solid #e9d5ff;margin-bottom:.75rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7c3aed;margin-bottom:.5rem">
+              Editor de ecuación
+            </p>
+            <div id="eq-mq-field" style="border:2px solid #7c3aed;border-radius:.65rem;padding:.65rem 1rem;min-height:3rem;font-size:1.2rem;background:#fff;cursor:text;margin-bottom:.5rem"></div>
+            <p style="font-size:.72rem;color:#94a3b8;margin-top:.3rem">
+              LaTeX: <span id="eq-latex-preview" style="font-family:monospace;color:#7c3aed">${eq.referenceLatex||''}</span>
+            </p>
+          </div>`;
+      }
+      // open
+      return `
+        <div class="info-box info-box-blue mb-3">
+          <p class="text-xs"><i class="fa-solid fa-lightbulb" style="margin-right:.4rem"></i>
+            Pregunta abierta — el estudiante responde con texto libre.
+          </p>
+        </div>`;
+    }
+
+    function renderModal() {
+      const existing = getModalEl();
+      if (existing) existing.remove();
+
+      const typeOptions = [
+        { value:'mc',    label:'Una correcta',    icon:'fa-list-check',           color:'#2563eb' },
+        { value:'multi', label:'Varias correctas', icon:'fa-square-check',         color:'#0891b2' },
+        { value:'open',  label:'Abierta',          icon:'fa-pen-to-square',        color:'#16a34a' },
+        { value:'eq',    label:'Ecuación',         icon:'fa-square-root-variable', color:'#7c3aed' },
+      ];
+
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="edit-q-modal" class="modal-overlay" style="z-index:9500">
+          <div class="modal-box" style="max-width:680px">
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+              <h3 style="font-size:1.1rem;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:.5rem">
+                <span style="width:2rem;height:2rem;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:.5rem;display:inline-flex;align-items:center;justify-content:center">
+                  <i class="fa-solid fa-pen" style="color:#fff;font-size:.8rem"></i>
+                </span>
+                Editar pregunta
+              </h3>
+              <button id="eq-modal-close" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#94a3b8;line-height:1;padding:.25rem">×</button>
+            </div>
+
+            <!-- Texto de la pregunta -->
+            <div class="form-group" style="margin-bottom:1rem">
+              <label class="label">Texto de la pregunta</label>
+              <textarea class="input" id="eq-text" rows="3"
+                style="resize:none">${eq.text || ''}</textarea>
+            </div>
+
+            <!-- Selector de tipo -->
+            <div class="form-group" style="margin-bottom:1rem">
+              <label class="label">Tipo de pregunta</label>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem">
+                ${typeOptions.map(t => `
+                  <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.6rem .5rem;
+                    border-radius:.65rem;border:2px solid ${eq.type===t.value?t.color:'#e2e8f0'};
+                    cursor:pointer;background:${eq.type===t.value?'#f8fafc':'#fff'};transition:all .15s;text-align:center">
+                    <input type="radio" name="eq-type" value="${t.value}" ${eq.type===t.value?'checked':''}
+                      style="display:none"/>
+                    <i class="fa-solid ${t.icon}" style="color:${t.color};font-size:1rem"></i>
+                    <span style="font-size:.7rem;font-weight:700;color:${eq.type===t.value?t.color:'#64748b'}">${t.label}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Opciones dinámicas según tipo -->
+            <div id="eq-options-area">
+              ${buildOptionsHTML()}
+            </div>
+
+            <!-- Botones -->
+            <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+              <button class="btn btn-outline" style="flex:1" id="eq-modal-cancel">Cancelar</button>
+              <button class="btn btn-primary" style="flex:1" id="eq-modal-save">
+                <i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      `);
+
+      bindModalEvents();
+      if (eq.type === 'eq') initMQEdit();
+    }
+
+    function initMQEdit() {
+      const fieldEl = document.getElementById('eq-mq-field');
+      if (!fieldEl || typeof MathQuill === 'undefined') return;
+      const MQ = MathQuill.getInterface(2);
+      fieldEl.innerHTML = '';
+      mqEditField = MQ.MathField(fieldEl, {
+        spaceBehavesLikeTab: false,
+        handlers: {
+          edit: () => {
+            const latex = mqEditField.latex();
+            eq.referenceLatex = latex;
+            const prev = document.getElementById('eq-latex-preview');
+            if (prev) prev.textContent = latex;
+          }
+        }
+      });
+      if (eq.referenceLatex) {
+        try { mqEditField.latex(eq.referenceLatex); } catch (_) {}
+      }
+      setTimeout(() => { try { mqEditField.focus(); } catch (_) {} }, 80);
+    }
+
+    function syncOptionsFromDOM() {
+      if (eq.type === 'mc' || eq.type === 'multi') {
+        eq.options = (eq.options||[]).map((_, i) => {
+          const inp = document.getElementById(`eq-opt-${i}`);
+          return inp ? inp.value.trim() : _;
+        });
+        if (eq.type === 'mc') {
+          const checked = document.querySelector('input[name="eq-correct"]:checked');
+          eq.correctIndex = checked ? Number(checked.value) : 0;
+        }
+        if (eq.type === 'multi') {
+          eq.correctIndexes = [...document.querySelectorAll('input[id^="eq-cb-"]:checked')]
+            .map(cb => Number(cb.value));
+        }
+      }
+      const textEl = document.getElementById('eq-text');
+      if (textEl) eq.text = textEl.value.trim();
+    }
+
+    function validate() {
+      if (!eq.text) { alert('El texto de la pregunta no puede estar vacío'); return false; }
+      if (eq.type === 'mc') {
+        const opts = (eq.options||[]).filter(Boolean);
+        if (opts.length < 2) { alert('Agrega al menos 2 opciones'); return false; }
+        if (eq.correctIndex == null) { alert('Selecciona la respuesta correcta'); return false; }
+      }
+      if (eq.type === 'multi') {
+        const opts = (eq.options||[]).filter(Boolean);
+        if (opts.length < 2) { alert('Agrega al menos 2 opciones'); return false; }
+        if (!eq.correctIndexes || eq.correctIndexes.length < 1) { alert('Marca al menos una respuesta correcta'); return false; }
+      }
+      if (eq.type === 'eq' && !eq.referenceLatex) { alert('Escribe la ecuación en el editor'); return false; }
+      return true;
+    }
+
+    function bindModalEvents() {
+      const modal = getModalEl();
+
+      document.getElementById('eq-modal-close').onclick  = () => modal.remove();
+      document.getElementById('eq-modal-cancel').onclick = () => modal.remove();
+      modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+      // Cambio de tipo — re-renderiza opciones dinámicamente
+      modal.querySelectorAll('input[name="eq-type"]').forEach(radio => {
+        radio.onchange = () => {
+          syncOptionsFromDOM();
+          const newType = radio.value;
+          // Migrar datos al cambiar tipo
+          if ((newType === 'mc' || newType === 'multi') && !eq.options) {
+            eq.options = ['', '', '', ''];
+          }
+          if (newType === 'mc' && eq.correctIndex == null) eq.correctIndex = 0;
+          if (newType === 'multi' && !eq.correctIndexes) eq.correctIndexes = [];
+          eq.type = newType;
+          // Re-renderizar solo el área de opciones y los labels del selector
+          document.getElementById('eq-options-area').innerHTML = buildOptionsHTML();
+          // Actualizar estilos del selector de tipo
+          modal.querySelectorAll('label[style*="border"]').forEach(lbl => {
+            const r = lbl.querySelector('input[name="eq-type"]');
+            if (!r) return;
+            const colors = { mc:'#2563eb', multi:'#0891b2', open:'#16a34a', eq:'#7c3aed' };
+            const c = colors[r.value] || '#e2e8f0';
+            const active = r.value === newType;
+            lbl.style.borderColor = active ? c : '#e2e8f0';
+            lbl.style.background  = active ? '#f8fafc' : '#fff';
+            const span = lbl.querySelector('span');
+            if (span) span.style.color = active ? c : '#64748b';
+          });
+          if (newType === 'eq') initMQEdit();
+          bindDynamicEvents();
+        };
+      });
+
+      bindDynamicEvents();
+
+      // Guardar
+      document.getElementById('eq-modal-save').onclick = () => {
+        syncOptionsFromDOM();
+        if (!validate()) return;
+        // Limpiar campos irrelevantes según tipo
+        if (eq.type !== 'mc')    { delete eq.correctIndex; }
+        if (eq.type !== 'multi') { delete eq.correctIndexes; }
+        if (eq.type !== 'eq')    { delete eq.referenceLatex; }
+        if (eq.type === 'mc' || eq.type === 'multi') {
+          eq.options = eq.options.filter(Boolean);
+          delete eq.isMath; delete eq.latex;
+        }
+        // Actualizar en el array
+        const idx = questions.findIndex(x => x.id === eq.id);
+        if (idx !== -1) questions[idx] = eq;
+        modal.remove();
+        render();
+      };
+    }
+
+    function bindDynamicEvents() {
+      const modal = getModalEl();
+      if (!modal) return;
+
+      // Agregar opción
+      const addOptBtn = document.getElementById('eq-add-opt');
+      if (addOptBtn) addOptBtn.onclick = () => {
+        syncOptionsFromDOM();
+        if ((eq.options||[]).length < 6) {
+          eq.options = [...(eq.options||[]), ''];
+          document.getElementById('eq-options-area').innerHTML = buildOptionsHTML();
+          bindDynamicEvents();
+        }
+      };
+
+      // Eliminar opción
+      modal.querySelectorAll('[data-rm-opt]').forEach(btn => {
+        btn.onclick = () => {
+          syncOptionsFromDOM();
+          const i = Number(btn.dataset.rmOpt);
+          if ((eq.options||[]).length <= 2) return;
+          eq.options.splice(i, 1);
+          if (eq.type === 'mc' && eq.correctIndex >= eq.options.length) eq.correctIndex = 0;
+          if (eq.type === 'multi') eq.correctIndexes = (eq.correctIndexes||[]).filter(x => x < eq.options.length);
+          document.getElementById('eq-options-area').innerHTML = buildOptionsHTML();
+          bindDynamicEvents();
+        };
+      });
+    }
+
+    renderModal();
+  }
+
   function renderQuestionChip(q, idx) {
     const typeBadge = {
       mc:    { bg:'#dbeafe', color:'#1d4ed8', icon:'fa-list-check',    label:'MÚLTIPLE' },
@@ -832,6 +1131,8 @@ function renderTeacher(app) {
         </div>
         <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
           data-del="${q.id}"><i class="fa-solid fa-trash"></i></button>
+        <button class="btn btn-outline" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
+          data-edit-q="${q.id}" title="Editar pregunta"><i class="fa-solid fa-pen"></i></button>
       </div>
     `;
   }
@@ -1001,6 +1302,13 @@ function renderTeacher(app) {
     }
     document.querySelectorAll('[data-del]').forEach(btn => {
       btn.onclick = () => removeQuestion(btn.dataset.del);
+    });
+
+    document.querySelectorAll('[data-edit-q]').forEach(btn => {
+      btn.onclick = () => {
+        const q = questions.find(x => x.id === btn.dataset.editQ);
+        if (q) openEditModal(q);
+      };
     });
 
     // ─── Botón IA ───
