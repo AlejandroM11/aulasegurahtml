@@ -11,6 +11,10 @@ function getUser() {
 }
 
 function logout() {
+  // Limpiar modo examen si está activo antes de cerrar sesión
+  if (typeof window._examCleanupFull === 'function') {
+    window._examCleanupFull();
+  }
   localStorage.removeItem('user');
   window.dispatchEvent(new Event('auth-changed'));
 }

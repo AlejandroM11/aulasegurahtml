@@ -42,6 +42,31 @@ function renderStudent(app) {
   const studentId = user.uid || user.email;
   const guestCode = user.isGuest ? user.examCode : '';
 
+  // Registrar limpieza global inmediatamente al montar el componente.
+  // Logout, router y beforeunload pueden llamarla en cualquier momento.
+  window._examCleanupFull = () => {
+    if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
+    exam = null; answers = {}; timer = 0;
+    finished = false; submitted = false; submitting = false;
+    violations = []; submissionData = null; mqStudentFields = {};
+    blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
+    if (timerInterval)   { clearInterval(timerInterval);  timerInterval  = null; }
+    if (statusInterval)  { clearInterval(statusInterval); statusInterval = null; }
+    if (unsubBlock)      { try { unsubBlock(); }    catch (_) {} unsubBlock    = null; }
+    if (unsubMessages)   { try { unsubMessages(); } catch (_) {} unsubMessages = null; }
+    if (fraudGuard.listeners) { fraudGuard.listeners(); fraudGuard.listeners = null; }
+    fraudGuard.active = false; fraudGuard.paused = false;
+    window.onbeforeunload = null;
+    listenerReady = false; enteringFullscreen = false;
+    // Salir de fullscreen con todos los fallbacks
+    try {
+      if      (document.exitFullscreen)            document.exitFullscreen().catch(() => {});
+      else if (document.webkitExitFullscreen)      document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen)       document.mozCancelFullScreen();
+      else if (document.msExitFullscreen)          document.msExitFullscreen();
+    } catch (_) {}
+  };
+
   // ─────────────────────────────────────────────
   // ESTILOS GLOBALES DE LA PÁGINA ESTUDIANTE
   // ─────────────────────────────────────────────
@@ -1342,20 +1367,7 @@ function renderStudent(app) {
   }
 
   function resetExam() {
-    if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
-    exam = null; answers = {}; timer = 0;
-    finished = false; submitted = false; submitting = false;
-    violations = []; submissionData = null;
-    mqStudentFields = {};
-    blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
-    stopTimer();
-    if (statusInterval)  { clearInterval(statusInterval); statusInterval = null; }
-    if (unsubBlock)      { try { unsubBlock(); }      catch (_) {} unsubBlock = null; }
-    if (unsubMessages)   { try { unsubMessages(); }   catch (_) {} unsubMessages = null; }
-    removeFraudListeners();
-    window.onbeforeunload = null;
-    listenerReady = false;
-    enteringFullscreen = false;
+    window._examCleanupFull?.();
     showJoin();
   }
 

@@ -33,6 +33,12 @@ function router() {
   const user = getUser();
   const app  = document.getElementById('app');
 
+  // Limpiar modo examen si el estudiante navega fuera de /estudiante
+  if (path !== '/estudiante' && typeof window._examCleanupFull === 'function') {
+    window._examCleanupFull();
+    window._examCleanupFull = null;
+  }
+
   if (path === '/' && user) {
     navigate(user.role === 'docente' ? '/docente' : '/estudiante');
     return;
@@ -157,6 +163,13 @@ function toggleTheme() {
 // ===== INIT =====
 if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
 setTimeout(() => document.getElementById('banner')?.remove(), 5000);
+
+// Limpiar examen si el usuario recarga o cierra la pestaña
+window.addEventListener('beforeunload', () => {
+  if (typeof window._examCleanupFull === 'function') {
+    window._examCleanupFull();
+  }
+});
 
 window.addEventListener('auth-changed', updateNavbar);
 window.addEventListener('hashchange', router);
