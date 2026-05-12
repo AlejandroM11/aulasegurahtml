@@ -43,8 +43,22 @@ function renderStudent(app) {
   const guestCode = user.isGuest ? user.examCode : '';
 
   // Registrar limpieza global inmediatamente al montar el componente.
-  // Logout, router y beforeunload pueden llamarla en cualquier momento.
+  // Logout, router, beforeunload y pagehide pueden llamarla en cualquier momento.
   window._examCleanupFull = () => {
+    // Guardar datos de limpieza pendiente en sessionStorage ANTES de limpiar
+    // para que si hay un reload, la próxima carga los procese
+    if (exam && !finished) {
+      try {
+        sessionStorage.setItem('_examAbandoned', JSON.stringify({
+          code: exam.code,
+          uid:  studentId,
+          ts:   Date.now()
+        }));
+        // Flag que impide re-entrada automática al examen tras reload
+        sessionStorage.setItem('_examReloadFlag', '1');
+      } catch (_) {}
+    }
+
     if (exam) removeActiveStudent(exam.code, studentId).catch(() => {});
     exam = null; answers = {}; timer = 0;
     finished = false; submitted = false; submitting = false;
@@ -66,6 +80,20 @@ function renderStudent(app) {
       else if (document.msExitFullscreen)          document.msExitFullscreen();
     } catch (_) {}
   };
+
+  // Al montar renderStudent, procesar cualquier examen abandonado por reload previo
+  (function processAbandonedExam() {
+    try {
+      const raw = sessionStorage.getItem('_examAbandoned');
+      if (!raw) return;
+      sessionStorage.removeItem('_examAbandoned');
+      const { code, uid, ts } = JSON.parse(raw);
+      // Solo procesar si es reciente (menos de 5 minutos)
+      if (Date.now() - ts < 300000 && code && uid) {
+        removeActiveStudent(code, uid).catch(() => {});
+      }
+    } catch (_) {}
+  })();
 
   // ─────────────────────────────────────────────
   // ESTILOS GLOBALES DE LA PÁGINA ESTUDIANTE
@@ -1025,7 +1053,8 @@ function renderStudent(app) {
     codeInput.oninput = () => { codeInput.value = codeInput.value.toUpperCase(); };
     codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinExam(); });
     document.getElementById('join-btn').onclick = joinExam;
-    if (guestCode) joinExam();
+    // Auto-unirse solo si NO fue un reload/abandono — evita re-entrada automática
+    if (guestCode && !sessionStorage.getItem('_examReloadFlag')) joinExam();
   }
 
   async function joinExam() {
@@ -1045,6 +1074,8 @@ function renderStudent(app) {
       const res = await apiGetExamByCode(code);
       if (res?.ok && res.exam) {
         exam = res.exam;
+        // Limpiar flags de reload — el estudiante inicia un examen legítimamente
+        try { sessionStorage.removeItem('_examReloadFlag'); } catch (_) {}
         answers = {}; violations = [];
         blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
         fraudGuard = { active: false, paused: false, listeners: null };
@@ -1263,7 +1294,18 @@ function renderStudent(app) {
     };
 
     fraudGuard.active = true; fraudGuard.paused = false;
-    window.onbeforeunload = () => { if (exam && !finished) removeActiveStudent(exam.code, studentId).catch(() => {}); };
+    // onbeforeunload: guardar flag de examen activo para que la próxima carga lo limpie
+    window.onbeforeunload = () => {
+      if (exam && !finished) {
+        try {
+          sessionStorage.setItem('_examAbandoned', JSON.stringify({
+            code: exam.code, uid: studentId, ts: Date.now()
+          }));
+          sessionStorage.setItem('_examReloadFlag', '1');
+        } catch (_) {}
+        removeActiveStudent(exam.code, studentId).catch(() => {});
+      }
+    };
   }
 
   function removeFraudListeners() {
@@ -1357,6 +1399,11 @@ function renderStudent(app) {
     try {
       await apiCreateSubmission(submission);
       finished = true;
+      // Examen completado normalmente — limpiar flags de abandono
+      try {
+        sessionStorage.removeItem('_examAbandoned');
+        sessionStorage.removeItem('_examReloadFlag');
+      } catch (_) {}
       exitFullscreen();
       submissionData = submission;
       showSuccess(forced);

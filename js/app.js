@@ -164,8 +164,32 @@ function toggleTheme() {
 if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
 setTimeout(() => document.getElementById('banner')?.remove(), 5000);
 
-// Limpiar examen si el usuario recarga o cierra la pestaña
+// Al cargar la app, si hay un examen abandonado pendiente de limpiar en Firebase,
+// procesarlo antes de que renderStudent lo haga (cubre el caso de reload desde otra ruta)
+(function cleanupAbandonedExamOnLoad() {
+  try {
+    const raw = sessionStorage.getItem('_examAbandoned');
+    if (!raw) return;
+    sessionStorage.removeItem('_examAbandoned');
+    const { code, uid, ts } = JSON.parse(raw);
+    if (Date.now() - ts < 300000 && code && uid) {
+      // removeActiveStudent está disponible globalmente desde firebase.js
+      if (typeof removeActiveStudent === 'function') {
+        removeActiveStudent(code, uid).catch(() => {});
+      }
+    }
+  } catch (_) {}
+})();
+
+// beforeunload: se dispara en reload, cierre de pestaña y navegación fuera del origen
 window.addEventListener('beforeunload', () => {
+  if (typeof window._examCleanupFull === 'function') {
+    window._examCleanupFull();
+  }
+});
+
+// pagehide: más confiable en Safari/iOS y cuando el navegador optimiza el unload
+window.addEventListener('pagehide', () => {
   if (typeof window._examCleanupFull === 'function') {
     window._examCleanupFull();
   }
