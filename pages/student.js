@@ -1102,9 +1102,10 @@ function renderStudent(app) {
   function startExam() {
     timer = (exam.durationMinutes || 0) * 60;
 
+    console.log('[STUDENT] Registrando con sessionId:', studentId, 'exam:', exam.code);
     registerActiveStudent(exam.code, {
-      uid: studentId,                              // sessionId único — key en Firebase
-      displayUid: user.uid || user.email || studentId, // uid real para identificación
+      uid: studentId,
+      displayUid: user.uid || user.email || studentId,
       email: user.email, name: user.name, timeLeft: timer
     }).catch(() => {});
 

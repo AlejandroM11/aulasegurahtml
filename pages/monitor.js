@@ -32,13 +32,10 @@ function renderMonitor(app) {
     selectedExam = exam;
     unsubStudents = listenToActiveStudents(exam.code, (students) => {
       const now = Date.now();
-      // Ventana de 90s: cubre 3 ciclos de syncStatus (cada 5s) + latencia de red
-      // Un estudiante se considera activo si se unió hace menos de 90s sin actividad,
-      // o si su última actividad fue hace menos de 90s
-      allStudents = students.filter(s => {
-        const lastSeen = s.lastActivity || s.joinedAt || 0;
-        return (now - lastSeen) < 90000;
-      });
+      console.log('[MONITOR] Snapshot recibido. Total en Firebase:', students.length, students.map(s => ({id: s.id, name: s.name, last: now - (s.lastActivity || s.joinedAt || 0)})));
+      // SIN FILTRO DE TIEMPO — mostrar TODOS los que están en Firebase
+      allStudents = students;
+      console.log('[MONITOR] allStudents:', allStudents.length);
       render();
     });
     unsubMessages = listenToMessages(exam.code, (msgs) => {

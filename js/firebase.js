@@ -30,9 +30,11 @@ function messagesRef(examCode) {
 
 /** Registra un estudiante como activo en el examen */
 function registerActiveStudent(examCode, studentData) {
+  const path = `active_exams/${examCode}/students/${studentData.uid}`;
+  console.log('[FIREBASE] Registrando estudiante en path:', path, '— datos:', studentData.name, studentData.uid);
   return studentRef(examCode, studentData.uid).set({
-    uid: studentData.uid,           // sessionId único por sesión
-    displayUid: studentData.displayUid || studentData.uid, // uid real del usuario
+    uid: studentData.uid,
+    displayUid: studentData.displayUid || studentData.uid,
     email: studentData.email,
     name: studentData.name,
     joinedAt: Date.now(),
@@ -105,6 +107,7 @@ function listenToActiveStudents(examCode, callback) {
   const ref = dbRef(`active_exams/${examCode}/students`);
   ref.on('value', snap => {
     const students = [];
+    console.log('[FIREBASE] active_exams/' + examCode + '/students — nodos:', snap.numChildren(), '— val:', JSON.stringify(snap.val()));
     snap.forEach(child => students.push({ id: child.key, ...child.val() }));
     callback(students);
   });
