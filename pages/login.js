@@ -51,26 +51,9 @@ function renderLogin(app) {
           </div>
         </div>
 
-        <div class="space-y">
-          <div class="form-group">
-            <label class="label">Nueva contraseña</label>
-            <input class="input" type="password" id="set-pw-input" placeholder="Mínimo 6 caracteres"/>
-          </div>
-          <div class="form-group">
-            <label class="label">Confirmar contraseña</label>
-            <input class="input" type="password" id="set-pw-confirm" placeholder="Repite la contraseña"/>
-            <p id="set-pw-error" class="text-xs" style="min-height:1rem;margin-top:.25rem;color:#dc2626"></p>
-          </div>
-        </div>
+        
 
-        <div class="flex-row mt-4">
-          <button class="btn btn-outline" style="flex:1" id="set-pw-skip">
-            Omitir por ahora
-          </button>
-          <button class="btn btn-primary" style="flex:1" id="set-pw-save">
-            <i class="fa-solid fa-lock" style="margin-right:.4rem"></i>Guardar
-          </button>
-        </div>
+        
       </div>
     </div>
   `;
