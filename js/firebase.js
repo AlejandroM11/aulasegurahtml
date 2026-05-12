@@ -125,7 +125,12 @@ function listenToMessages(examCode, callback) {
   const ref = messagesRef(examCode);
   ref.on('value', snap => {
     const msgs = [];
-    snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
+    const raw = snap.val();
+    if (raw) {
+      Object.entries(raw).forEach(([key, val]) => {
+        msgs.push({ id: key, ...val });
+      });
+    }
     callback(msgs);
   });
   return () => ref.off('value');
