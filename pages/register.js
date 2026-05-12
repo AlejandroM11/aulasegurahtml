@@ -1,44 +1,128 @@
 function renderRegister(app) {
   app.innerHTML = `
-    <div class="card" style="max-width:440px;margin:0 auto">
-      <img src="https://cdn-icons-png.flaticon.com/512/3534/3534139.png"
-        alt="Registro" style="width:140px;height:140px;object-fit:contain;display:block;margin:0 auto 1rem"/>
-      <h2 class="text-center font-bold" style="font-size:1.5rem;margin-bottom:.25rem">Crear cuenta</h2>
-      <p class="text-center text-gray text-sm mb-4">Únete a Aula Segura</p>
+    <style>
+      .auth-wrap {
+        min-height: calc(100vh - var(--nav-height));
+        display: flex; align-items: center; justify-content: center;
+        padding: 2rem 1rem;
+      }
+      .auth-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-2xl);
+        padding: 2.5rem 2.25rem;
+        width: 100%; max-width: 460px;
+        box-shadow: 0 4px 24px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
+        animation: cardIn .3s cubic-bezier(.4,0,.2,1) both;
+      }
+      body.dark .auth-card { background: var(--surface-raised); border-color: var(--border-strong); }
+      .auth-logo-ring {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 8px 24px rgba(124,58,237,.3);
+      }
+      .auth-title {
+        font-size: 1.6rem; font-weight: 800; letter-spacing: -.025em;
+        color: var(--text-primary); text-align: center; margin-bottom: .3rem;
+      }
+      .auth-sub {
+        text-align: center; color: var(--text-muted); font-size: .875rem;
+        margin-bottom: 2rem;
+      }
+      .auth-divider {
+        display: flex; align-items: center; gap: .75rem;
+        margin: 1.25rem 0; color: var(--text-muted);
+        font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+      }
+      .auth-divider::before, .auth-divider::after {
+        content: ''; flex: 1; height: 1px; background: var(--border);
+      }
+      body.dark .auth-divider::before, body.dark .auth-divider::after { background: var(--border-strong); }
+      .auth-footer {
+        text-align: center; margin-top: 1.5rem;
+        font-size: .875rem; color: var(--text-muted);
+      }
+      .auth-footer a { color: var(--blue-600); font-weight: 600; text-decoration: none; }
+      .auth-footer a:hover { text-decoration: underline; }
+      body.dark .auth-footer a { color: var(--blue-300); }
+      .role-selector {
+        display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .4rem;
+      }
+      .role-option {
+        border: 2px solid var(--border-strong); border-radius: var(--radius-lg);
+        padding: .85rem .75rem; cursor: pointer; transition: all .18s;
+        text-align: center; background: var(--surface);
+      }
+      .role-option:hover { border-color: var(--blue-400); background: var(--blue-50); }
+      .role-option.selected {
+        border-color: var(--blue-600); background: var(--blue-50);
+        box-shadow: 0 0 0 1px var(--blue-600);
+      }
+      body.dark .role-option { background: var(--gray-900); border-color: var(--gray-700); }
+      body.dark .role-option:hover { border-color: var(--blue-500); background: rgba(37,99,235,.08); }
+      body.dark .role-option.selected { border-color: var(--blue-500); background: rgba(37,99,235,.12); }
+      .role-option i { font-size: 1.4rem; display: block; margin-bottom: .4rem; }
+      .role-option span { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
+    </style>
 
-      <form id="reg-form" class="space-y">
-        <div class="form-group">
-          <label class="label">Nombre completo</label>
-          <input class="input" type="text" id="reg-name" placeholder="Juan Pérez"/>
-        </div>
-        <div class="form-group">
-          <label class="label">Correo</label>
-          <input class="input" type="email" id="reg-email" required placeholder="correo@ejemplo.com"/>
-          <p id="reg-email-error" class="text-xs" style="min-height:1rem;margin-top:.25rem"></p>
-        </div>
-        <div class="form-group">
-          <label class="label">Contraseña</label>
-          <input class="input" type="password" id="reg-pw" required minlength="6" placeholder="Mínimo 6 caracteres"/>
-        </div>
-        <div class="form-group">
-          <label class="label">Rol</label>
-          <select class="input" id="reg-role">
-            <option value="estudiante">Estudiante</option>
-            <option value="docente">Docente</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary btn-full" id="reg-btn">Registrarme</button>
-      </form>
+    <div class="auth-wrap">
+      <div class="auth-card">
 
-      <div class="divider">O regístrate con</div>
-      <button class="btn btn-outline btn-full" id="google-reg-btn" style="display:flex;align-items:center;justify-content:center;gap:.6rem">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:1.2rem;height:1.2rem"/>
-        Continuar con Google
-      </button>
+        <div class="auth-logo-ring">
+          <img src="https://cdn-icons-png.flaticon.com/512/3534/3534139.png"
+            alt="Registro" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1)"/>
+        </div>
 
-      <p class="text-center text-sm mt-4">
-        ¿Ya tienes cuenta? <a href="#/login" class="text-blue" style="text-decoration:underline">Inicia sesión</a>
-      </p>
+        <h2 class="auth-title">Crear cuenta</h2>
+        <p class="auth-sub">Únete a Aula Segura</p>
+
+        <form id="reg-form" style="display:flex;flex-direction:column;gap:1rem">
+          <div class="form-group">
+            <label class="label">Nombre completo</label>
+            <input class="input" type="text" id="reg-name" placeholder="Juan Pérez"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Correo</label>
+            <input class="input" type="email" id="reg-email" required placeholder="correo@ejemplo.com"/>
+            <p id="reg-email-error" class="text-xs" style="min-height:1rem;margin-top:.25rem"></p>
+          </div>
+          <div class="form-group">
+            <label class="label">Contraseña</label>
+            <input class="input" type="password" id="reg-pw" required minlength="6" placeholder="Mínimo 6 caracteres"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Rol</label>
+            <div class="role-selector">
+              <div class="role-option selected" data-role="estudiante" id="role-estudiante">
+                <i class="fa-solid fa-user-graduate" style="color:#16a34a"></i>
+                <span>Estudiante</span>
+              </div>
+              <div class="role-option" data-role="docente" id="role-docente">
+                <i class="fa-solid fa-chalkboard-user" style="color:#2563eb"></i>
+                <span>Docente</span>
+              </div>
+            </div>
+            <input type="hidden" id="reg-role" value="estudiante"/>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="reg-btn"
+            style="padding:.8rem;font-size:.95rem;border-radius:var(--radius-lg)">
+            <i class="fa-solid fa-user-plus" style="margin-right:.4rem"></i>Registrarme
+          </button>
+        </form>
+
+        <div class="auth-divider">O regístrate con</div>
+        <button class="btn btn-outline btn-full" id="google-reg-btn"
+          style="padding:.7rem;gap:.6rem;border-radius:var(--radius-lg)">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:1.2rem;height:1.2rem"/>
+          Continuar con Google
+        </button>
+
+        <p class="auth-footer">
+          ¿Ya tienes cuenta? <a href="#/login">Inicia sesión</a>
+        </p>
+      </div>
     </div>
 
     <!-- Modal: crear contraseña tras Google -->
@@ -48,11 +132,11 @@ function renderRegister(app) {
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:2.5rem;margin-bottom:.75rem"/>
           <h3 class="font-bold" style="font-size:1.2rem">Crea tu contraseña</h3>
           <p class="text-gray text-sm mt-1">
-            Así también podrás iniciar sesión con tu correo y contraseña,<br/>sin necesidad de Google.
+            Así también podrás iniciar sesión con tu correo y contraseña.
           </p>
         </div>
 
-        <div id="google-pw-user-info" style="background:#f1f5f9;border-radius:.75rem;padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
+        <div id="google-pw-user-info" style="background:var(--gray-100);border-radius:var(--radius-lg);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
           <img id="google-pw-photo" src="" style="width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover;display:none"/>
           <div>
             <p class="font-bold text-sm" id="google-pw-name"></p>
@@ -68,23 +152,16 @@ function renderRegister(app) {
           <div class="form-group">
             <label class="label">Confirmar contraseña</label>
             <input class="input" type="password" id="google-pw-confirm" placeholder="Repite la contraseña"/>
-            <p id="google-pw-error" class="text-xs text-red" style="min-height:1rem;margin-top:.25rem"></p>
+            <p id="google-pw-error" class="text-xs" style="min-height:1rem;margin-top:.25rem;color:#dc2626"></p>
           </div>
         </div>
 
         <div class="flex-row mt-4">
-          <button class="btn btn-outline" style="flex:1" id="google-pw-skip">
-            Omitir por ahora
-          </button>
+          <button class="btn btn-outline" style="flex:1" id="google-pw-skip">Omitir</button>
           <button class="btn btn-primary" style="flex:1" id="google-pw-save">
             <i class="fa-solid fa-lock" style="margin-right:.4rem"></i>Guardar contraseña
           </button>
         </div>
-
-        <p class="text-center text-xs text-gray mt-3">
-          <i class="fa-solid fa-circle-info" style="margin-right:.3rem"></i>
-          Puedes cambiarla después desde tu perfil
-        </p>
       </div>
     </div>
   `;
@@ -92,17 +169,23 @@ function renderRegister(app) {
   const btn = document.getElementById('reg-btn');
   bindEmailValidation('reg-email', 'reg-email-error');
 
-  // ── Registro normal ──
+  // Role selector
+  document.querySelectorAll('.role-option').forEach(opt => {
+    opt.onclick = () => {
+      document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      document.getElementById('reg-role').value = opt.dataset.role;
+    };
+  });
+
   document.getElementById('reg-form').onsubmit = async (e) => {
     e.preventDefault();
     const email = document.getElementById('reg-email').value;
     const pw    = document.getElementById('reg-pw').value;
     const name  = document.getElementById('reg-name').value;
     const role  = document.getElementById('reg-role').value;
-
     if (!isValidEmailDomain(email)) { alert(getEmailValidationError(email)); return; }
-
-    btn.disabled = true; btn.textContent = 'Registrando...';
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Registrando...';
     try {
       const res = await apiRegister({ email, password: pw, name, role });
       if (res.ok) {
@@ -115,27 +198,18 @@ function renderRegister(app) {
     } catch (err) {
       alert('❌ ' + (err.response?.data?.error || err.message || 'Error al crear la cuenta'));
     } finally {
-      btn.disabled = false; btn.textContent = 'Registrarme';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-user-plus" style="margin-right:.4rem"></i>Registrarme';
     }
   };
 
-  // ── Registro con Google ──
   document.getElementById('google-reg-btn').onclick = async () => {
     const role = document.getElementById('reg-role').value;
     try {
       const result = await fbAuth.signInWithPopup(googleProvider);
       const u = result.user;
       const snap = await fbDB.ref(`users/${u.uid}`).get();
-
-      if (snap.exists()) {
-        // Ya tiene cuenta — simplemente iniciar sesión
-        const userData = snap.val();
-        setUser(userData);
-        redirectByRole(userData);
-        return;
-      }
-
-      // Cuenta nueva con Google — guardar en DB y pedir contraseña
+      if (snap.exists()) { const userData = snap.val(); setUser(userData); redirectByRole(userData); return; }
       const newUser = {
         uid: u.uid, email: u.email,
         name: u.displayName || '', photo: u.photoURL || '',
@@ -143,16 +217,12 @@ function renderRegister(app) {
       };
       await fbDB.ref(`users/${u.uid}`).set(newUser);
       setUser(newUser);
-
-      // Mostrar modal para crear contraseña
       showGooglePasswordModal(u, newUser);
-
     } catch (err) {
       alert('Error al registrarse con Google: ' + err.message);
     }
   };
 
-  // ── Modal para crear contraseña ──
   function showGooglePasswordModal(firebaseUser, userData) {
     const modal     = document.getElementById('google-pw-modal');
     const nameEl    = document.getElementById('google-pw-name');
@@ -166,65 +236,36 @@ function renderRegister(app) {
 
     nameEl.textContent  = userData.name  || 'Usuario';
     emailEl.textContent = userData.email || '';
-    if (userData.photo) {
-      photoEl.src = userData.photo;
-      photoEl.style.display = 'block';
-    }
+    if (userData.photo) { photoEl.src = userData.photo; photoEl.style.display = 'block'; }
 
     modal.style.display = 'flex';
     pwInput.focus();
 
-    // Validación en tiempo real
     pwConfirm.oninput = () => {
-      if (pwConfirm.value && pwInput.value !== pwConfirm.value) {
-        pwError.textContent = '❌ Las contraseñas no coinciden';
-        pwError.style.color = '#dc2626';
-      } else {
-        pwError.textContent = '';
-      }
+      pwError.textContent = (pwConfirm.value && pwInput.value !== pwConfirm.value)
+        ? '❌ Las contraseñas no coinciden' : '';
     };
 
-    // Omitir
-    skipBtn.onclick = () => {
-      modal.style.display = 'none';
-      redirectByRole(userData);
-    };
+    skipBtn.onclick = () => { modal.style.display = 'none'; redirectByRole(userData); };
 
-    // Guardar contraseña
     saveBtn.onclick = async () => {
       const pw      = pwInput.value.trim();
       const confirm = pwConfirm.value.trim();
-
-      if (pw.length < 6) {
-        pwError.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
-        return;
-      }
-      if (pw !== confirm) {
-        pwError.textContent = '❌ Las contraseñas no coinciden';
-        return;
-      }
-
+      if (pw.length < 6)  { pwError.textContent = '❌ Mínimo 6 caracteres'; return; }
+      if (pw !== confirm) { pwError.textContent = '❌ Las contraseñas no coinciden'; return; }
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Guardando...';
       pwError.textContent = '';
-
       try {
-        // Actualizar contraseña en Firebase Auth
         await firebaseUser.updatePassword(pw);
-
-        // Marcar en DB que ya tiene contraseña configurada
         await fbDB.ref(`users/${firebaseUser.uid}`).update({ hasPassword: true });
-
         modal.style.display = 'none';
-        alert('✅ Contraseña creada. Ya puedes iniciar sesión con tu correo y contraseña.');
+        alert('✅ Contraseña creada.');
         redirectByRole(userData);
       } catch (err) {
-        // Firebase puede requerir re-autenticación reciente
-        if (err.code === 'auth/requires-recent-login') {
-          pwError.textContent = '⚠️ Por seguridad, vuelve a iniciar sesión con Google e intenta de nuevo.';
-        } else {
-          pwError.textContent = '❌ Error: ' + err.message;
-        }
+        pwError.textContent = err.code === 'auth/requires-recent-login'
+          ? '⚠️ Vuelve a iniciar sesión con Google e intenta de nuevo.'
+          : '❌ Error: ' + err.message;
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fa-solid fa-lock" style="margin-right:.4rem"></i>Guardar contraseña';
