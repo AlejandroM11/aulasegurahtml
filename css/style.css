@@ -1312,3 +1312,36 @@ body.dark ::-webkit-scrollbar-track { background: #0d1117; }
     padding: .25rem .4rem !important;
   }
 }
+
+/* ── Teacher — panel preguntas en móvil ── */
+@media (max-width: 900px) {
+  /* El grid ya colapsa a 1 columna, forzar ancho completo */
+  .crear-layout > div:last-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Chips: ancho completo, altura automática, sin restricciones */
+  .q-chip {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Contenedor de la lista de chips */
+  .crear-layout > div:last-child [style*="overflow-y:auto"],
+  .crear-layout > div:last-child [style*="overflow-y: auto"] {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
+  /* Card del panel preguntas */
+  .crear-layout > div:last-child .card {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+}
