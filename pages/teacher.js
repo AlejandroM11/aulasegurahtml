@@ -217,7 +217,7 @@ function renderTeacher(app) {
         .tab-pill:hover:not(.active){background:#f1f5f9;color:#1e293b}
         .opt-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
         .correct-radio{width:1.1rem;height:1.1rem;accent-color:#2563eb;cursor:pointer;flex-shrink:0}
-        .q-chip{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:.75rem;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;transition:border-color .2s}
+        .q-chip{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:.75rem;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .2s;min-width:0;overflow:hidden}
         .q-chip:hover{border-color:#2563eb}
         .section-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.5rem}
         /* teclado matemático */
@@ -1086,53 +1086,58 @@ function renderTeacher(app) {
         : q.text;
 
     return `
-      <div class="q-chip">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">
-            <span style="background:${typeBadge.bg};color:${typeBadge.color};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px">
-              <i class="fa-solid ${typeBadge.icon}" style="margin-right:.3rem"></i>${typeBadge.label}
-            </span>
-            <span class="text-xs text-gray">#${idx+1}</span>
+      <div class="q-chip" style="flex-direction:column;gap:.6rem">
+        <!-- Header: badge + número + botones -->
+        <div style="display:flex;align-items:center;gap:.5rem;width:100%">
+          <span style="background:${typeBadge.bg};color:${typeBadge.color};font-size:.7rem;font-weight:700;padding:.15rem .5rem;border-radius:999px;flex-shrink:0">
+            <i class="fa-solid ${typeBadge.icon}" style="margin-right:.3rem"></i>${typeBadge.label}
+          </span>
+          <span class="text-xs text-gray">#${idx+1}</span>
+          <div style="margin-left:auto;display:flex;gap:.35rem;flex-shrink:0">
+            <button class="btn btn-outline" style="padding:.3rem .55rem;font-size:.8rem"
+              data-edit-q="${q.id}" title="Editar pregunta"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem"
+              data-del="${q.id}"><i class="fa-solid fa-trash"></i></button>
           </div>
-          <p class="text-sm font-bold">${displayText}</p>
-          ${q.type === 'mc' ? `
-            <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
-              ${q.options.map((o,i) => `
-                <span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
-                  background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};
-                  color:${i===q.correctIndex?'#15803d':'#475569'};
-                  font-weight:${i===q.correctIndex?'700':'400'}">
-                  ${i===q.correctIndex?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
-                </span>
-              `).join('')}
-            </div>
-          ` : q.type === 'multi' ? `
-            <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem">
-              ${(q.options||[]).map((o,i) => {
-                const isCorrect = (q.correctIndexes||[]).includes(i);
-                return `<span style="font-size:.72rem;padding:.15rem .5rem;border-radius:999px;
-                  background:${isCorrect?'#cffafe':'#f1f5f9'};
-                  color:${isCorrect?'#0e7490':'#475569'};
-                  font-weight:${isCorrect?'700':'400'}">
-                  ${isCorrect?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
-                </span>`;
-              }).join('')}
-            </div>
-          ` : q.type === 'eq' && q.referenceLatex ? `
-            <p class="text-xs" style="color:#7c3aed;margin-top:.3rem">
-              <i class="fa-solid fa-superscript" style="margin-right:.3rem"></i>
-              Ref: \\(${q.referenceLatex}\\)
-            </p>
-          ` : q.type === 'open' ? `
-            <p class="text-xs text-gray mt-1">
-              <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta
-            </p>
-          ` : ''}
         </div>
-        <button class="btn btn-danger" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
-          data-del="${q.id}"><i class="fa-solid fa-trash"></i></button>
-        <button class="btn btn-outline" style="padding:.3rem .55rem;font-size:.8rem;flex-shrink:0"
-          data-edit-q="${q.id}" title="Editar pregunta"><i class="fa-solid fa-pen"></i></button>
+        <!-- Texto de la pregunta -->
+        <p class="text-sm font-bold" style="word-break:break-word;overflow-wrap:anywhere;line-height:1.45">${displayText}</p>
+        <!-- Opciones -->
+        ${q.type === 'mc' ? `
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+            ${q.options.map((o,i) => `
+              <span style="font-size:.72rem;padding:.2rem .55rem;border-radius:999px;
+                word-break:break-word;overflow-wrap:anywhere;max-width:100%;
+                background:${i===q.correctIndex?'#dcfce7':'#f1f5f9'};
+                color:${i===q.correctIndex?'#15803d':'#475569'};
+                font-weight:${i===q.correctIndex?'700':'400'}">
+                ${i===q.correctIndex?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
+              </span>
+            `).join('')}
+          </div>
+        ` : q.type === 'multi' ? `
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+            ${(q.options||[]).map((o,i) => {
+              const isCorrect = (q.correctIndexes||[]).includes(i);
+              return `<span style="font-size:.72rem;padding:.2rem .55rem;border-radius:999px;
+                word-break:break-word;overflow-wrap:anywhere;max-width:100%;
+                background:${isCorrect?'#cffafe':'#f1f5f9'};
+                color:${isCorrect?'#0e7490':'#475569'};
+                font-weight:${isCorrect?'700':'400'}">
+                ${isCorrect?'<i class="fa-solid fa-check" style="margin-right:.2rem"></i>':''}${o}
+              </span>`;
+            }).join('')}
+          </div>
+        ` : q.type === 'eq' && q.referenceLatex ? `
+          <p class="text-xs" style="color:#7c3aed">
+            <i class="fa-solid fa-superscript" style="margin-right:.3rem"></i>
+            Ref: \\(${q.referenceLatex}\\)
+          </p>
+        ` : q.type === 'open' ? `
+          <p class="text-xs text-gray">
+            <i class="fa-solid fa-pen-to-square" style="margin-right:.3rem"></i>Respuesta abierta
+          </p>
+        ` : ''}
       </div>
     `;
   }
