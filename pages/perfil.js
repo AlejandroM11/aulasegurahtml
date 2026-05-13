@@ -47,7 +47,7 @@ function renderPerfil(app) {
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-        .pf-page { font-family: 'Plus Jakarta Sans', sans-serif; max-width: 860px; margin: 0 auto; padding: 2rem 1rem; }
+        .pf-page { font-family: 'Plus Jakarta Sans', sans-serif; max-width: 860px; margin: 0 auto; padding: 2rem 1rem; position: relative; z-index: 1; }
 
         /* hero banner */
         .pf-hero {
@@ -99,6 +99,7 @@ function renderPerfil(app) {
           box-shadow: 0 4px 24px rgba(0,0,0,.08);
           border: 1px solid #e2e8f0;
           margin-top: -3rem; position: relative; overflow: hidden;
+          z-index: 1;
         }
         body.dark .pf-body { background: #1e293b; border-color: #334155; }
 
@@ -219,8 +220,38 @@ function renderPerfil(app) {
 
       <div class="pf-page">
 
+        <!-- SVG fondo sutil -->
+        <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
+          <defs>
+            <linearGradient id="pfb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".05"/><stop offset="100%" stop-color="#7c3aed" stop-opacity=".03"/></linearGradient>
+            <linearGradient id="pfb2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed" stop-opacity=".04"/><stop offset="100%" stop-color="#2563eb" stop-opacity=".02"/></linearGradient>
+          </defs>
+          <circle cx="0" cy="0" r="400" fill="url(#pfb1)"><animate attributeName="r" values="400;430;400" dur="10s" repeatCount="indefinite"/></circle>
+          <circle cx="1440" cy="900" r="350" fill="url(#pfb2)"><animate attributeName="r" values="350;380;350" dur="12s" begin="2s" repeatCount="indefinite"/></circle>
+          <circle cx="1440" cy="0" r="240" fill="url(#pfb1)" opacity=".6"><animate attributeName="r" values="240;265;240" dur="8s" begin="1s" repeatCount="indefinite"/></circle>
+        </svg>
+
         <!-- Hero banner -->
-        <div class="pf-hero">
+        <div class="pf-hero" style="position:relative;z-index:1">
+          <!-- SVG decorativo en el hero -->
+          <svg style="position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);opacity:.12;pointer-events:none" width="160" height="160" viewBox="0 0 160 160" fill="none">
+            <circle cx="80" cy="80" r="70" stroke="white" stroke-width="1.5" stroke-dasharray="9 6">
+              <animateTransform attributeName="transform" type="rotate" values="0 80 80;360 80 80" dur="22s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="80" cy="80" r="48" stroke="white" stroke-width="1" stroke-dasharray="6 5">
+              <animateTransform attributeName="transform" type="rotate" values="360 80 80;0 80 80" dur="15s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="80" cy="80" r="24" fill="white" opacity=".15">
+              <animate attributeName="r" values="24;28;24" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="150" cy="80" r="7" fill="white" opacity=".7">
+              <animateTransform attributeName="transform" type="rotate" values="0 80 80;360 80 80" dur="22s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="128" cy="80" r="5" fill="white" opacity=".5">
+              <animateTransform attributeName="transform" type="rotate" values="360 80 80;0 80 80" dur="15s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+
           <button class="pf-hero-back" id="pf-back">
             <i class="fa-solid fa-arrow-left"></i> Volver
           </button>
