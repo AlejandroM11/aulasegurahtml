@@ -63,9 +63,85 @@ function renderLogin(app) {
     <div class="auth-wrap">
       <div class="auth-card">
 
-        <div class="auth-logo-ring">
-          <img src="https://cdn-icons-png.flaticon.com/512/3371/3371723.png"
-            alt="Login" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1)"/>
+        <div style="display:flex;justify-content:center;margin-bottom:1.5rem">
+          <!-- SVG animado: llave desbloqueando candado -->
+          <svg width="110" height="110" viewBox="0 0 110 110" fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style="filter:drop-shadow(0 8px 24px rgba(37,99,235,.3))">
+            <defs>
+              <linearGradient id="lgBg" x1="0" y1="0" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#1e3a5f"/>
+                <stop offset="100%" stop-color="#2563eb"/>
+              </linearGradient>
+              <linearGradient id="lgKey" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#fbbf24"/>
+                <stop offset="100%" stop-color="#f59e0b"/>
+              </linearGradient>
+              <linearGradient id="lgLock" x1="20" y1="20" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#60a5fa"/>
+                <stop offset="100%" stop-color="#ffffff"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Círculo de fondo con pulso -->
+            <circle cx="55" cy="55" r="50" fill="url(#lgBg)">
+              <animate attributeName="r" values="50;52;50" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Anillo exterior pulsante -->
+            <circle cx="55" cy="55" r="50" stroke="#3b82f6" stroke-width="1.5"
+              fill="none" opacity="0">
+              <animate attributeName="r" values="50;66;66" dur="2.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="55" cy="55" r="50" stroke="#7c3aed" stroke-width="1"
+              fill="none" opacity="0">
+              <animate attributeName="r" values="50;66;66" dur="2.5s" begin="1.25s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.3;0;0" dur="2.5s" begin="1.25s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Cuerpo del candado -->
+            <rect x="36" y="52" width="38" height="28" rx="7"
+              fill="url(#lgLock)" opacity="0.95"/>
+
+            <!-- Arco del candado — animado abriéndose -->
+            <path d="M44 52 v-10 a11 11 0 0 1 22 0" stroke="white" stroke-width="4"
+              stroke-linecap="round" fill="none">
+              <animateTransform attributeName="transform" type="rotate"
+                values="0 55 42; -25 55 42; 0 55 42" dur="3s"
+                repeatCount="indefinite" calcMode="spline"
+                keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"/>
+            </path>
+
+            <!-- Ojo del candado -->
+            <circle cx="55" cy="64" r="4" fill="#1e3a5f">
+              <animate attributeName="r" values="4;5;4" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Ranura del candado -->
+            <rect x="53.5" y="64" width="3" height="7" rx="1.5" fill="#1e3a5f"/>
+
+            <!-- Llave animada entrando -->
+            <g>
+              <animateTransform attributeName="transform" type="translate"
+                values="-20,0; 0,0; 0,0; -20,0" dur="3s"
+                repeatCount="indefinite" calcMode="spline"
+                keySplines="0.4 0 0.2 1; 0.2 1 0.4 0; 0.4 0 0.2 1"/>
+              <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/>
+              <!-- Mango de la llave -->
+              <circle cx="22" cy="38" r="8" stroke="url(#lgKey)" stroke-width="3" fill="none"/>
+              <circle cx="22" cy="38" r="3" fill="url(#lgKey)"/>
+              <!-- Cuerpo de la llave -->
+              <line x1="28" y1="43" x2="46" y2="61" stroke="url(#lgKey)" stroke-width="3" stroke-linecap="round"/>
+              <!-- Dientes de la llave -->
+              <line x1="40" y1="57" x2="44" y2="53" stroke="url(#lgKey)" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="44" y1="61" x2="48" y2="57" stroke="url(#lgKey)" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+
+            <!-- Check de acceso concedido -->
+            <path d="M44 66 l7 7 14-14" stroke="#1e3a5f" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0">
+              <animate attributeName="opacity" values="0;0;0;1;1;0" dur="3s" repeatCount="indefinite"/>
+            </path>
+          </svg>
         </div>
 
         <h2 class="auth-title">Iniciar sesión</h2>
