@@ -1265,16 +1265,50 @@ body.dark ::-webkit-scrollbar-track { background: #0d1117; }
 
 /* ── Tipografía responsive ── */
 @media (max-width: 640px) {
-  h1 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
-  h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; }
+  /* Solo títulos de página, no elementos inline */
+  #app > div > h1,
+  .pf-hero-text h1,
+  .mon-hero h1,
+  .home-hero h1 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
 }
 
 /* ── Touch targets mínimos (WCAG 2.5.5) ── */
 @media (max-width: 640px) {
-  .btn, button, a, input[type="checkbox"], input[type="radio"] {
+  /* Solo botones y links de navegación — NO todos los elementos */
+  .btn:not(.btn-sm),
+  #nav-actions button,
+  #nav-actions a,
+  .nav-mobile-item,
+  input[type="submit"],
+  input[type="button"] {
     min-height: 44px;
-    min-width: 44px;
   }
-  .btn-sm { min-height: 36px; min-width: 36px; }
-  .badge  { min-height: auto; min-width: auto; }
+  /* Checkboxes y radios más grandes para touch */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 20px;
+    min-width: 20px;
+  }
+}
+
+/* ── Teacher chips en móvil ── */
+@media (max-width: 640px) {
+  .q-chip {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: .7rem .85rem !important;
+  }
+  .q-chip p,
+  .q-chip span,
+  .q-chip div {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  /* Botones dentro del chip — más pequeños en móvil */
+  .q-chip .btn,
+  .q-chip button {
+    min-height: 32px !important;
+    min-width: 32px !important;
+    padding: .25rem .4rem !important;
+  }
 }
