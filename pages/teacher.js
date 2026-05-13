@@ -626,6 +626,10 @@ function renderTeacher(app) {
             display:flex;
             flex-direction:column;
             gap:1rem;
+            position:sticky;
+            top:calc(var(--nav-height, 80px) + 1rem);
+            max-height:calc(100vh - var(--nav-height, 80px) - 2rem);
+            overflow-y:auto;
           ">
 
             <!-- Panel preguntas -->
