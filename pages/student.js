@@ -108,15 +108,13 @@ function renderStudent(app) {
       sessionStorage.removeItem('_guestExam');
       const guestExam = JSON.parse(raw);
       if (!guestExam?.id) return;
-      // Iniciar el examen directamente sin mostrar la pantalla de join
+      // Diferir al siguiente tick para que todas las funciones del closure estén listas
       exam = guestExam;
       answers = {}; violations = [];
       blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
       fraudGuard = { active: false, paused: false, listeners: null };
       submitted = false; finished = false; submitting = false;
       submissionData = null; listenerReady = false;
-      injectStyles();
-      startExam();
     } catch (_) {}
   })();
 
@@ -2208,6 +2206,12 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   // INICIO
   // ─────────────────────────────────────────────
-  // Solo mostrar join si checkGuestExam no inició el examen directamente
-  if (!exam) showJoin();
+  // Si checkGuestExam ya cargó el examen, iniciarlo directamente
+  // Si no, mostrar la pantalla de join normal
+  if (exam) {
+    injectStyles();
+    startExam();
+  } else {
+    showJoin();
+  }
 }
