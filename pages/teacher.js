@@ -621,24 +621,18 @@ function renderTeacher(app) {
 
           </div><!-- /columna izquierda -->
 
-          <!-- ── Columna derecha: panel de preguntas sticky ── -->
+          <!-- ── Columna derecha: panel de preguntas ── -->
           <div style="
-            position:sticky;
-            top:calc(var(--nav-height, 64px) + 1rem);
             display:flex;
             flex-direction:column;
             gap:1rem;
-            max-height:calc(100vh - var(--nav-height, 64px) - 2rem);
           ">
 
             <!-- Panel preguntas -->
             <div class="card" style="
               display:flex;
               flex-direction:column;
-              flex:1;
-              overflow:hidden;
               padding:0;
-              min-height:0;
             ">
               <!-- Header del panel -->
               <div style="
@@ -665,7 +659,6 @@ function renderTeacher(app) {
                 display:flex;
                 flex-direction:column;
                 gap:.65rem;
-                max-height:calc(100vh - var(--nav-height, 64px) - 14rem);
               ">
                 ${questions.length === 0 ? `
                   <div class="text-center text-gray" style="padding:3rem 1rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
