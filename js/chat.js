@@ -1,6 +1,6 @@
 // ===== CHATBOT — Aula Segura IA =====
 
-const ARDY_IMG = 'https://www.unibague.edu.co/images/2022/ardy/hola-ardy.png';
+const ARDY_IMG = 'logoardi.png';
 
 function initChat() {
   if (document.getElementById('chat-btn')) return;
@@ -9,16 +9,31 @@ function initChat() {
     <style>
       #chat-btn {
         position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 500;
-        width: 3.5rem; height: 3.5rem; border-radius: 50%;
-        background: linear-gradient(135deg, #7c3aed, #2563eb);
-        border: none; cursor: pointer;
-        box-shadow: 0 4px 20px rgba(124,58,237,.45);
+        width: 4.5rem; height: 4.5rem; border-radius: 50%;
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9, #0284c7);
+        border: 3px solid rgba(255,255,255,.6);
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(14,165,233,.5), 0 0 0 0 rgba(56,189,248,.4);
         display: flex; align-items: center; justify-content: center;
         transition: transform .2s, box-shadow .2s;
         overflow: hidden; padding: 0;
+        animation: ardiBtnPulse 2.5s ease-in-out infinite;
       }
-      #chat-btn:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(124,58,237,.55); }
-      #chat-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+      @keyframes ardiBtnPulse {
+        0%,100% { box-shadow: 0 4px 20px rgba(14,165,233,.5), 0 0 0 0 rgba(56,189,248,.35); }
+        50%      { box-shadow: 0 6px 28px rgba(14,165,233,.6), 0 0 0 10px rgba(56,189,248,0); }
+      }
+      #chat-btn:hover {
+        transform: scale(1.12);
+        box-shadow: 0 8px 32px rgba(14,165,233,.6), 0 0 0 6px rgba(56,189,248,.2);
+        animation: none;
+      }
+      #chat-btn img {
+        width: 88%; height: 88%;
+        object-fit: contain;
+        border-radius: 50%;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));
+      }
 
       #chat-widget {
         position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 500;
