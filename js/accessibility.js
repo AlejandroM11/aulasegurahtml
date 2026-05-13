@@ -200,8 +200,9 @@
       /* Botón de accesibilidad — fixed, siempre visible */
       #a11y-btn {
         position: fixed;
-        bottom: 5.5rem;   /* encima del botón de ARDI */
-        right: 1.5rem;
+        bottom: 1.5rem;
+        left: 1.5rem;
+        right: auto;
         z-index: 501;
         display: flex; align-items: center; justify-content: center;
         width: 3.25rem; height: 3.25rem;
@@ -226,8 +227,9 @@
       /* Panel de accesibilidad */
       #a11y-panel {
         position: fixed;
-        bottom: 9.5rem;   /* encima del botón */
-        right: 1rem;
+        bottom: 5.5rem;
+        left: 1rem;
+        right: auto;
         z-index: 600;
         width: 300px;
         background: var(--surface, #fff);
