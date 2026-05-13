@@ -146,30 +146,193 @@ function updateNavbar() {
       }
       body.dark .nav-profile-name { color: #e2e8f0; }
       .nav-role-dot { width: .45rem; height: .45rem; border-radius: 50%; display: inline-block; margin-right: .3rem; }
+
+      /* ── Menú móvil ── */
+      .nav-mobile-menu-btn {
+        display: none;
+        align-items: center; justify-content: center;
+        width: 2.4rem; height: 2.4rem;
+        border-radius: var(--radius-md);
+        border: 1.5px solid var(--border-strong, #cbd5e1);
+        background: transparent; cursor: pointer;
+        color: var(--text-secondary, #475569);
+        font-size: 1rem; transition: all .2s;
+      }
+      .nav-mobile-menu-btn:hover { background: var(--gray-100, #f1f5f9); border-color: #2563eb; color: #2563eb; }
+      body.dark .nav-mobile-menu-btn { border-color: #334155; color: #94a3b8; }
+      body.dark .nav-mobile-menu-btn:hover { background: #1e293b; border-color: #3b82f6; color: #60a5fa; }
+
+      .nav-mobile-dropdown {
+        display: none;
+        position: fixed;
+        top: var(--nav-height, 64px);
+        left: 0; right: 0;
+        background: var(--surface, #fff);
+        border-bottom: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 8px 24px rgba(0,0,0,.1);
+        z-index: 49;
+        padding: .75rem 1rem;
+        flex-direction: column;
+        gap: .5rem;
+        animation: slideDown .2s ease;
+      }
+      body.dark .nav-mobile-dropdown { background: #0d1117; border-color: #21262d; }
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .nav-mobile-dropdown.open { display: flex; }
+
+      .nav-mobile-item {
+        display: flex; align-items: center; gap: .75rem;
+        padding: .75rem 1rem;
+        border-radius: var(--radius-lg);
+        text-decoration: none;
+        font-size: .9rem; font-weight: 600;
+        color: var(--text-primary, #0d1117);
+        background: transparent;
+        border: none; cursor: pointer; width: 100%;
+        transition: background .15s;
+        font-family: inherit;
+      }
+      .nav-mobile-item:hover { background: var(--gray-100, #f1f5f9); }
+      body.dark .nav-mobile-item { color: #e6edf3; }
+      body.dark .nav-mobile-item:hover { background: #161b22; }
+      .nav-mobile-item i { width: 1.1rem; text-align: center; color: #64748b; }
+      body.dark .nav-mobile-item i { color: #8b949e; }
+      .nav-mobile-divider { height: 1px; background: var(--border, #e2e8f0); margin: .25rem 0; }
+      body.dark .nav-mobile-divider { background: #21262d; }
+
+      /* Mostrar/ocultar según breakpoint */
+      @media (max-width: 640px) {
+        .nav-desktop-actions { display: none !important; }
+        .nav-mobile-menu-btn { display: flex !important; }
+      }
+      @media (min-width: 641px) {
+        .nav-mobile-menu-btn { display: none !important; }
+        .nav-mobile-dropdown { display: none !important; }
+      }
     </style>
-    <button class="btn btn-outline" id="theme-toggle">${isDark ? '☀️ Claro' : '🌙 Oscuro'}</button>
-    ${user ? `
-      <a href="#/perfil" class="nav-profile-btn" id="nav-profile">
-        ${buildAvatarHTML(user)}
-        <div style="display:flex;flex-direction:column;line-height:1.2">
-          <span class="nav-profile-name">${user.name || user.email.split('@')[0]}</span>
-          <span style="font-size:.68rem;color:#94a3b8">
-            <span class="nav-role-dot" style="background:${user.role === 'docente' ? '#2563eb' : '#16a34a'}"></span>${user.role}
-          </span>
+
+    <!-- Acciones desktop (ocultas en móvil) -->
+    <div class="nav-desktop-actions" style="display:flex;align-items:center;gap:.5rem">
+      <button class="btn btn-outline" id="theme-toggle-desk">${isDark ? '☀️ Claro' : '🌙 Oscuro'}</button>
+      ${user ? `
+        <a href="#/perfil" class="nav-profile-btn" id="nav-profile">
+          ${buildAvatarHTML(user)}
+          <div style="display:flex;flex-direction:column;line-height:1.2">
+            <span class="nav-profile-name">${user.name || user.email.split('@')[0]}</span>
+            <span style="font-size:.68rem;color:#94a3b8">
+              <span class="nav-role-dot" style="background:${user.role === 'docente' ? '#2563eb' : '#16a34a'}"></span>${user.role}
+            </span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:.65rem;color:#94a3b8"></i>
+        </a>
+        <button class="btn btn-outline" id="nav-logout-desk" style="padding:.4rem .85rem;font-size:.85rem">
+          <i class="fa-solid fa-right-from-bracket" style="margin-right:.3rem"></i>Salir
+        </button>
+      ` : `
+        <a href="#/login" class="btn btn-primary">Ingresar</a>
+        <a href="#/register" class="btn btn-outline">Crear cuenta</a>
+      `}
+    </div>
+
+    <!-- Botón hamburguesa (solo móvil) -->
+    <button class="nav-mobile-menu-btn" id="nav-mobile-toggle" aria-label="Menú">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Dropdown móvil -->
+    <div class="nav-mobile-dropdown" id="nav-mobile-dropdown">
+      ${user ? `
+        <!-- Info del usuario -->
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 1rem .75rem;border-bottom:1px solid var(--border,#e2e8f0);margin-bottom:.25rem">
+          ${buildAvatarHTML(user)}
+          <div>
+            <p style="font-weight:700;font-size:.9rem;color:var(--text-primary)">${user.name || user.email.split('@')[0]}</p>
+            <p style="font-size:.72rem;color:#94a3b8">${user.email}</p>
+          </div>
         </div>
-        <i class="fa-solid fa-chevron-down" style="font-size:.65rem;color:#94a3b8"></i>
-      </a>
-      <button class="btn btn-outline" id="nav-logout" style="padding:.4rem .85rem;font-size:.85rem">
-        <i class="fa-solid fa-right-from-bracket" style="margin-right:.3rem"></i>Salir
-      </button>
-    ` : `
-      <a href="#/login" class="btn btn-primary">Ingresar</a>
-      <a href="#/register" class="btn btn-outline">Crear cuenta</a>
-    `}
+        <a href="#/perfil" class="nav-mobile-item" id="mob-perfil">
+          <i class="fa-solid fa-user" style="color:#2563eb"></i>Mi perfil
+        </a>
+        ${user.role === 'docente' ? `
+          <a href="#/docente" class="nav-mobile-item" id="mob-docente">
+            <i class="fa-solid fa-chalkboard-user" style="color:#7c3aed"></i>Panel docente
+          </a>
+          <a href="#/monitor" class="nav-mobile-item" id="mob-monitor">
+            <i class="fa-solid fa-tower-broadcast" style="color:#0891b2"></i>Monitoreo
+          </a>
+          <a href="#/resultados" class="nav-mobile-item" id="mob-results">
+            <i class="fa-solid fa-chart-bar" style="color:#16a34a"></i>Resultados
+          </a>
+        ` : ''}
+        <div class="nav-mobile-divider"></div>
+        <button class="nav-mobile-item" id="mob-theme">
+          <i class="fa-solid ${isDark ? 'fa-sun' : 'fa-moon'}" style="color:#d97706"></i>
+          ${isDark ? 'Modo claro' : 'Modo oscuro'}
+        </button>
+        <button class="nav-mobile-item" id="mob-logout" style="color:#dc2626">
+          <i class="fa-solid fa-right-from-bracket" style="color:#dc2626"></i>Cerrar sesión
+        </button>
+      ` : `
+        <a href="#/login" class="nav-mobile-item">
+          <i class="fa-solid fa-right-to-bracket" style="color:#2563eb"></i>Ingresar
+        </a>
+        <a href="#/register" class="nav-mobile-item">
+          <i class="fa-solid fa-user-plus" style="color:#7c3aed"></i>Crear cuenta
+        </a>
+        <div class="nav-mobile-divider"></div>
+        <button class="nav-mobile-item" id="mob-theme">
+          <i class="fa-solid ${isDark ? 'fa-sun' : 'fa-moon'}" style="color:#d97706"></i>
+          ${isDark ? 'Modo claro' : 'Modo oscuro'}
+        </button>
+      `}
+    </div>
   `;
 
-  document.getElementById('theme-toggle').onclick = toggleTheme;
-  document.getElementById('nav-logout')?.addEventListener('click', () => { logout(); navigate('/login'); });
+  // Desktop events
+  document.getElementById('theme-toggle-desk')?.addEventListener('click', toggleTheme);
+  document.getElementById('nav-logout-desk')?.addEventListener('click', () => { logout(); navigate('/login'); });
+
+  // Mobile toggle
+  const mobileBtn      = document.getElementById('nav-mobile-toggle');
+  const mobileDropdown = document.getElementById('nav-mobile-dropdown');
+
+  mobileBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    mobileDropdown?.classList.toggle('open');
+    const isOpen = mobileDropdown?.classList.contains('open');
+    mobileBtn.innerHTML = `<i class="fa-solid ${isOpen ? 'fa-xmark' : 'fa-bars'}"></i>`;
+  });
+
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function closeMob(e) {
+    if (!mobileDropdown?.contains(e.target) && !mobileBtn?.contains(e.target)) {
+      mobileDropdown?.classList.remove('open');
+      if (mobileBtn) mobileBtn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+      document.removeEventListener('click', closeMob);
+    }
+  });
+
+  // Mobile menu item events
+  document.getElementById('mob-theme')?.addEventListener('click', () => {
+    toggleTheme();
+    mobileDropdown?.classList.remove('open');
+  });
+  document.getElementById('mob-logout')?.addEventListener('click', () => {
+    logout(); navigate('/login');
+    mobileDropdown?.classList.remove('open');
+  });
+  ['mob-perfil','mob-docente','mob-monitor','mob-results'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      mobileDropdown?.classList.remove('open');
+      if (mobileBtn) mobileBtn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    });
+  });
+
+  // Alias para compatibilidad con código que busca theme-toggle o nav-logout
+  // (el CSS responsive ya oculta el desktop en móvil)
 }
 
 function toggleTheme() {
