@@ -271,68 +271,109 @@ function renderMonitor(app) {
         <style>
           .mon-exam-card {
             background:var(--surface);border:1.5px solid var(--border);
-            border-radius:var(--radius-xl);padding:1.25rem 1.5rem;
-            cursor:pointer;transition:all .2s;
+            border-radius:var(--radius-xl);padding:1.4rem 1.75rem;
+            cursor:pointer;transition:all .22s;
             display:flex;align-items:center;justify-content:space-between;gap:1rem;
+            position:relative;overflow:hidden;
           }
-          .mon-exam-card:hover {
-            border-color:var(--blue-500);
-            box-shadow:0 4px 20px rgba(37,99,235,.12);
-            transform:translateY(-2px);
+          .mon-exam-card::before {
+            content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+            background:linear-gradient(180deg,#2563eb,#7c3aed);
+            border-radius:4px 0 0 4px;opacity:0;transition:opacity .2s;
           }
+          .mon-exam-card:hover { border-color:var(--blue-400);box-shadow:0 6px 24px rgba(37,99,235,.13);transform:translateY(-2px); }
+          .mon-exam-card:hover::before { opacity:1; }
           body.dark .mon-exam-card { background:var(--surface-raised);border-color:var(--border-strong); }
-          body.dark .mon-exam-card:hover { border-color:var(--blue-500); }
+          body.dark .mon-exam-card:hover { border-color:var(--blue-500);box-shadow:0 6px 24px rgba(37,99,235,.2); }
+          .mon-hero {
+            background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 60%,#7c3aed 100%);
+            border-radius:var(--radius-2xl);padding:2.5rem 2.5rem 2rem;
+            margin-bottom:2rem;position:relative;overflow:hidden;
+            box-shadow:0 8px 32px rgba(37,99,235,.3);
+          }
+          .mon-hero-badge {
+            display:inline-flex;align-items:center;gap:.5rem;
+            background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+            border:1px solid rgba(255,255,255,.25);border-radius:999px;
+            padding:.35rem .9rem;font-size:.8rem;font-weight:600;color:#fff;margin-top:1.25rem;
+          }
+          .mon-live-dot { width:.55rem;height:.55rem;border-radius:50%;background:#22c55e;animation:monPulse 1.5s infinite; }
+          @keyframes monPulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4)} 50%{opacity:.7;box-shadow:0 0 0 5px rgba(34,197,94,0)} }
         </style>
 
-        <div style="max-width:760px;margin:0 auto">
-          <div class="flex-between mb-6">
-            <div>
-              <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:-.025em;color:var(--text-primary);display:flex;align-items:center;gap:.6rem">
-                <span style="width:2.4rem;height:2.4rem;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:.7rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-                  <i class="fa-solid fa-tower-broadcast" style="color:#fff;font-size:.95rem"></i>
-                </span>
-                Monitoreo
-              </h1>
-              <p style="color:var(--text-muted);font-size:.875rem;margin-top:.3rem">
-                Selecciona un examen para supervisar en tiempo real
-              </p>
+        <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none">
+          <defs>
+            <linearGradient id="mb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".05"/><stop offset="100%" stop-color="#7c3aed" stop-opacity=".03"/></linearGradient>
+            <linearGradient id="mb2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed" stop-opacity=".04"/><stop offset="100%" stop-color="#2563eb" stop-opacity=".02"/></linearGradient>
+          </defs>
+          <circle cx="1440" cy="0" r="380" fill="url(#mb1)"><animate attributeName="r" values="380;410;380" dur="9s" repeatCount="indefinite"/></circle>
+          <circle cx="0" cy="900" r="320" fill="url(#mb2)"><animate attributeName="r" values="320;350;320" dur="11s" begin="2s" repeatCount="indefinite"/></circle>
+          <circle cx="720" cy="450" r="200" fill="url(#mb1)" opacity=".4"><animate attributeName="r" values="200;225;200" dur="13s" begin="1s" repeatCount="indefinite"/></circle>
+        </svg>
+
+        <div style="max-width:900px;margin:0 auto;position:relative;z-index:1">
+
+          <div class="mon-hero">
+            <svg style="position:absolute;right:2rem;top:50%;transform:translateY(-50%);opacity:.15;pointer-events:none" width="180" height="140" viewBox="0 0 180 140" fill="none">
+              <circle cx="90" cy="70" r="60" stroke="white" stroke-width="1.5" stroke-dasharray="8 5"><animateTransform attributeName="transform" type="rotate" values="0 90 70;360 90 70" dur="20s" repeatCount="indefinite"/></circle>
+              <circle cx="90" cy="70" r="38" stroke="white" stroke-width="1" stroke-dasharray="5 4"><animateTransform attributeName="transform" type="rotate" values="360 90 70;0 90 70" dur="13s" repeatCount="indefinite"/></circle>
+              <circle cx="90" cy="70" r="18" fill="white" opacity=".2"><animate attributeName="r" values="18;22;18" dur="3s" repeatCount="indefinite"/></circle>
+              <circle cx="150" cy="70" r="6" fill="white" opacity=".8"><animateTransform attributeName="transform" type="rotate" values="0 90 70;360 90 70" dur="20s" repeatCount="indefinite"/></circle>
+              <circle cx="128" cy="70" r="4" fill="white" opacity=".6"><animateTransform attributeName="transform" type="rotate" values="360 90 70;0 90 70" dur="13s" repeatCount="indefinite"/></circle>
+            </svg>
+            <div class="flex-between" style="position:relative;z-index:1">
+              <div>
+                <h1 style="font-size:2rem;font-weight:800;letter-spacing:-.03em;color:#fff;margin-bottom:.4rem">
+                  <i class="fa-solid fa-tower-broadcast" style="margin-right:.6rem"></i>Monitoreo
+                </h1>
+                <p style="color:rgba(255,255,255,.75);font-size:.95rem">Supervisa tus exámenes en tiempo real</p>
+                <div class="mon-hero-badge">
+                  <span class="mon-live-dot"></span>
+                  Sistema activo · ${exams.length} examen${exams.length !== 1 ? 'es' : ''} disponible${exams.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <button class="btn btn-outline" id="back-btn"
+                style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;backdrop-filter:blur(8px)">
+                <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
+              </button>
             </div>
-            <button class="btn btn-outline" id="back-btn">
-              <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
-            </button>
           </div>
 
-          <div class="card">
-            <p style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:1rem">
-              <i class="fa-solid fa-file-lines" style="margin-right:.4rem;color:#2563eb"></i>
-              ${exams.length} examen${exams.length !== 1 ? 'es' : ''} disponible${exams.length !== 1 ? 's' : ''}
+          <div class="card" style="padding:1.5rem">
+            <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:1.25rem">
+              Selecciona un examen para comenzar
             </p>
-
             ${exams.length === 0
-              ? `<div class="text-center" style="padding:3rem;color:var(--text-muted)">
-                  <i class="fa-solid fa-inbox" style="font-size:2.5rem;color:var(--gray-300);display:block;margin-bottom:.75rem"></i>
-                  <p style="font-weight:600">No hay exámenes disponibles</p>
-                  <button class="btn btn-primary mt-3" id="create-btn">
+              ? `<div class="text-center" style="padding:4rem 2rem;color:var(--text-muted)">
+                  <i class="fa-solid fa-inbox" style="font-size:3rem;color:var(--gray-300);display:block;margin-bottom:1rem"></i>
+                  <p style="font-weight:700;font-size:1rem">No hay exámenes disponibles</p>
+                  <p style="font-size:.875rem;margin-top:.35rem;margin-bottom:1.5rem">Crea un examen desde el panel docente</p>
+                  <button class="btn btn-primary" id="create-btn">
                     <i class="fa-solid fa-plus" style="margin-right:.4rem"></i>Crear examen
                   </button>
                 </div>`
-              : `<div style="display:flex;flex-direction:column;gap:.6rem">
-                  ${exams.map(e => `
-                    <div class="mon-exam-card" data-exam="${e.id}">
-                      <div style="display:flex;align-items:center;gap:1rem">
-                        <div style="width:2.75rem;height:2.75rem;border-radius:.75rem;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                          <i class="fa-solid fa-file-pen" style="color:#fff;font-size:.9rem"></i>
+              : `<div style="display:flex;flex-direction:column;gap:.75rem">
+                  ${exams.map((e, idx) => `
+                    <div class="mon-exam-card" data-exam="${e.id}" style="animation:cardIn .3s ${idx * 0.05}s both">
+                      <div style="display:flex;align-items:center;gap:1.1rem;min-width:0">
+                        <div style="width:3rem;height:3rem;border-radius:.85rem;flex-shrink:0;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,99,235,.3)">
+                          <i class="fa-solid fa-file-pen" style="color:#fff;font-size:1rem"></i>
                         </div>
-                        <div>
-                          <p style="font-weight:700;font-size:.95rem;color:var(--text-primary)">${e.title}</p>
-                          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.15rem">
-                            <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#2563eb">${e.code}</span>
-                            &nbsp;·&nbsp;${e.durationMinutes} min
-                            &nbsp;·&nbsp;${e.questions?.length || 0} preguntas
-                          </p>
+                        <div style="min-width:0">
+                          <p style="font-weight:700;font-size:1rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</p>
+                          <div style="display:flex;align-items:center;gap:.75rem;margin-top:.25rem;flex-wrap:wrap">
+                            <span style="font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:#2563eb;background:#eff6ff;padding:.1rem .55rem;border-radius:999px;border:1px solid #bfdbfe">${e.code}</span>
+                            <span style="font-size:.78rem;color:var(--text-muted)"><i class="fa-solid fa-clock" style="margin-right:.3rem"></i>${e.durationMinutes} min</span>
+                            <span style="font-size:.78rem;color:var(--text-muted)"><i class="fa-solid fa-circle-question" style="margin-right:.3rem"></i>${e.questions?.length || 0} preguntas</span>
+                          </div>
                         </div>
                       </div>
-                      <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:.8rem"></i>
+                      <div style="display:flex;align-items:center;gap:.75rem;flex-shrink:0">
+                        <span style="font-size:.75rem;font-weight:600;color:#2563eb;background:#eff6ff;padding:.3rem .75rem;border-radius:999px;border:1px solid #bfdbfe;white-space:nowrap">
+                          <i class="fa-solid fa-play" style="margin-right:.3rem;font-size:.65rem"></i>Monitorear
+                        </span>
+                        <i class="fa-solid fa-chevron-right" style="color:var(--text-muted);font-size:.8rem"></i>
+                      </div>
                     </div>
                   `).join('')}
                 </div>`
