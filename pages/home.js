@@ -215,7 +215,127 @@ function renderHome(app) {
 
         <div class="hero-visual">
           <div class="hero-img-wrap">
-            <img src="https://cdn-icons-png.flaticon.com/512/5231/5231719.png" alt="Examen seguro"/>
+            <!-- Ilustración SVG animada: monitor + escudo de seguridad -->
+            <svg width="320" height="300" viewBox="0 0 320 300" fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style="width:min(320px,100%);height:auto;display:block;filter:drop-shadow(0 24px 48px rgba(37,99,235,.22))">
+              <defs>
+                <linearGradient id="monitorGrad" x1="0" y1="0" x2="320" y2="300" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#e0eaff"/>
+                  <stop offset="100%" stop-color="#c7d7ff"/>
+                </linearGradient>
+                <linearGradient id="screenGrad" x1="40" y1="40" x2="280" y2="200" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#1e3a5f"/>
+                  <stop offset="100%" stop-color="#2563eb"/>
+                </linearGradient>
+                <linearGradient id="shieldHeroGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#7c3aed"/>
+                  <stop offset="100%" stop-color="#2563eb"/>
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              <!-- Base del monitor -->
+              <rect x="30" y="30" width="260" height="180" rx="16" fill="url(#monitorGrad)" stroke="#bfdbfe" stroke-width="2"/>
+              <!-- Pantalla -->
+              <rect x="46" y="46" width="228" height="148" rx="10" fill="url(#screenGrad)"/>
+
+              <!-- Fila 1 check verde -->
+              <rect x="70" y="72" width="12" height="12" rx="3" fill="#22c55e">
+                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="90" y="74" width="80" height="8" rx="4" fill="rgba(255,255,255,.7)"/>
+              <rect x="178" y="74" width="40" height="8" rx="4" fill="rgba(255,255,255,.3)"/>
+
+              <!-- Fila 2 check verde -->
+              <rect x="70" y="94" width="12" height="12" rx="3" fill="#22c55e">
+                <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.3s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="90" y="96" width="100" height="8" rx="4" fill="rgba(255,255,255,.7)"/>
+              <rect x="198" y="96" width="30" height="8" rx="4" fill="rgba(255,255,255,.3)"/>
+
+              <!-- Fila 3 en progreso -->
+              <rect x="70" y="116" width="12" height="12" rx="3" fill="#f59e0b">
+                <animate attributeName="opacity" values="1;0.4;1" dur="1.2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="90" y="118" width="60" height="8" rx="4" fill="rgba(255,255,255,.5)"/>
+              <rect x="154" y="118" width="3" height="8" rx="1" fill="rgba(255,255,255,.9)">
+                <animate attributeName="opacity" values="1;0;1" dur="0.8s" repeatCount="indefinite"/>
+              </rect>
+
+              <!-- Filas vacías -->
+              <rect x="70" y="138" width="12" height="12" rx="3" fill="rgba(255,255,255,.2)"/>
+              <rect x="90" y="140" width="110" height="8" rx="4" fill="rgba(255,255,255,.2)"/>
+              <rect x="70" y="160" width="12" height="12" rx="3" fill="rgba(255,255,255,.2)"/>
+              <rect x="90" y="162" width="75" height="8" rx="4" fill="rgba(255,255,255,.2)"/>
+
+              <!-- Barra de progreso -->
+              <rect x="70" y="182" width="180" height="6" rx="3" fill="rgba(255,255,255,.15)"/>
+              <rect x="70" y="182" width="110" height="6" rx="3" fill="#22c55e">
+                <animate attributeName="width" values="60;110;110" dur="2s" fill="freeze"/>
+              </rect>
+
+              <!-- Pie del monitor -->
+              <rect x="140" y="210" width="40" height="22" rx="4" fill="#bfdbfe"/>
+              <rect x="110" y="230" width="100" height="10" rx="5" fill="#93c5fd"/>
+
+              <!-- Escudo flotante con animación -->
+              <g filter="url(#glow)">
+                <g>
+                  <animateTransform attributeName="transform" type="translate"
+                    values="0,0; 0,-10; 0,0" dur="3s" repeatCount="indefinite"
+                    calcMode="spline" keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"/>
+                  <ellipse cx="232" cy="108" rx="28" ry="6" fill="rgba(37,99,235,.2)">
+                    <animate attributeName="rx" values="28;20;28" dur="3s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.2;0.08;0.2" dur="3s" repeatCount="indefinite"/>
+                  </ellipse>
+                  <path d="M232 58 L208 68 v16 c0 14 10.5 27 24 30.5 C245.5 111 256 98 256 84 V68 Z"
+                    fill="url(#shieldHeroGrad)" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+                  <path d="M232 63 L212 72 v13 c0 11 8.5 21.5 20 24.5 C243.5 106.5 252 96 252 85 V72 Z"
+                    fill="rgba(255,255,255,.12)"/>
+                  <path d="M222 84 l6 6 12-12"
+                    stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                    fill="none" stroke-dasharray="25" stroke-dashoffset="25">
+                    <animate attributeName="stroke-dashoffset" values="25;0" dur="0.6s" begin="0.8s" fill="freeze"/>
+                  </path>
+                  <circle cx="232" cy="84" r="30" stroke="#7c3aed" stroke-width="1.5" fill="none" opacity="0">
+                    <animate attributeName="r" values="30;46;46" dur="2s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.6;0;0" dur="2s" repeatCount="indefinite"/>
+                  </circle>
+                  <circle cx="232" cy="84" r="30" stroke="#2563eb" stroke-width="1" fill="none" opacity="0">
+                    <animate attributeName="r" values="30;46;46" dur="2s" begin="1s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.4;0;0" dur="2s" begin="1s" repeatCount="indefinite"/>
+                  </circle>
+                </g>
+              </g>
+
+              <!-- Badge SEGURO -->
+              <rect x="60" y="248" width="80" height="24" rx="12" fill="#dcfce7" stroke="#86efac" stroke-width="1.5" opacity="0">
+                <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.5s" fill="freeze"/>
+              </rect>
+              <text x="100" y="264" text-anchor="middle"
+                font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="700" fill="#15803d" opacity="0">
+                ✓ SEGURO
+                <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.5s" fill="freeze"/>
+              </text>
+
+              <!-- Badge EN VIVO -->
+              <rect x="180" y="248" width="80" height="24" rx="12" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" opacity="0">
+                <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.8s" fill="freeze"/>
+              </rect>
+              <circle cx="196" cy="260" r="4" fill="#2563eb" opacity="0">
+                <animate attributeName="opacity" values="0;1;1" dur="0.5s" begin="1.8s" fill="freeze"/>
+                <animate attributeName="r" values="4;5;4" dur="1s" begin="2s" repeatCount="indefinite"/>
+              </circle>
+              <text x="213" y="264"
+                font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="700" fill="#1d4ed8" opacity="0">
+                EN VIVO
+                <animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.8s" fill="freeze"/>
+              </text>
+            </svg>
           </div>
         </div>
       </div>
