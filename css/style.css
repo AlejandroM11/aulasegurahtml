@@ -1320,6 +1320,10 @@ body.dark ::-webkit-scrollbar-track { background: #0d1117; }
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    order: 2;  /* panel preguntas siempre al final */
+  }
+  .crear-layout > div:first-child {
+    order: 1;  /* formulario siempre primero */
   }
 
   /* Chips: ancho completo, altura automática, sin restricciones */
@@ -1344,4 +1348,16 @@ body.dark ::-webkit-scrollbar-track { background: #0d1117; }
     width: 100% !important;
     overflow: visible !important;
   }
+}
+
+/* ── Teacher — botón guardar: desktop en panel, móvil al final ── */
+@media (max-width: 900px) {
+  /* Ocultar botón dentro del panel en móvil */
+  .crear-layout > div:last-child > #save-btn,
+  .crear-layout > div:last-child > p.text-xs { display: none !important; }
+  /* Mostrar botón externo al final */
+  .save-btn-mobile { display: block !important; }
+}
+@media (min-width: 901px) {
+  .save-btn-mobile { display: none !important; }
 }

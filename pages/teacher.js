@@ -685,6 +685,20 @@ function renderTeacher(app) {
           </div><!-- /columna derecha -->
 
         </div><!-- /crear-layout -->
+
+        <!-- Botón guardar móvil — siempre al final en móvil, oculto en desktop -->
+        <div class="save-btn-mobile" style="display:none;margin-top:1rem">
+          <button class="btn btn-primary btn-full" id="save-btn-mobile"
+            style="padding:.85rem;font-size:.95rem"
+            ${saving || questions.length === 0 || !title.trim() || !code.trim() ? 'disabled' : ''}>
+            ${saving
+              ? '<i class="fa-solid fa-spinner fa-spin" style="margin-right:.4rem"></i>Guardando...'
+              : selectedExam
+                ? '<i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Guardar cambios'
+                : '<i class="fa-solid fa-circle-check" style="margin-right:.4rem"></i>Crear examen'}
+          </button>
+          ${questions.length === 0 ? `<p class="text-center text-xs text-gray" style="margin-top:.25rem">Agrega al menos una pregunta</p>` : ''}
+        </div>
       </div>
     `;
   }
@@ -1346,7 +1360,8 @@ function renderTeacher(app) {
     }
 
     document.getElementById('add-q-btn').onclick = addQuestion;
-    document.getElementById('save-btn').onclick   = saveExam;
+    document.getElementById('save-btn')?.addEventListener('click', saveExam);
+    document.getElementById('save-btn-mobile')?.addEventListener('click', saveExam);
     if (selectedExam) {
       document.getElementById('cancel-edit').onclick = () => { resetForm(); render(); };
     }
