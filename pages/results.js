@@ -198,6 +198,9 @@ function renderResults(app) {
           <button class="btn btn-outline" id="back-btn">
             <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
           </button>
+          <button class="btn btn-outline" id="export-pdf-btn" style="gap:.4rem">
+            <i class="fa-solid fa-file-pdf" style="color:#dc2626"></i>Exportar PDF
+          </button>
         </div>
 
         <!-- Stats -->
@@ -335,6 +338,8 @@ function renderResults(app) {
         render();
       };
     });
+
+    document.getElementById('export-pdf-btn')?.addEventListener('click', () => exportAllPDF(filtered));
   }
 
   // ── Vista detalle ────────────────────────────────────────────────────────
@@ -426,6 +431,9 @@ function renderResults(app) {
           </div>
           <button class="btn btn-outline" id="back-detail">
             <i class="fa-solid fa-arrow-left" style="margin-right:.4rem"></i>Volver
+          </button>
+          <button class="btn btn-outline" id="export-one-pdf-btn" style="gap:.4rem">
+            <i class="fa-solid fa-file-pdf" style="color:#dc2626"></i>Exportar PDF
           </button>
         </div>
 
@@ -607,7 +615,145 @@ function renderResults(app) {
       </div>`;
 
     document.getElementById('back-detail').onclick = () => { selectedSub = null; render(); };
+    document.getElementById('export-one-pdf-btn')?.addEventListener('click', () => exportOnePDF(s));
     setTimeout(() => renderMathInResults(questions, answers), 60);
+  }
+
+  // ── Exportar PDF de un estudiante ────────────────────────────────────────
+
+  function exportOnePDF(sub) {
+    const sc        = score(sub);
+    const questions = sub.examQuestions || [];
+    const answers   = sub.answers || {};
+    const violations = sub.violations || [];
+
+    const win = window.open('', '_blank');
+    win.document.write(buildPDFHTML([sub], true));
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  }
+
+  // ── Exportar PDF de todos los resultados filtrados ───────────────────────
+
+  function exportAllPDF(subs) {
+    if (!subs.length) { alert('No hay resultados para exportar.'); return; }
+    const win = window.open('', '_blank');
+    win.document.write(buildPDFHTML(subs, false));
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  }
+
+  // ── Construir HTML del PDF ────────────────────────────────────────────────
+
+  function buildPDFHTML(subs, detailed) {
+    const now = new Date().toLocaleString('es-ES', {
+      day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit'
+    });
+
+    const rows = subs.map(s => {
+      const sc         = score(s);
+      const violations = s.violations?.length || 0;
+      const status     = s.wasBlocked ? 'Bloqueado' : s.forced ? 'Tiempo agotado' : 'Completado';
+
+      let detailHTML = '';
+      if (detailed) {
+        const questions = s.examQuestions || [];
+        const answers   = s.answers || {};
+        detailHTML = questions.map((q, idx) => {
+          const given    = answers[q.id];
+          const answered = Array.isArray(given) ? given.length > 0 : (given !== undefined && given !== '');
+          let result = '';
+          if (q.type === 'mc' && answered) {
+            const isCorrect = Number(given) === q.correctIndex;
+            result = `<span style="color:${isCorrect?'#16a34a':'#dc2626'}">${isCorrect ? '✓ Correcto' : '✗ Incorrecto'}</span>
+                      — Respondió: <strong>${q.options?.[given] || given}</strong>
+                      ${!isCorrect && q.options ? `<br><span style="color:#16a34a">Correcta: ${q.options[q.correctIndex]}</span>` : ''}`;
+          } else if (q.type === 'multi') {
+            const givenArr = Array.isArray(given) ? given : [];
+            const expected = q.correctIndexes || [];
+            const isCorrect = expected.length > 0 && givenArr.length === expected.length && expected.every(i => givenArr.includes(i));
+            result = `<span style="color:${isCorrect?'#16a34a':'#dc2626'}">${isCorrect ? '✓ Correcto' : '✗ Incorrecto'}</span>
+                      — Seleccionó: ${givenArr.map(i => q.options?.[i]).filter(Boolean).join(', ') || 'Ninguna'}`;
+          } else if (q.type === 'open') {
+            result = answered ? `Respuesta: <em>${given}</em>` : '<span style="color:#94a3b8">Sin responder</span>';
+          } else if (q.type === 'eq') {
+            result = answered ? `LaTeX: <code>${given}</code>` : '<span style="color:#94a3b8">Sin responder</span>';
+          }
+          return `<tr style="border-bottom:1px solid #e2e8f0">
+            <td style="padding:.5rem .75rem;color:#64748b;font-size:.8rem;white-space:nowrap">${idx+1}</td>
+            <td style="padding:.5rem .75rem;font-size:.85rem">${q.text}</td>
+            <td style="padding:.5rem .75rem;font-size:.82rem">${result || '<span style="color:#94a3b8">—</span>'}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      return `
+        <div style="page-break-inside:avoid;margin-bottom:1.5rem;border:1px solid #e2e8f0;border-radius:.75rem;overflow:hidden">
+          <div style="background:#1e3a5f;color:#fff;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <strong style="font-size:1rem">${s.studentName || 'Anónimo'}</strong>
+              <span style="font-size:.8rem;opacity:.8;margin-left:.75rem">${s.studentEmail || ''}</span>
+            </div>
+            <div style="text-align:right;font-size:.82rem">
+              <div>${s.title || s.code || '—'} · <code style="background:rgba(255,255,255,.2);padding:.1rem .4rem;border-radius:.3rem">${s.code || ''}</code></div>
+              <div style="opacity:.75">${fmtDate(s.submittedAt)}</div>
+            </div>
+          </div>
+          <div style="padding:.75rem 1rem;display:flex;gap:2rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap">
+            <div><span style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Nota MC</span><br>
+              <strong style="font-size:1.1rem;color:${sc ? (sc.pct>=60?'#16a34a':'#dc2626') : '#94a3b8'}">${sc ? sc.pct+'%' : '—'}</strong>
+              ${sc ? `<span style="font-size:.75rem;color:#64748b"> (${sc.correct}/${sc.total})</span>` : ''}
+            </div>
+            <div><span style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Infracciones</span><br>
+              <strong style="font-size:1.1rem;color:${violations>0?'#dc2626':'#16a34a'}">${violations}</strong>
+            </div>
+            <div><span style="font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Estado</span><br>
+              <strong style="font-size:1rem;color:${s.wasBlocked?'#dc2626':s.forced?'#d97706':'#16a34a'}">${status}</strong>
+            </div>
+          </div>
+          ${detailed && detailHTML ? `
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="background:#f1f5f9">
+                <th style="padding:.5rem .75rem;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;width:2rem">#</th>
+                <th style="padding:.5rem .75rem;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase">Pregunta</th>
+                <th style="padding:.5rem .75rem;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase">Respuesta</th>
+              </tr></thead>
+              <tbody>${detailHTML}</tbody>
+            </table>
+          ` : ''}
+        </div>`;
+    }).join('');
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Resultados — AulaSegura</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #1e293b; padding: 2rem; }
+    h1 { font-size: 1.4rem; font-weight: 800; color: #1e3a5f; margin-bottom: .25rem; }
+    .meta { font-size: .82rem; color: #64748b; margin-bottom: 1.5rem; }
+    @media print {
+      body { padding: 1rem; }
+      @page { margin: 1.5cm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid #1e3a5f">
+    <div>
+      <h1>🛡 AulaSegura — Resultados</h1>
+      <p class="meta">Generado el ${now} · ${subs.length} entrega${subs.length!==1?'s':''}</p>
+    </div>
+    ${subs[0]?.title ? `<div style="text-align:right"><strong style="font-size:1rem">${subs[0].title}</strong><br><span style="font-size:.8rem;color:#64748b">${subs[0].code||''}</span></div>` : ''}
+  </div>
+  ${rows}
+</body>
+</html>`;
   }
 
   load();
