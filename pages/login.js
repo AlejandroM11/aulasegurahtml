@@ -5,8 +5,10 @@ function renderLogin(app) {
         min-height: calc(100vh - var(--nav-height));
         display: flex; align-items: center; justify-content: center;
         padding: 2rem 1rem;
+        position: relative; overflow: hidden;
       }
       .auth-card {
+        position: relative; z-index: 1;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-2xl);
@@ -59,6 +61,20 @@ function renderLogin(app) {
       .auth-footer a:hover { text-decoration: underline; }
       body.dark .auth-footer a { color: var(--blue-300); }
     </style>
+
+    <!-- SVG sutil de fondo -->
+    <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".06"/><stop offset="100%" stop-color="#1e3a5f" stop-opacity=".04"/></linearGradient>
+        <linearGradient id="lb2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f" stop-opacity=".05"/><stop offset="100%" stop-color="#2563eb" stop-opacity=".03"/></linearGradient>
+      </defs>
+      <circle cx="0" cy="0" r="420" fill="url(#lb1)"><animate attributeName="r" values="420;450;420" dur="8s" repeatCount="indefinite"/></circle>
+      <circle cx="1440" cy="900" r="380" fill="url(#lb2)"><animate attributeName="r" values="380;410;380" dur="10s" begin="2s" repeatCount="indefinite"/></circle>
+      <circle cx="1440" cy="0" r="260" fill="url(#lb1)" opacity=".7"><animate attributeName="r" values="260;285;260" dur="7s" begin="1s" repeatCount="indefinite"/></circle>
+      <circle cx="0" cy="900" r="200" fill="url(#lb2)" opacity=".6"><animate attributeName="r" values="200;220;200" dur="9s" begin="3s" repeatCount="indefinite"/></circle>
+      <line x1="200" y1="0" x2="0" y2="200" stroke="#2563eb" stroke-width="1" opacity=".04"/>
+      <line x1="1440" y1="700" x2="1240" y2="900" stroke="#1e3a5f" stroke-width="1" opacity=".04"/>
+    </svg>
 
     <div class="auth-wrap">
       <div class="auth-card">
