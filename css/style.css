@@ -71,7 +71,7 @@
   --transition-slow: all .3s  cubic-bezier(.4,0,.2,1);
 
   --max-width:    1600px;
-  --nav-height:   72px;
+  --nav-height:   80px;
   --page-padding: clamp(.75rem, 2.5vw, 2rem);
 }
 
@@ -168,17 +168,18 @@ body.dark nav {
   text-decoration: none;
   transition: var(--transition);
 }
-.nav-brand:hover { opacity: .8; }
+.nav-brand:hover { opacity: .85; transform: scale(1.02); }
 .nav-brand img {
-  height: 52px;
+  height: 64px;
   width: auto;
-  max-width: 220px;
+  max-width: 280px;
   object-fit: contain;
   display: block;
-  transition: opacity .2s;
+  transition: all .2s;
 }
 body.dark .nav-brand img {
-  filter: brightness(.92) contrast(1.05);
+  /* Sin fondo blanco, no necesita filtro en dark mode */
+  opacity: .98;
 }
 
 .nav-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
