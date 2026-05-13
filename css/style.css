@@ -989,3 +989,114 @@ body.dark ::-webkit-scrollbar-thumb { background: rgba(71,85,105,.5); }
 .space-y > *:nth-child(3) { animation-delay: .09s; }
 .space-y > *:nth-child(4) { animation-delay: .12s; }
 .space-y > *:nth-child(5) { animation-delay: .15s; }
+
+/* ============================================================
+   DARK MODE — Fix global para fondos hardcodeados en blanco
+   Cubre inputs, selects, textareas, cards inline y chips
+   ============================================================ */
+
+/* Inputs y selects nativos que el browser pone en blanco */
+body.dark input:not([type="radio"]):not([type="checkbox"]),
+body.dark textarea,
+body.dark select {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+  border-color: #30363d !important;
+}
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+  color: #484f58 !important;
+}
+body.dark input:focus,
+body.dark textarea:focus,
+body.dark select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.18) !important;
+  background-color: #0d1117 !important;
+}
+
+/* Opciones de select en dark */
+body.dark select option {
+  background: #161b22;
+  color: #e6edf3;
+}
+
+/* Cards y contenedores con background:#fff hardcodeado */
+body.dark .card,
+body.dark .modal-box,
+body.dark .auth-card {
+  background: #161b22 !important;
+  border-color: #21262d !important;
+  color: #e6edf3 !important;
+}
+
+/* Chips de preguntas en teacher */
+body.dark .q-chip {
+  background: rgba(30,58,95,.5) !important;
+  border-color: #1d4ed8 !important;
+}
+body.dark .q-chip p,
+body.dark .q-chip span:not(.badge):not([style*="background"]) {
+  color: #e2e8f0 !important;
+}
+
+/* Fondos de secciones inline en teacher */
+body.dark [style*="background:#f8fafc"],
+body.dark [style*="background: #f8fafc"],
+body.dark [style*="background:#fafaf9"],
+body.dark [style*="background:#fff"],
+body.dark [style*="background: #fff"],
+body.dark [style*="background:white"],
+body.dark [style*="background: white"] {
+  background: #161b22 !important;
+}
+
+/* Texto oscuro hardcodeado que no se ve en dark */
+body.dark [style*="color:#1e293b"],
+body.dark [style*="color: #1e293b"],
+body.dark [style*="color:#0f172a"],
+body.dark [style*="color:#374151"],
+body.dark [style*="color:#1a1a1a"] {
+  color: #e2e8f0 !important;
+}
+
+/* Bordes claros hardcodeados */
+body.dark [style*="border:1px solid #e2e8f0"],
+body.dark [style*="border: 1px solid #e2e8f0"],
+body.dark [style*="border:1px solid #e8e4df"],
+body.dark [style*="border-color:#e2e8f0"] {
+  border-color: #21262d !important;
+}
+
+/* MathQuill en dark */
+body.dark .mq-editable-field,
+body.dark .mq-math-mode {
+  background: #0d1117 !important;
+  color: #e2e8f0 !important;
+}
+body.dark .mq-editable-field .mq-cursor {
+  border-color: #a78bfa !important;
+}
+
+/* Tabla de resultados y teacher en dark */
+body.dark .rs-table th,
+body.dark .ex-tbl th {
+  background: #161b22 !important;
+  color: #8b949e !important;
+  border-color: #21262d !important;
+}
+body.dark .rs-table-wrap,
+body.dark .rs-search-bar {
+  background: #161b22 !important;
+  border-color: #21262d !important;
+}
+
+/* Checkbox y radio en dark */
+body.dark input[type="checkbox"],
+body.dark input[type="radio"] {
+  accent-color: #2563eb;
+  background: #0d1117 !important;
+}
+
+/* Scrollbar en dark */
+body.dark ::-webkit-scrollbar-track { background: #0d1117; }

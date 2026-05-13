@@ -215,10 +215,13 @@ function renderTeacher(app) {
         .tab-pill{background:transparent;border:none;padding:.55rem 1rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;color:#64748b;transition:all .2s}
         .tab-pill.active{background:#2563eb;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3)}
         .tab-pill:hover:not(.active){background:#f1f5f9;color:#1e293b}
+        body.dark .tab-pill:hover:not(.active){background:#1e293b;color:#e2e8f0}
+        body.dark .tab-pill{color:#94a3b8}
         .opt-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
         .correct-radio{width:1.1rem;height:1.1rem;accent-color:#2563eb;cursor:pointer;flex-shrink:0}
         .q-chip{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:.75rem;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .2s;min-width:0;overflow:hidden}
         .q-chip:hover{border-color:#2563eb}
+        body.dark .q-chip{background:#1e3a5f;border-color:#1d4ed8;color:#e2e8f0}
         .section-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.5rem}
         /* teclado matemático */
         .math-kb-section{margin-bottom:.75rem}
@@ -227,9 +230,13 @@ function renderTeacher(app) {
         .math-kb-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:.5rem;padding:.35rem .6rem;font-size:.9rem;cursor:pointer;color:#1e293b;font-family:'Times New Roman',serif;transition:all .15s;min-width:2.2rem;text-align:center;line-height:1.2}
         .math-kb-btn:hover{background:#ede9fe;border-color:#7c3aed;color:#7c3aed}
         .math-kb-btn:active{transform:scale(.93)}
+        body.dark .math-kb-btn{background:#1e293b;border-color:#334155;color:#e2e8f0}
+        body.dark .math-kb-btn:hover{background:#2d1f5e;border-color:#7c3aed;color:#c4b5fd}
         /* MathQuill overrides */
         .mq-editable-field{outline:none!important;font-size:1.2rem}
         .mq-cursor{border-left:2px solid #7c3aed!important}
+        body.dark .mq-editable-field{background:#0f172a!important;color:#e2e8f0!important}
+        body.dark .mq-math-mode{color:#e2e8f0!important}
       </style>
     `;
 
