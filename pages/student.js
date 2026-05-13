@@ -100,6 +100,26 @@ function renderStudent(app) {
     } catch (_) {}
   })();
 
+  // Acceso rápido desde guest.js — saltar la pantalla de join directamente
+  (function checkGuestExam() {
+    try {
+      const raw = sessionStorage.getItem('_guestExam');
+      if (!raw) return;
+      sessionStorage.removeItem('_guestExam');
+      const guestExam = JSON.parse(raw);
+      if (!guestExam?.id) return;
+      // Iniciar el examen directamente sin mostrar la pantalla de join
+      exam = guestExam;
+      answers = {}; violations = [];
+      blockState = { isBlocked: false, reason: '', local: false, remote: false, unlocking: false };
+      fraudGuard = { active: false, paused: false, listeners: null };
+      submitted = false; finished = false; submitting = false;
+      submissionData = null; listenerReady = false;
+      injectStyles();
+      startExam();
+    } catch (_) {}
+  })();
+
   // ─────────────────────────────────────────────
   // ESTILOS GLOBALES DE LA PÁGINA ESTUDIANTE
   // ─────────────────────────────────────────────
@@ -2188,5 +2208,6 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   // INICIO
   // ─────────────────────────────────────────────
-  showJoin();
+  // Solo mostrar join si checkGuestExam no inició el examen directamente
+  if (!exam) showJoin();
 }
