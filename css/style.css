@@ -166,22 +166,20 @@ body.dark nav {
 .nav-brand {
   display: flex; align-items: center; gap: .6rem;
   text-decoration: none;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: var(--blue-600);
-  letter-spacing: -.025em;
   transition: var(--transition);
 }
 .nav-brand:hover { opacity: .8; }
-body.dark .nav-brand { color: var(--blue-300); }
-
-.nav-brand-icon {
-  width: 32px; height: 32px;
-  background: linear-gradient(135deg, var(--blue-700), var(--purple-600));
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(37,99,235,.4);
+.nav-brand img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  /* La imagen tiene fondo blanco — en dark mode la oscurecemos levemente */
+  transition: opacity .2s;
+}
+body.dark .nav-brand img {
+  /* Invertir colores oscuros para que se vea bien en dark mode */
+  filter: brightness(.92) contrast(1.05);
 }
 
 .nav-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }

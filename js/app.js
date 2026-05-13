@@ -82,13 +82,10 @@ function getAvatarColor(str) {
 function buildNavBrandHTML() {
   return `
     <a href="#/" class="nav-brand">
-      <div class="nav-brand-icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="rgba(255,255,255,.25)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <span>AulaSegura</span>
+      <img src="logo.png" alt="AulaSegura"
+        style="height:36px;width:auto;object-fit:contain;display:block"
+        onerror="this.style.display='none'"
+      />
     </a>
   `;
 }
