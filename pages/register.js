@@ -70,9 +70,80 @@ function renderRegister(app) {
     <div class="auth-wrap">
       <div class="auth-card">
 
-        <div class="auth-logo-ring">
-          <img src="https://cdn-icons-png.flaticon.com/512/3534/3534139.png"
-            alt="Registro" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) invert(1)"/>
+        <div style="display:flex;justify-content:center;margin-bottom:1.5rem">
+          <!-- SVG animado: usuario nuevo siendo creado -->
+          <svg width="110" height="110" viewBox="0 0 110 110" fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style="filter:drop-shadow(0 8px 24px rgba(124,58,237,.3))">
+            <defs>
+              <linearGradient id="rgBg" x1="0" y1="0" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#4c1d95"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <linearGradient id="rgUser" x1="20" y1="20" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#c4b5fd"/>
+                <stop offset="100%" stop-color="#ffffff"/>
+              </linearGradient>
+              <linearGradient id="rgPlus" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#34d399"/>
+                <stop offset="100%" stop-color="#10b981"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Círculo de fondo -->
+            <circle cx="55" cy="55" r="50" fill="url(#rgBg)">
+              <animate attributeName="r" values="50;52;50" dur="3.5s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Anillos de onda morados -->
+            <circle cx="55" cy="55" r="50" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0">
+              <animate attributeName="r" values="50;68;68" dur="2.8s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.5;0;0" dur="2.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="55" cy="55" r="50" stroke="#7c3aed" stroke-width="1" fill="none" opacity="0">
+              <animate attributeName="r" values="50;68;68" dur="2.8s" begin="1.4s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.3;0;0" dur="2.8s" begin="1.4s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Cabeza del usuario -->
+            <circle cx="55" cy="38" r="13" fill="url(#rgUser)">
+              <animate attributeName="r" values="13;14;13" dur="2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Cuerpo del usuario -->
+            <path d="M28 80 c0-15 12-24 27-24 s27 9 27 24" fill="url(#rgUser)" opacity="0.95"/>
+
+            <!-- Signo + animado (aparece y crece) -->
+            <g>
+              <animateTransform attributeName="transform" type="scale"
+                values="0.5;1;1;0.5" dur="2.5s" repeatCount="indefinite"
+                additive="sum" calcMode="spline"
+                keySplines="0.4 0 0.2 1; 0.2 1 0.4 0; 0.4 0 0.2 1"/>
+              <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" repeatCount="indefinite"/>
+              <!-- Círculo verde del + -->
+              <circle cx="76" cy="36" r="13" fill="url(#rgPlus)"
+                style="transform-origin:76px 36px"/>
+              <!-- Línea horizontal del + -->
+              <line x1="70" y1="36" x2="82" y2="36" stroke="white" stroke-width="3" stroke-linecap="round"/>
+              <!-- Línea vertical del + -->
+              <line x1="76" y1="30" x2="76" y2="42" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            </g>
+
+            <!-- Estrellas decorativas que aparecen -->
+            <g opacity="0">
+              <animate attributeName="opacity" values="0;0;1;0" dur="3s" begin="1s" repeatCount="indefinite"/>
+              <circle cx="30" cy="30" r="2.5" fill="#fbbf24"/>
+              <circle cx="82" cy="72" r="2" fill="#34d399"/>
+              <circle cx="25" cy="68" r="1.8" fill="#a78bfa"/>
+            </g>
+
+            <!-- Check final de confirmación -->
+            <path d="M43 68 l8 8 16-16" stroke="white" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"
+              stroke-dasharray="30" stroke-dashoffset="30" opacity="0">
+              <animate attributeName="stroke-dashoffset" values="30;0;0;30" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0;1;1;0" dur="2.5s" begin="0.5s" repeatCount="indefinite"/>
+            </path>
+          </svg>
         </div>
 
         <h2 class="auth-title">Crear cuenta</h2>
