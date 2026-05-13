@@ -1100,3 +1100,181 @@ body.dark input[type="radio"] {
 
 /* Scrollbar en dark */
 body.dark ::-webkit-scrollbar-track { background: #0d1117; }
+
+/* ============================================================
+   RESPONSIVE MÓVIL — Fixes globales para pantallas pequeñas
+   ============================================================ */
+
+/* ── Navbar en móvil ── */
+@media (max-width: 480px) {
+  .nav-brand-text { display: none; }
+  .nav-logo-svg   { width: 40px !important; height: 40px !important; }
+  .nav-inner      { padding: 0 .75rem; gap: .5rem; }
+  #nav-actions    { gap: .35rem; }
+
+  /* Ocultar texto de botones del navbar, dejar solo iconos */
+  #nav-logout span:not(.fa-solid) { display: none; }
+  .nav-profile-name { max-width: 80px; }
+}
+
+/* ── Layout general ── */
+@media (max-width: 640px) {
+  :root {
+    --nav-height: 60px;
+    --page-padding: .75rem;
+  }
+  #app { padding: 1rem .75rem; }
+
+  /* Cards más compactas */
+  .card, .card-wide { padding: 1rem; border-radius: var(--radius-lg); }
+  .modal-box        { padding: 1.25rem; border-radius: var(--radius-xl); margin: .5rem; }
+
+  /* Tablas — scroll horizontal */
+  .overflow-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table       { min-width: 520px; }
+
+  /* Grids a 1 columna */
+  .grid-2, .grid-3, .grid-4,
+  .stats-row, .dashboard-grid,
+  .rs-grid, .rd-stat-grid,
+  .pf-grid-2, .pf-info-grid { grid-template-columns: 1fr !important; }
+
+  /* Flex-between apilado */
+  .flex-between { flex-wrap: wrap; gap: .75rem; }
+
+  /* Botones full en móvil donde tiene sentido */
+  .btn-lg { width: 100%; }
+
+  /* Ocultar columnas secundarias de tabla */
+  .hide-mobile { display: none !important; }
+}
+
+/* ── Teacher — crear examen ── */
+@media (max-width: 640px) {
+  .crear-layout { grid-template-columns: 1fr !important; }
+  .crear-layout > div:last-child { position: static !important; }
+
+  /* Grid de campos del examen */
+  [style*="grid-template-columns:2fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Grid tipo de pregunta */
+  [style*="grid-template-columns:1fr auto"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tabs del teacher */
+  .tab-pill { font-size: .75rem; padding: .45rem .6rem; }
+}
+
+/* ── Monitor ── */
+@media (max-width: 640px) {
+  .mon-hero { padding: 1.5rem 1.25rem 1.5rem; }
+  .mon-hero h1 { font-size: 1.4rem !important; }
+  .mon-hero svg[style*="position:absolute"] { display: none; }
+  .mon-exam-card { padding: 1rem 1.1rem; }
+  .mon-stat { padding: 1rem; }
+  .mon-stat-val { font-size: 1.5rem !important; }
+
+  /* Tabla de estudiantes — ocultar columnas menos críticas */
+  .mon-table-hide { display: none; }
+}
+
+/* ── Results ── */
+@media (max-width: 640px) {
+  .rs-grid { grid-template-columns: 1fr 1fr !important; }
+  .rs-stat  { padding: .85rem 1rem; }
+  .rs-stat-val { font-size: 1.4rem !important; }
+  .rs-search-bar { flex-wrap: wrap; }
+  .rs-search-bar input { min-width: 0; }
+}
+
+/* ── Perfil ── */
+@media (max-width: 640px) {
+  .pf-page  { padding: 1rem .75rem; }
+  .pf-hero  { padding: 1.5rem 1.25rem 4rem; }
+  .pf-hero-info { gap: 1rem; }
+  .pf-tabs  { padding: 0 .75rem; overflow-x: auto; }
+  .pf-tab   { padding: .85rem .85rem; font-size: .8rem; white-space: nowrap; }
+  .pf-content { padding: 1.25rem 1rem; }
+}
+
+/* ── Home ── */
+@media (max-width: 640px) {
+  .home-hero { padding: 2rem 0 1.5rem !important; gap: 1.5rem !important; }
+  .hero-title { font-size: clamp(1.75rem, 7vw, 2.5rem) !important; }
+  .hero-desc  { font-size: .95rem !important; }
+  .stats-strip { gap: 1.25rem; padding: 1rem 0 1.5rem; }
+  .stat-num   { font-size: 1.5rem !important; }
+  .home-features { grid-template-columns: 1fr !important; gap: 1rem; }
+}
+
+/* ── Login / Register ── */
+@media (max-width: 480px) {
+  .auth-card { padding: 1.75rem 1.25rem; border-radius: var(--radius-xl); }
+  .auth-title { font-size: 1.35rem !important; }
+  .role-selector { grid-template-columns: 1fr 1fr; gap: .4rem; }
+  .role-option  { padding: .65rem .5rem; }
+  .role-option i { font-size: 1.1rem; }
+}
+
+/* ── Student join screen ── */
+@media (max-width: 480px) {
+  .join-card { padding: 1.75rem 1.25rem; border-radius: var(--radius-xl); }
+  .join-title { font-size: 1.6rem !important; }
+  .st-code-input { font-size: 1.3rem !important; }
+}
+
+/* ── Examenes ── */
+@media (max-width: 640px) {
+  .ex-grid { grid-template-columns: 1fr !important; }
+  .ex-header-top { flex-wrap: wrap; gap: .75rem; }
+  .ex-controls { flex-direction: column; }
+  .ex-search-wrap { min-width: 0; }
+  .ex-stats { flex-direction: column; gap: .5rem; }
+}
+
+/* ── Chat ARDI en móvil ── */
+@media (max-width: 480px) {
+  #chat-widget {
+    width: calc(100vw - 2rem) !important;
+    right: 1rem !important;
+    left: 1rem !important;
+    bottom: 5rem !important;
+  }
+  #chat-btn { bottom: 1rem !important; right: 1rem !important; }
+  #a11y-btn { bottom: 1rem !important; left: 1rem !important; }
+  #a11y-panel {
+    width: calc(100vw - 2rem) !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: 5rem !important;
+  }
+}
+
+/* ── Modales en móvil ── */
+@media (max-width: 480px) {
+  .modal-overlay { padding: .5rem; align-items: flex-end; }
+  .modal-box {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+    max-height: 90vh;
+    margin: 0;
+    width: 100%;
+  }
+}
+
+/* ── Tipografía responsive ── */
+@media (max-width: 640px) {
+  h1 { font-size: clamp(1.4rem, 5vw, 2rem) !important; }
+  h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; }
+}
+
+/* ── Touch targets mínimos (WCAG 2.5.5) ── */
+@media (max-width: 640px) {
+  .btn, button, a, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .btn-sm { min-height: 36px; min-width: 36px; }
+  .badge  { min-height: auto; min-width: auto; }
+}
