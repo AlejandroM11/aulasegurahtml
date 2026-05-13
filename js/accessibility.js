@@ -397,15 +397,6 @@
         </div>
 
         <!-- Reducir movimiento -->
-        <div class="a11y-row">
-          <label class="a11y-row-label" for="a11y-motion">
-            <i class="fa-solid fa-wind"></i>Reducir movimiento
-          </label>
-          <label class="a11y-toggle">
-            <input type="checkbox" id="a11y-motion" ${prefs.reducedMotion ? 'checked' : ''}/>
-            <span class="a11y-toggle-track"></span>
-          </label>
-        </div>
 
         <!-- Cursor grande -->
         <div class="a11y-row">
@@ -414,17 +405,6 @@
           </label>
           <label class="a11y-toggle">
             <input type="checkbox" id="a11y-cursor" ${prefs.bigCursor ? 'checked' : ''}/>
-            <span class="a11y-toggle-track"></span>
-          </label>
-        </div>
-
-        <!-- Resaltado de foco -->
-        <div class="a11y-row">
-          <label class="a11y-row-label" for="a11y-focus">
-            <i class="fa-solid fa-crosshairs"></i>Resaltar foco
-          </label>
-          <label class="a11y-toggle">
-            <input type="checkbox" id="a11y-focus" ${prefs.focusHighlight ? 'checked' : ''}/>
             <span class="a11y-toggle-track"></span>
           </label>
         </div>
@@ -480,9 +460,7 @@
 
     const toggleMap = {
       'a11y-contrast':  'highContrast',
-      'a11y-motion':    'reducedMotion',
       'a11y-cursor':    'bigCursor',
-      'a11y-focus':     'focusHighlight',
       'a11y-spacing':   'textSpacing',
       'a11y-dyslexia':  'dyslexiaFont',
       'a11y-reader':    'screenReader',
