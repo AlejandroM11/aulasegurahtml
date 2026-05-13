@@ -1169,6 +1169,16 @@ function renderStudent(app) {
   function startExam() {
     timer = (exam.durationMinutes || 0) * 60;
 
+    // Mezclar preguntas con Fisher-Yates — orden único por sesión
+    if (Array.isArray(exam.questions) && exam.questions.length > 1) {
+      const q = [...exam.questions];
+      for (let i = q.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [q[i], q[j]] = [q[j], q[i]];
+      }
+      exam = { ...exam, questions: q };
+    }
+
     console.log('[STUDENT] Registrando con sessionId:', studentId, 'exam:', exam.code);
     registerActiveStudent(exam.code, {
       uid: studentId,
