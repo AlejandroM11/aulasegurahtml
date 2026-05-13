@@ -1009,6 +1009,7 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   function showJoin() {
     injectStyles();
+    window.scrollTo({ top: 0, behavior: 'instant' });
     app.innerHTML = `
       <!-- SVG sutil de fondo -->
       <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1515,6 +1516,7 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   function showBlocked() {
     injectStyles();
+    window.scrollTo({ top: 0, behavior: 'instant' });
     app.innerHTML = `
       <div class="blocked-screen" style="align-items:flex-start;overflow-y:auto;padding:2rem 1rem">
         <div style="max-width:560px;width:100%;margin:auto">
@@ -1744,6 +1746,7 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   function showSuccess(forced) {
     injectStyles();
+    window.scrollTo({ top: 0, behavior: 'instant' });
     const questions = Array.isArray(exam?.questions) ? exam.questions : [];
     const mc = questions.filter(q => q.type === 'mc');
     const correct = mc.filter(q => answers[q.id] !== undefined && Number(answers[q.id]) === q.correctIndex).length;
@@ -2074,6 +2077,7 @@ function renderStudent(app) {
   // ─────────────────────────────────────────────
   function showExam() {
     injectStyles();
+    window.scrollTo({ top: 0, behavior: 'instant' });
     const questions = Array.isArray(exam.questions) ? exam.questions : [];
     const answered  = countAnswered();
     const total     = questions.length;

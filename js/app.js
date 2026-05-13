@@ -61,6 +61,7 @@ function router() {
 
   const renderPage = ROUTES[path] || renderHome;
   app.innerHTML = '';
+  window.scrollTo({ top: 0, behavior: 'instant' });
   renderPage(app);
   updateNavbar();
 }
