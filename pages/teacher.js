@@ -1173,25 +1173,65 @@ function renderTeacher(app) {
     if (filtered.length === 0)
       return `<p class="text-center text-gray" style="padding:2rem">${filter ? 'No se encontraron exámenes' : 'No hay exámenes registrados aún'}</p>`;
     return `
-      <div class="overflow-x">
-        <table>
+      <style>
+        .ex-tbl { width:100%;border-collapse:collapse;font-size:.875rem }
+        .ex-tbl thead tr { background:none }
+        .ex-tbl th {
+          padding:.65rem 1rem;text-align:left;
+          font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+          color:var(--text-muted);border-bottom:1.5px solid var(--border);
+          background:var(--surface-raised);
+        }
+        body.dark .ex-tbl th { background:var(--surface-raised);border-color:var(--border-strong); }
+        .ex-tbl th:first-child { border-radius:var(--radius-md) 0 0 0; }
+        .ex-tbl th:last-child  { border-radius:0 var(--radius-md) 0 0; }
+        .ex-tbl td { padding:.8rem 1rem;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text-primary); }
+        body.dark .ex-tbl td { border-color:var(--border-strong); }
+        .ex-tbl tbody tr { transition:background .12s; }
+        .ex-tbl tbody tr:hover td { background:rgba(37,99,235,.03); }
+        body.dark .ex-tbl tbody tr:hover td { background:rgba(37,99,235,.06); }
+        .ex-tbl tbody tr:last-child td { border-bottom:none; }
+        .ex-code-pill {
+          display:inline-flex;align-items:center;gap:.35rem;
+          font-family:'JetBrains Mono','Courier New',monospace;
+          font-size:.8rem;font-weight:700;letter-spacing:.06em;
+          background:#eff6ff;color:#1d4ed8;
+          padding:.2rem .65rem;border-radius:var(--radius-full);
+          border:1px solid #bfdbfe;
+        }
+        body.dark .ex-code-pill { background:#1e3a5f;color:#93c5fd;border-color:#1d4ed8; }
+      </style>
+      <div class="overflow-x" style="border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
+        <table class="ex-tbl">
           <thead>
-            <tr><th>Código</th><th>Título</th><th>Duración</th><th>Preguntas</th><th>Config</th><th>Acciones</th></tr>
+            <tr>
+              <th>Código</th><th>Título</th><th>Duración</th>
+              <th>Preguntas</th><th>Config</th><th>Acciones</th>
+            </tr>
           </thead>
           <tbody>
             ${filtered.map(e => `
               <tr>
-                <td class="font-mono font-bold text-blue">${e.code}</td>
-                <td>${e.title}</td>
-                <td><i class="fa-solid fa-clock" style="margin-right:.3rem;color:#64748b"></i>${e.durationMinutes} min</td>
-                <td><i class="fa-solid fa-circle-question" style="margin-right:.3rem;color:#64748b"></i>${e.questions?.length || 0}</td>
+                <td><span class="ex-code-pill">${e.code}</span></td>
+                <td style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</td>
+                <td style="color:var(--text-secondary);white-space:nowrap">
+                  <i class="fa-solid fa-clock" style="margin-right:.35rem;color:var(--text-muted)"></i>${e.durationMinutes} min
+                </td>
+                <td style="color:var(--text-secondary)">
+                  <i class="fa-solid fa-circle-question" style="margin-right:.35rem;color:var(--text-muted)"></i>${e.questions?.length || 0}
+                </td>
                 <td>${e.showCorrectAnswers
-                  ? `<span class="badge badge-green"><i class="fa-solid fa-eye" style="margin-right:.3rem"></i>Muestra respuestas</span>`
-                  : `<span class="badge badge-gray"><i class="fa-solid fa-eye-slash" style="margin-right:.3rem"></i>Oculta respuestas</span>`}</td>
+                  ? `<span class="badge badge-green"><i class="fa-solid fa-eye" style="margin-right:.3rem"></i>Muestra</span>`
+                  : `<span class="badge badge-gray"><i class="fa-solid fa-eye-slash" style="margin-right:.3rem"></i>Oculta</span>`}
+                </td>
                 <td>
                   <div class="flex-row">
-                    <button class="btn btn-outline text-xs" data-edit="${e.id}"><i class="fa-solid fa-pen" style="margin-right:.3rem"></i>Editar</button>
-                    <button class="btn btn-danger text-xs" data-del-exam="${e.id}"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-outline btn-sm" data-edit="${e.id}">
+                      <i class="fa-solid fa-pen" style="margin-right:.3rem"></i>Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm" data-del-exam="${e.id}">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
                   </div>
                 </td>
               </tr>

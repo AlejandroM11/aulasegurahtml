@@ -117,12 +117,23 @@ function renderResults(app) {
     })();
 
     app.innerHTML = `
+      <!-- SVG sutil de fondo -->
+      <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="rsb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".05"/><stop offset="100%" stop-color="#7c3aed" stop-opacity=".03"/></linearGradient>
+          <linearGradient id="rsb2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed" stop-opacity=".04"/><stop offset="100%" stop-color="#2563eb" stop-opacity=".02"/></linearGradient>
+        </defs>
+        <circle cx="1440" cy="0" r="350" fill="url(#rsb1)"><animate attributeName="r" values="350;380;350" dur="9s" repeatCount="indefinite"/></circle>
+        <circle cx="0" cy="900" r="300" fill="url(#rsb2)"><animate attributeName="r" values="300;325;300" dur="11s" begin="2s" repeatCount="indefinite"/></circle>
+        <circle cx="720" cy="450" r="180" fill="url(#rsb1)" opacity=".5"><animate attributeName="r" values="180;200;180" dur="13s" begin="1s" repeatCount="indefinite"/></circle>
+      </svg>
+
       <style>
         /* ── Stats ── */
         .rs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.75rem}
         .rs-stat{background:#fff;border:1px solid #e8e4df;border-radius:1.1rem;padding:1.25rem 1.4rem;
           display:flex;align-items:center;gap:1rem;
-          box-shadow:0 2px 8px rgba(0,0,0,.05);transition:box-shadow .2s}
+          box-shadow:0 2px 8px rgba(0,0,0,.05);transition:box-shadow .2s;position:relative;z-index:1}
         .rs-stat:hover{box-shadow:0 4px 16px rgba(0,0,0,.09)}
         body.dark .rs-stat{background:#1e293b;border-color:#334155}
         .rs-stat-icon{width:2.75rem;height:2.75rem;border-radius:.85rem;
@@ -132,7 +143,7 @@ function renderResults(app) {
         .rs-stat-lbl{font-size:.72rem;color:#94a3b8;margin-top:.2rem;text-transform:uppercase;letter-spacing:.06em}
         /* ── Table ── */
         .rs-table-wrap{background:#fff;border:1px solid #e8e4df;border-radius:1.1rem;
-          overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+          overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);position:relative;z-index:1}
         body.dark .rs-table-wrap{background:#1e293b;border-color:#334155}
         .rs-search-bar{padding:1rem 1.25rem;border-bottom:1px solid #e8e4df;
           display:flex;align-items:center;gap:.75rem;background:#fafaf9}
@@ -164,7 +175,7 @@ function renderResults(app) {
         @media(max-width:640px){.rs-grid{grid-template-columns:1fr}}
       </style>
 
-      <div style="max-width:980px;margin:0 auto">
+      <div style="max-width:980px;margin:0 auto;position:relative;z-index:1">
 
         <!-- Header -->
         <div class="flex-between mb-4">
