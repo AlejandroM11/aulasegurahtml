@@ -17,57 +17,8 @@ function renderRegister(app) {
       .reg-side {
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
-        gap: 1.75rem; padding: 2rem; height: 100%;
-        max-height: 700px;
+        padding: 1rem; height: 100%;
       }
-      .reg-feat {
-        background: rgba(255,255,255,.85);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(226,232,240,.8);
-        border-radius: 1.25rem;
-        padding: 1.25rem 1.4rem;
-        width: 220px;
-        box-shadow: 0 4px 20px rgba(0,0,0,.07);
-        animation: floatCard ease-in-out infinite;
-      }
-      body.dark .reg-feat {
-        background: rgba(22,27,34,.85);
-        border-color: rgba(48,54,61,.8);
-      }
-      .reg-feat:nth-child(1) { animation-duration: 5s;   animation-delay: 0s; }
-      .reg-feat:nth-child(2) { animation-duration: 6s;   animation-delay: -2s; }
-      .reg-feat:nth-child(3) { animation-duration: 5.5s; animation-delay: -1s; }
-      @keyframes floatCard {
-        0%,100% { transform: translateY(0px); }
-        50%      { transform: translateY(-10px); }
-      }
-      .reg-feat-icon {
-        width: 2.5rem; height: 2.5rem; border-radius: .75rem;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.1rem; margin-bottom: .65rem;
-      }
-      .reg-feat-title { font-size: .875rem; font-weight: 700; color: var(--text-primary); margin-bottom: .25rem; }
-      .reg-feat-desc  { font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
-      .reg-stat {
-        display: flex; align-items: center; gap: .75rem;
-        background: rgba(255,255,255,.9);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(226,232,240,.7);
-        border-radius: 999px;
-        padding: .6rem 1.1rem;
-        box-shadow: 0 2px 12px rgba(0,0,0,.06);
-        animation: floatCard ease-in-out infinite;
-        width: fit-content;
-      }
-      body.dark .reg-stat { background: rgba(22,27,34,.9); border-color: rgba(48,54,61,.7); }
-      .reg-stat:nth-child(2) { animation-duration: 4.5s; animation-delay: -0.5s; }
-      .reg-stat:nth-child(4) { animation-duration: 5.5s; animation-delay: -2.5s; }
-      .reg-stat-dot { width: .55rem; height: .55rem; border-radius: 50%; animation: pulseDot 1.5s infinite; }
-      @keyframes pulseDot {
-        0%,100% { opacity:1; } 50% { opacity:.5; }
-      }
-      .reg-stat-val { font-size: .95rem; font-weight: 800; color: var(--text-primary); }
-      .reg-stat-lbl { font-size: .72rem; color: var(--text-muted); }
       .auth-card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -112,42 +63,105 @@ function renderRegister(app) {
 
     <div class="reg-wrap">
 
-      <!-- Panel izquierdo -->
+      <!-- Panel izquierdo — gráfico animado puro -->
       <div class="reg-side">
-        <div class="reg-feat">
-          <div class="reg-feat-icon" style="background:#dbeafe">
-            <i class="fa-solid fa-shield-halved" style="color:#2563eb"></i>
-          </div>
-          <div class="reg-feat-title">Antifraude 100%</div>
-          <div class="reg-feat-desc">Monitoreo en tiempo real con detección automática de infracciones.</div>
-        </div>
+        <svg width="240" height="420" viewBox="0 0 240 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity=".4"/>
+            </linearGradient>
+            <linearGradient id="barGrad2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity=".3"/>
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
 
-        <div class="reg-stat">
-          <span class="reg-stat-dot" style="background:#22c55e"></span>
-          <div>
-            <div class="reg-stat-val">En vivo</div>
-            <div class="reg-stat-lbl">Monitoreo activo</div>
-          </div>
-        </div>
+          <!-- Barras de gráfico animadas -->
+          <g opacity=".85">
+            <!-- Barra 1 -->
+            <rect x="20" y="280" width="28" height="0" rx="6" fill="url(#barGrad1)">
+              <animate attributeName="height" values="0;120;100;120" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y" values="280;160;180;160" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <!-- Barra 2 -->
+            <rect x="58" y="280" width="28" height="0" rx="6" fill="url(#barGrad2)">
+              <animate attributeName="height" values="0;80;160;80" dur="3.5s" begin=".3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y" values="280;200;120;200" dur="3.5s" begin=".3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <!-- Barra 3 -->
+            <rect x="96" y="280" width="28" height="0" rx="6" fill="url(#barGrad1)">
+              <animate attributeName="height" values="0;140;90;140" dur="4s" begin=".6s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y" values="280;140;190;140" dur="4s" begin=".6s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <!-- Barra 4 -->
+            <rect x="134" y="280" width="28" height="0" rx="6" fill="url(#barGrad2)">
+              <animate attributeName="height" values="0;60;110;60" dur="3.2s" begin=".9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y" values="280;220;170;220" dur="3.2s" begin=".9s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <!-- Barra 5 -->
+            <rect x="172" y="280" width="28" height="0" rx="6" fill="url(#barGrad1)">
+              <animate attributeName="height" values="0;100;150;100" dur="3.8s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y" values="280;180;130;180" dur="3.8s" begin="1.2s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <!-- Línea base -->
+            <line x1="10" y1="282" x2="230" y2="282" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>
+          </g>
 
-        <div class="reg-feat">
-          <div class="reg-feat-icon" style="background:#f3e8ff">
-            <i class="fa-solid fa-robot" style="color:#7c3aed"></i>
-          </div>
-          <div class="reg-feat-title">IA Integrada</div>
-          <div class="reg-feat-desc">Genera preguntas automáticamente con inteligencia artificial.</div>
-        </div>
+          <!-- Línea de tendencia animada encima -->
+          <polyline points="34,200 72,230 110,175 148,215 186,185"
+            stroke="url(#lineGrad)" stroke-width="2.5" fill="none"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="300" stroke-dashoffset="300">
+            <animate attributeName="stroke-dashoffset" values="300;0;0;300" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.2 1 0.4 0;0.4 0 0.2 1"/>
+          </polyline>
+          <!-- Puntos de la línea -->
+          <circle cx="34"  cy="200" r="4" fill="#2563eb" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="4s" begin="1s" repeatCount="indefinite"/></circle>
+          <circle cx="72"  cy="230" r="4" fill="#2563eb" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="4s" begin="1.3s" repeatCount="indefinite"/></circle>
+          <circle cx="110" cy="175" r="4" fill="#7c3aed" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="4s" begin="1.6s" repeatCount="indefinite"/></circle>
+          <circle cx="148" cy="215" r="4" fill="#7c3aed" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="4s" begin="1.9s" repeatCount="indefinite"/></circle>
+          <circle cx="186" cy="185" r="4" fill="#2563eb" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" dur="4s" begin="2.2s" repeatCount="indefinite"/></circle>
 
-        <svg width="160" height="80" viewBox="0 0 160 80" fill="none" style="opacity:.3">
-          <circle cx="20" cy="40" r="15" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 3">
-            <animateTransform attributeName="transform" type="rotate" values="0 20 40;360 20 40" dur="12s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="80" cy="20" r="10" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="3 3">
-            <animateTransform attributeName="transform" type="rotate" values="360 80 20;0 80 20" dur="9s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="140" cy="55" r="18" stroke="#2563eb" stroke-width="1" stroke-dasharray="5 4">
-            <animateTransform attributeName="transform" type="rotate" values="0 140 55;360 140 55" dur="15s" repeatCount="indefinite"/>
-          </circle>
+          <!-- Donut chart arriba -->
+          <g transform="translate(120, 90)">
+            <!-- Fondo del donut -->
+            <circle cx="0" cy="0" r="55" stroke="#e2e8f0" stroke-width="14" fill="none"/>
+            <!-- Segmento 1 — azul -->
+            <circle cx="0" cy="0" r="55" stroke="#2563eb" stroke-width="14" fill="none"
+              stroke-dasharray="138 207" stroke-dashoffset="0" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="0;360" dur="8s" repeatCount="indefinite"/>
+              <animate attributeName="stroke-dasharray" values="138 207;180 165;138 207" dur="4s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Segmento 2 — morado -->
+            <circle cx="0" cy="0" r="55" stroke="#7c3aed" stroke-width="14" fill="none"
+              stroke-dasharray="80 265" stroke-dashoffset="-145" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="0;360" dur="8s" repeatCount="indefinite"/>
+              <animate attributeName="stroke-dasharray" values="80 265;50 295;80 265" dur="4s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Segmento 3 — verde -->
+            <circle cx="0" cy="0" r="55" stroke="#22c55e" stroke-width="14" fill="none"
+              stroke-dasharray="40 305" stroke-dashoffset="-230" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="0;360" dur="8s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Centro pulsante -->
+            <circle cx="0" cy="0" r="30" fill="white" opacity=".9">
+              <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="0" r="8" fill="#2563eb">
+              <animate attributeName="r" values="8;10;8" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="fill" values="#2563eb;#7c3aed;#2563eb" dur="4s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- Partículas flotantes -->
+          <circle cx="30"  cy="50"  r="3" fill="#2563eb" opacity=".4"><animate attributeName="cy" values="50;30;50"   dur="5s" repeatCount="indefinite"/><animate attributeName="opacity" values=".4;.8;.4" dur="5s" repeatCount="indefinite"/></circle>
+          <circle cx="200" cy="80"  r="2" fill="#7c3aed" opacity=".5"><animate attributeName="cy" values="80;55;80"   dur="4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".5;.9;.5" dur="4s" repeatCount="indefinite"/></circle>
+          <circle cx="60"  cy="370" r="2.5" fill="#22c55e" opacity=".4"><animate attributeName="cy" values="370;350;370" dur="6s" repeatCount="indefinite"/></circle>
+          <circle cx="190" cy="340" r="3" fill="#2563eb" opacity=".3"><animate attributeName="cy" values="340;315;340" dur="5.5s" repeatCount="indefinite"/></circle>
         </svg>
       </div>
 
@@ -259,46 +273,98 @@ function renderRegister(app) {
         </p>
       </div>
 
-      <!-- Panel derecho -->
+      <!-- Panel derecho — gráfico animado puro -->
       <div class="reg-side">
-        <svg width="160" height="100" viewBox="0 0 160 100" fill="none" style="opacity:.3">
-          <ellipse cx="80" cy="50" rx="70" ry="30" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5 4">
-            <animateTransform attributeName="transform" type="rotate" values="0 80 50;360 80 50" dur="18s" repeatCount="indefinite"/>
-          </ellipse>
-          <circle cx="150" cy="50" r="5" fill="#7c3aed">
-            <animateTransform attributeName="transform" type="rotate" values="0 80 50;360 80 50" dur="18s" repeatCount="indefinite"/>
+        <svg width="240" height="420" viewBox="0 0 240 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="rAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed" stop-opacity=".35"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="rLineGrad" x1="0" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Gráfico de área animado -->
+          <path d="M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155 L230,300 L10,300 Z"
+            fill="url(#rAreaGrad)">
+            <animate attributeName="d"
+              values="M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155 L230,300 L10,300 Z;
+                      M10,260 C40,240 60,200 90,220 C120,240 140,200 170,170 C195,148 215,190 230,175 L230,300 L10,300 Z;
+                      M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155 L230,300 L10,300 Z"
+              dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+          <!-- Línea del área -->
+          <path d="M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155"
+            stroke="url(#rLineGrad)" stroke-width="2.5" fill="none" stroke-linecap="round">
+            <animate attributeName="d"
+              values="M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155;
+                      M10,260 C40,240 60,200 90,220 C120,240 140,200 170,170 C195,148 215,190 230,175;
+                      M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155"
+              dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+          <!-- Línea base -->
+          <line x1="10" y1="302" x2="230" y2="302" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+          <!-- Punto deslizante en la línea -->
+          <circle r="6" fill="#7c3aed" stroke="white" stroke-width="2">
+            <animateMotion dur="5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1">
+              <mpath href="#rLinePath"/>
+            </animateMotion>
           </circle>
-          <ellipse cx="80" cy="50" rx="45" ry="20" stroke="#2563eb" stroke-width="1" stroke-dasharray="3 3">
-            <animateTransform attributeName="transform" type="rotate" values="360 80 50;0 80 50" dur="11s" repeatCount="indefinite"/>
-          </ellipse>
-          <circle cx="125" cy="50" r="4" fill="#2563eb">
-            <animateTransform attributeName="transform" type="rotate" values="360 80 50;0 80 50" dur="11s" repeatCount="indefinite"/>
-          </circle>
+          <path id="rLinePath" d="M10,280 C40,260 60,220 90,200 C120,180 140,230 170,190 C195,158 215,170 230,155" fill="none"/>
+
+          <!-- Red de nodos (grafo) arriba -->
+          <g transform="translate(120, 100)">
+            <!-- Conexiones -->
+            <line x1="-60" y1="20"  x2="0"   y2="-50" stroke="#2563eb" stroke-width="1.2" opacity=".5" stroke-dasharray="3 3">
+              <animate attributeName="opacity" values=".5;1;.5" dur="2s" repeatCount="indefinite"/>
+            </line>
+            <line x1="0"   y1="-50" x2="60"  y2="10"  stroke="#7c3aed" stroke-width="1.2" opacity=".5" stroke-dasharray="3 3">
+              <animate attributeName="opacity" values=".5;1;.5" dur="2.5s" begin=".5s" repeatCount="indefinite"/>
+            </line>
+            <line x1="-60" y1="20"  x2="20"  y2="60"  stroke="#2563eb" stroke-width="1.2" opacity=".4" stroke-dasharray="3 3">
+              <animate attributeName="opacity" values=".4;.9;.4" dur="3s" begin="1s" repeatCount="indefinite"/>
+            </line>
+            <line x1="60"  y1="10"  x2="20"  y2="60"  stroke="#7c3aed" stroke-width="1.2" opacity=".4" stroke-dasharray="3 3">
+              <animate attributeName="opacity" values=".4;.9;.4" dur="2.8s" begin=".3s" repeatCount="indefinite"/>
+            </line>
+            <line x1="0"   y1="-50" x2="20"  y2="60"  stroke="#22c55e" stroke-width="1" opacity=".3" stroke-dasharray="3 3">
+              <animate attributeName="opacity" values=".3;.7;.3" dur="3.5s" begin=".8s" repeatCount="indefinite"/>
+            </line>
+            <!-- Nodos -->
+            <circle cx="-60" cy="20"  r="10" fill="#2563eb" opacity=".9">
+              <animate attributeName="r" values="10;12;10" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0"   cy="-50" r="14" fill="#7c3aed">
+              <animate attributeName="r" values="14;16;14" dur="2.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="60"  cy="10"  r="10" fill="#2563eb" opacity=".9">
+              <animate attributeName="r" values="10;12;10" dur="3s" begin=".5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="20"  cy="60"  r="8"  fill="#22c55e">
+              <animate attributeName="r" values="8;10;8" dur="2.2s" begin="1s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Pulsos en nodos -->
+            <circle cx="-60" cy="20"  r="10" stroke="#2563eb" stroke-width="1.5" fill="none" opacity="0">
+              <animate attributeName="r" values="10;22;22" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.6;0;0" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0"   cy="-50" r="14" stroke="#7c3aed" stroke-width="1.5" fill="none" opacity="0">
+              <animate attributeName="r" values="14;28;28" dur="2.5s" begin="1s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.6;0;0" dur="2.5s" begin="1s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- Partículas flotantes -->
+          <circle cx="20"  cy="330" r="3"   fill="#7c3aed" opacity=".4"><animate attributeName="cy" values="330;310;330" dur="5s" repeatCount="indefinite"/></circle>
+          <circle cx="215" cy="350" r="2.5" fill="#2563eb" opacity=".5"><animate attributeName="cy" values="350;325;350" dur="4.5s" begin="1s" repeatCount="indefinite"/></circle>
+          <circle cx="120" cy="380" r="2"   fill="#22c55e" opacity=".4"><animate attributeName="cy" values="380;360;380" dur="6s" begin=".5s" repeatCount="indefinite"/></circle>
+          <circle cx="50"  cy="40"  r="2.5" fill="#7c3aed" opacity=".3"><animate attributeName="cy" values="40;20;40" dur="5.5s" repeatCount="indefinite"/></circle>
+          <circle cx="190" cy="60"  r="2"   fill="#2563eb" opacity=".4"><animate attributeName="cy" values="60;40;60" dur="4s" begin="2s" repeatCount="indefinite"/></circle>
         </svg>
-
-        <div class="reg-feat">
-          <div class="reg-feat-icon" style="background:#dcfce7">
-            <i class="fa-solid fa-clock" style="color:#16a34a"></i>
-          </div>
-          <div class="reg-feat-title">Resultados al instante</div>
-          <div class="reg-feat-desc">Calificación automática y retroalimentación inmediata para tus estudiantes.</div>
-        </div>
-
-        <div class="reg-stat">
-          <span class="reg-stat-dot" style="background:#2563eb"></span>
-          <div>
-            <div class="reg-stat-val">∞ Estudiantes</div>
-            <div class="reg-stat-lbl">Sin límite de usuarios</div>
-          </div>
-        </div>
-
-        <div class="reg-feat">
-          <div class="reg-feat-icon" style="background:#fef3c7">
-            <i class="fa-solid fa-chart-bar" style="color:#d97706"></i>
-          </div>
-          <div class="reg-feat-title">Analíticas completas</div>
-          <div class="reg-feat-desc">Visualiza el desempeño de cada estudiante con métricas detalladas.</div>
-        </div>
       </div>
 
     </div>
