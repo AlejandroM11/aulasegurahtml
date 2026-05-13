@@ -74,9 +74,94 @@ function renderRegister(app) {
 
     <div class="reg-wrap">
 
-      <!-- Panel izquierdo — gráfico animado puro -->
+      <!-- Panel izquierdo — gráfico sutil centrado -->
       <div class="reg-side">
-        <svg viewBox="0 0 280 700" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <svg viewBox="0 0 260 600" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style="width:100%;height:100%;max-height:calc(100vh - var(--nav-height))">
+          <defs>
+            <linearGradient id="bG1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2563eb" stop-opacity=".8"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity=".2"/>
+            </linearGradient>
+            <linearGradient id="bG2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed" stop-opacity=".7"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity=".15"/>
+            </linearGradient>
+            <linearGradient id="lG" x1="0" y1="0" x2="260" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Donut centrado verticalmente -->
+          <g transform="translate(130, 185)">
+            <circle cx="0" cy="0" r="90" stroke="#e2e8f0" stroke-width="16" fill="none"/>
+            <circle cx="0" cy="0" r="90" stroke="#2563eb" stroke-width="16" fill="none"
+              stroke-dasharray="220 345" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="-90;270" dur="9s" repeatCount="indefinite"/>
+              <animate attributeName="stroke-dasharray" values="220 345;280 285;220 345" dur="4.5s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="0" r="90" stroke="#7c3aed" stroke-width="16" fill="none"
+              stroke-dasharray="110 455" stroke-dashoffset="-230" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="-90;270" dur="9s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="0" r="90" stroke="#22c55e" stroke-width="16" fill="none"
+              stroke-dasharray="50 515" stroke-dashoffset="-350" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" values="-90;270" dur="9s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Centro -->
+            <circle cx="0" cy="0" r="55" fill="white" opacity=".95">
+              <animate attributeName="r" values="55;58;55" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="0" r="12" fill="#2563eb">
+              <animate attributeName="fill" values="#2563eb;#7c3aed;#2563eb" dur="4.5s" repeatCount="indefinite"/>
+              <animate attributeName="r" values="12;15;12" dur="3s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+
+          <!-- Barras debajo del donut -->
+          <g>
+            <rect x="18"  y="420" width="30" height="0" rx="8" fill="url(#bG1)">
+              <animate attributeName="height" values="0;130;105;130" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;290;315;290" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <rect x="58"  y="420" width="30" height="0" rx="8" fill="url(#bG2)">
+              <animate attributeName="height" values="0;90;170;90" dur="3.5s" begin=".25s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;330;250;330" dur="3.5s" begin=".25s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <rect x="98"  y="420" width="30" height="0" rx="8" fill="url(#bG1)">
+              <animate attributeName="height" values="0;155;100;155" dur="4s" begin=".5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;265;320;265" dur="4s" begin=".5s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <rect x="138" y="420" width="30" height="0" rx="8" fill="url(#bG2)">
+              <animate attributeName="height" values="0;70;140;70" dur="3.2s" begin=".75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;350;280;350" dur="3.2s" begin=".75s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <rect x="178" y="420" width="30" height="0" rx="8" fill="url(#bG1)">
+              <animate attributeName="height" values="0;115;160;115" dur="3.8s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;305;260;305" dur="3.8s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <rect x="218" y="420" width="30" height="0" rx="8" fill="url(#bG2)">
+              <animate attributeName="height" values="0;95;145;95" dur="4.2s" begin="1.25s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+              <animate attributeName="y"      values="420;325;275;325" dur="4.2s" begin="1.25s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"/>
+            </rect>
+            <line x1="8" y1="422" x2="252" y2="422" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4 3"/>
+          </g>
+
+          <!-- Línea de tendencia -->
+          <polyline points="33,390 73,410 113,370 153,395 193,368 233,380"
+            stroke="url(#lG)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="350" stroke-dashoffset="350">
+            <animate attributeName="stroke-dashoffset" values="350;0;0;350" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.2 1 0.4 0;0.4 0 0.2 1"/>
+          </polyline>
+
+          <!-- Partículas sutiles -->
+          <circle cx="20"  cy="50"  r="3" fill="#2563eb" opacity=".2"><animate attributeName="cy" values="50;30;50"   dur="6s" repeatCount="indefinite"/></circle>
+          <circle cx="230" cy="80"  r="2" fill="#7c3aed" opacity=".25"><animate attributeName="cy" values="80;55;80"   dur="5s" begin="1s" repeatCount="indefinite"/></circle>
+          <circle cx="130" cy="540" r="3" fill="#2563eb" opacity=".2"><animate attributeName="cy" values="540;520;540" dur="5.5s" repeatCount="indefinite"/></circle>
+          <circle cx="60"  cy="570" r="2" fill="#7c3aed" opacity=".2"><animate attributeName="cy" values="570;550;570" dur="4.5s" begin="2s" repeatCount="indefinite"/></circle>
+        </svg>
+      </div>
           <defs>
             <linearGradient id="barGrad1" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#2563eb"/>
@@ -279,9 +364,108 @@ function renderRegister(app) {
         </p>
       </div>
 
-      <!-- Panel derecho — gráfico animado puro -->
+      <!-- Panel derecho — onda suave centrada -->
       <div class="reg-side">
-        <svg viewBox="0 0 280 700" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <svg viewBox="0 0 260 600" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style="width:100%;height:100%;max-height:calc(100vh - var(--nav-height))">
+          <defs>
+            <linearGradient id="wArea1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c3aed" stop-opacity=".25"/>
+              <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="wArea2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2563eb" stop-opacity=".18"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="wLine1" x1="0" y1="0" x2="260" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#2563eb"/>
+            </linearGradient>
+            <linearGradient id="wLine2" x1="0" y1="0" x2="260" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#22c55e"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Onda 1 — área morada -->
+          <path d="M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255 L260,420 L0,420 Z"
+            fill="url(#wArea1)">
+            <animate attributeName="d"
+              values="M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255 L260,420 L0,420 Z;
+                      M0,265 C50,290 80,240 130,285 C180,260 210,240 260,270 L260,420 L0,420 Z;
+                      M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255 L260,420 L0,420 Z"
+              dur="6s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+          <path d="M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255"
+            stroke="url(#wLine1)" stroke-width="2.5" fill="none" stroke-linecap="round">
+            <animate attributeName="d"
+              values="M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255;
+                      M0,265 C50,290 80,240 130,285 C180,260 210,240 260,270;
+                      M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255"
+              dur="6s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+
+          <!-- Onda 2 — área azul, desfasada -->
+          <path d="M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300 L260,420 L0,420 Z"
+            fill="url(#wArea2)">
+            <animate attributeName="d"
+              values="M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300 L260,420 L0,420 Z;
+                      M0,305 C60,330 90,285 140,325 C190,300 220,280 260,315 L260,420 L0,420 Z;
+                      M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300 L260,420 L0,420 Z"
+              dur="7s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+          <path d="M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300"
+            stroke="url(#wLine2)" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7">
+            <animate attributeName="d"
+              values="M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300;
+                      M0,305 C60,330 90,285 140,325 C190,300 220,280 260,315;
+                      M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300"
+              dur="7s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+          </path>
+
+          <!-- Línea base -->
+          <line x1="0" y1="422" x2="260" y2="422" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 3"/>
+
+          <!-- Punto deslizante onda 1 -->
+          <circle r="6" fill="#7c3aed" stroke="white" stroke-width="2.5">
+            <animateMotion dur="6s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1">
+              <mpath href="#wPath1"/>
+            </animateMotion>
+          </circle>
+          <path id="wPath1" d="M0,280 C50,250 80,310 130,270 C180,230 210,290 260,255" fill="none"/>
+
+          <!-- Punto deslizante onda 2 -->
+          <circle r="5" fill="#2563eb" stroke="white" stroke-width="2">
+            <animateMotion dur="7s" begin="1s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.2 1">
+              <mpath href="#wPath2"/>
+            </animateMotion>
+          </circle>
+          <path id="wPath2" d="M0,320 C60,295 90,345 140,310 C190,275 220,330 260,300" fill="none"/>
+
+          <!-- Círculos decorativos arriba — sutiles -->
+          <circle cx="130" cy="130" r="70" stroke="#7c3aed" stroke-width="1.2"
+            fill="none" stroke-dasharray="6 5" opacity=".2">
+            <animateTransform attributeName="transform" type="rotate" values="0 130 130;360 130 130" dur="20s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="130" cy="130" r="45" stroke="#2563eb" stroke-width="1"
+            fill="none" stroke-dasharray="4 4" opacity=".2">
+            <animateTransform attributeName="transform" type="rotate" values="360 130 130;0 130 130" dur="14s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="130" cy="130" r="18" fill="#7c3aed" opacity=".15">
+            <animate attributeName="r" values="18;22;18" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="130" cy="130" r="8" fill="#7c3aed" opacity=".5">
+            <animate attributeName="r" values="8;10;8" dur="3s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- Partículas sutiles -->
+          <circle cx="30"  cy="480" r="3" fill="#7c3aed" opacity=".2"><animate attributeName="cy" values="480;460;480" dur="5s" repeatCount="indefinite"/></circle>
+          <circle cx="200" cy="510" r="2" fill="#2563eb" opacity=".2"><animate attributeName="cy" values="510;490;510" dur="4.5s" begin="1s" repeatCount="indefinite"/></circle>
+          <circle cx="120" cy="550" r="2.5" fill="#22c55e" opacity=".2"><animate attributeName="cy" values="550;530;550" dur="6s" begin=".5s" repeatCount="indefinite"/></circle>
+          <circle cx="50"  cy="40"  r="2.5" fill="#7c3aed" opacity=".2"><animate attributeName="cy" values="40;20;40" dur="5s" repeatCount="indefinite"/></circle>
+          <circle cx="220" cy="60"  r="2"   fill="#2563eb" opacity=".2"><animate attributeName="cy" values="60;40;60" dur="4s" begin="2s" repeatCount="indefinite"/></circle>
+        </svg>
+      </div>
           <defs>
             <linearGradient id="rAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#7c3aed" stop-opacity=".3"/>
