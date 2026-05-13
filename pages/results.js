@@ -145,19 +145,23 @@ function renderResults(app) {
         .rs-table-wrap{background:#fff;border:1px solid #e8e4df;border-radius:1.1rem;
           overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);position:relative;z-index:1}
         body.dark .rs-table-wrap{background:#1e293b;border-color:#334155}
-        .rs-search-bar{padding:1rem 1.25rem;border-bottom:1px solid #e8e4df;
-          display:flex;align-items:center;gap:.75rem;background:#fafaf9}
-        body.dark .rs-search-bar{background:#0f172a;border-color:#334155}
+        .rs-search-bar{padding:1rem 1.25rem;border-bottom:1px solid #e8edf2;
+          display:flex;align-items:center;gap:.75rem;background:#fff}
+        body.dark .rs-search-bar{background:#1e293b;border-color:#334155}
         .rs-table{width:100%;border-collapse:collapse;font-size:.875rem}
-        .rs-table thead tr{background:linear-gradient(90deg,#1e3a5f,#2563eb)}
-        .rs-table th{padding:.75rem 1rem;text-align:left;color:#fff;font-weight:600;
-          font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+        .rs-table thead tr{background:none}
+        .rs-table th{padding:.7rem 1rem;text-align:left;
+          background:var(--gray-50,#f8fafc);
+          color:#64748b;font-weight:700;
+          font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;
+          border-bottom:1.5px solid #e8edf2}
+        body.dark .rs-table th{background:#0f172a;color:#64748b;border-color:#334155}
         .rs-table th:first-child{border-radius:0}
         .rs-table td{padding:.85rem 1rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#1e293b}
         body.dark .rs-table td{border-color:#334155;color:#e2e8f0}
-        .rs-table tbody tr{transition:background .15s}
-        .rs-table tbody tr:hover td{background:#f8fafc}
-        body.dark .rs-table tbody tr:hover td{background:#1e293b}
+        .rs-table tbody tr{transition:background .12s}
+        .rs-table tbody tr:hover td{background:rgba(37,99,235,.03)}
+        body.dark .rs-table tbody tr:hover td{background:rgba(37,99,235,.06)}
         .rs-table tbody tr:last-child td{border-bottom:none}
         /* ── Student cell ── */
         .rs-student-name{font-weight:600;font-size:.9rem;color:#1e293b}
@@ -277,8 +281,8 @@ function renderResults(app) {
                           <p class="rs-student-email">${s.studentEmail || ''}</p>
                         </td>
                         <td>
-                          <p style="font-weight:600;font-size:.875rem;color:#1e293b">${s.title || s.code || '—'}</p>
-                          <p style="font-size:.72rem;font-family:monospace;color:#2563eb;margin-top:.1rem">${s.code || ''}</p>
+                          <p style="font-weight:600;font-size:.875rem;color:var(--text-primary)">${s.title || s.code || '—'}</p>
+                          ${s.code ? `<span style="display:inline-flex;align-items:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;letter-spacing:.05em;background:#eff6ff;color:#1d4ed8;padding:.15rem .55rem;border-radius:999px;border:1px solid #bfdbfe;margin-top:.2rem">${s.code}</span>` : ''}
                         </td>
                         <td>
                           ${sc
