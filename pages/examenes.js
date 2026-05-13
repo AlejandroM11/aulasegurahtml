@@ -371,7 +371,7 @@ function renderExamenes(app) {
     // Events
     document.getElementById('back-btn').onclick   = () => navigate('/docente');
     document.getElementById('create-btn').onclick = () => navigate('/docente');
-    document.getElementById('ex-filter').oninput  = e => { filter = e.target.value; render(); };
+    document.getElementById('ex-filter').oninput  = e => { filter = e.target.value; renderKeepFocus(render, 'ex-filter'); };
     document.getElementById('ex-sort').onchange   = e => { sortBy = e.target.value; render(); };
 
     document.querySelectorAll('[data-copy]').forEach(btn => {

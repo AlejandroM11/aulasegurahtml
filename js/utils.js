@@ -47,3 +47,27 @@ function spinnerHTML(msg = 'Cargando...') {
     <p class="text-gray mt-3">${msg}</p>
   </div>`;
 }
+
+/**
+ * Ejecuta render() preservando el foco y la posición del cursor
+ * en el input activo. Úsalo en lugar de render() directo cuando
+ * el usuario está escribiendo en un campo de búsqueda.
+ *
+ * @param {Function} renderFn  — la función render() a ejecutar
+ * @param {string}   inputId   — id del input que debe recuperar el foco
+ */
+function renderKeepFocus(renderFn, inputId) {
+  const active = document.activeElement;
+  const id     = inputId || active?.id;
+  const val    = active?.value || '';
+  const start  = active?.selectionStart ?? val.length;
+  const end    = active?.selectionEnd   ?? val.length;
+
+  renderFn();
+
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus();
+  try { el.setSelectionRange(start, end); } catch (_) {}
+}

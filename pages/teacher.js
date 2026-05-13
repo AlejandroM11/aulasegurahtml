@@ -1384,7 +1384,7 @@ function renderTeacher(app) {
   }
 
   function bindListaEvents() {
-    document.getElementById('f-filter').oninput   = e => { filter = e.target.value; render(); };
+    document.getElementById('f-filter').oninput   = e => { filter = e.target.value; renderKeepFocus(render, 'f-filter'); };
     document.getElementById('toggle-reg').onclick = () => { showRegistry = !showRegistry; render(); };
     const gotoBtn = document.getElementById('goto-examenes-btn');
     if (gotoBtn) gotoBtn.onclick = () => navigate('/examenes');

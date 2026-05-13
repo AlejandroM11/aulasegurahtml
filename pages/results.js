@@ -329,7 +329,7 @@ function renderResults(app) {
       </div>`;
 
     document.getElementById('back-btn').onclick = () => navigate('/docente');
-    document.getElementById('f-filter').oninput = e => { filter = e.target.value; render(); };
+    document.getElementById('f-filter').oninput = e => { filter = e.target.value; renderKeepFocus(render, 'f-filter'); };
     const clearBtn = document.getElementById('clear-filter');
     if (clearBtn) clearBtn.onclick = () => { filter = ''; render(); };
     document.querySelectorAll('[data-view]').forEach(btn => {

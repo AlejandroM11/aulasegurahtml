@@ -558,8 +558,8 @@ function renderPerfil(app) {
     const confirmInput  = document.getElementById('pf-pw-confirm');
 
     if (currentInput) currentInput.oninput = e => { pwCurrent = e.target.value; };
-    if (newInput) newInput.oninput = e => { pwNew = e.target.value; render(); };
-    if (confirmInput) confirmInput.oninput = e => { pwConfirm = e.target.value; render(); };
+    if (newInput) newInput.oninput = e => { pwNew = e.target.value; renderKeepFocus(render, 'pf-pw-new'); };
+    if (confirmInput) confirmInput.oninput = e => { pwConfirm = e.target.value; renderKeepFocus(render, 'pf-pw-confirm'); };
 
     document.getElementById('pf-save-pw').onclick = savePw;
   }
