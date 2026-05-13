@@ -197,25 +197,26 @@
         box-shadow: 0 4px 16px rgba(0,0,0,.3);
       }
 
-      /* Botón de accesibilidad */
+      /* Botón de accesibilidad — fixed, siempre visible */
       #a11y-btn {
-        position: relative;
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 2.2rem; height: 2.2rem;
+        position: fixed;
+        bottom: 5.5rem;   /* encima del botón de ARDI */
+        right: 1.5rem;
+        z-index: 501;
+        display: flex; align-items: center; justify-content: center;
+        width: 3.25rem; height: 3.25rem;
         border-radius: 50%;
-        background: #0ea5e9;
-        border: 2px solid rgba(255,255,255,.5);
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+        border: 3px solid rgba(255,255,255,.55);
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(14,165,233,.4);
-        transition: all .2s;
-        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(14,165,233,.45);
+        transition: transform .2s, box-shadow .2s;
         color: #fff;
-        font-size: .95rem;
+        font-size: 1.25rem;
       }
       #a11y-btn:hover {
-        background: #0284c7;
-        transform: scale(1.1);
-        box-shadow: 0 4px 14px rgba(14,165,233,.5);
+        transform: scale(1.12);
+        box-shadow: 0 6px 24px rgba(14,165,233,.6);
       }
       #a11y-btn:focus-visible {
         outline: 3px solid #f59e0b;
@@ -225,7 +226,7 @@
       /* Panel de accesibilidad */
       #a11y-panel {
         position: fixed;
-        top: calc(var(--nav-height, 64px) + .5rem);
+        bottom: 9.5rem;   /* encima del botón */
         right: 1rem;
         z-index: 600;
         width: 300px;
@@ -520,6 +521,8 @@
 
   // ── Botón en el navbar ────────────────────────────────────
   function mountButton() {
+    // El botón vive fuera del navbar como elemento fixed independiente
+    // así nunca lo borra updateNavbar()
     if (document.getElementById('a11y-btn')) return;
     const btn = document.createElement('button');
     btn.id = 'a11y-btn';
@@ -527,19 +530,7 @@
     btn.setAttribute('title', 'Accesibilidad');
     btn.innerHTML = '<i class="fa-solid fa-universal-access"></i>';
     btn.onclick = (e) => { e.stopPropagation(); togglePanel(); };
-
-    // Insertar en nav-actions
-    const actions = document.getElementById('nav-actions');
-    if (actions) {
-      actions.insertBefore(btn, actions.firstChild);
-    } else {
-      // Fallback: esquina superior derecha
-      btn.style.position = 'fixed';
-      btn.style.top = '1rem';
-      btn.style.right = '1rem';
-      btn.style.zIndex = '999';
-      document.body.appendChild(btn);
-    }
+    document.body.appendChild(btn);
   }
 
   // ── Init ──────────────────────────────────────────────────
@@ -548,16 +539,11 @@
     injectStyles();
     apply();
 
-    // Montar botón cuando el DOM esté listo
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', mountButton);
     } else {
       mountButton();
     }
-
-    // Re-montar el botón cuando el navbar se actualice (updateNavbar lo reemplaza)
-    window.addEventListener('auth-changed', () => setTimeout(mountButton, 50));
-    window.addEventListener('hashchange',   () => setTimeout(mountButton, 50));
   }
 
   init();
