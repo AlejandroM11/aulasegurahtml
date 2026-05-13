@@ -29,6 +29,25 @@ function renderMonitor(app) {
     finally { loading = false; render(); }
   }
 
+  /**
+   * Elimina de Firebase los nodos de estudiantes que llevan más de
+   * STALE_MS sin actividad — son fantasmas de sesiones anteriores.
+   * Se llama al seleccionar un examen y cada vez que llega un snapshot.
+   */
+  const STALE_MS = 5 * 60 * 1000; // 5 minutos sin actividad = fantasma
+
+  async function purgeGhosts(examCode, students) {
+    const now    = Date.now();
+    const ghosts = students.filter(s => {
+      const last = s.lastActivity || s.joinedAt || 0;
+      return (now - last) > STALE_MS;
+    });
+    if (!ghosts.length) return;
+    await Promise.allSettled(
+      ghosts.map(s => removeActiveStudent(examCode, s.id))
+    );
+  }
+
   function selectExam(exam) {
     selectedExam = exam;
 
@@ -38,13 +57,25 @@ function renderMonitor(app) {
         const all = [];
         const raw = snap.val();
         if (raw) Object.entries(raw).forEach(([key, val]) => all.push({ id: key, ...val }));
-        allStudents = all;
+        // Limpiar fantasmas antes de mostrar
+        await purgeGhosts(exam.code, all);
+        // Re-leer después de purgar para tener la lista limpia
+        const snap2 = await fbDB.ref(`active_exams/${exam.code}/students`).get();
+        const clean = [];
+        const raw2  = snap2.val();
+        if (raw2) Object.entries(raw2).forEach(([key, val]) => clean.push({ id: key, ...val }));
+        allStudents = clean;
         render();
       } catch(e) { console.error('[MONITOR] Error fetch:', e); }
     }
 
-    unsubStudents = listenToActiveStudents(exam.code, (students) => {
-      allStudents = students;
+    unsubStudents = listenToActiveStudents(exam.code, async (students) => {
+      // Purgar fantasmas en cada update del listener
+      await purgeGhosts(exam.code, students);
+      allStudents = students.filter(s => {
+        const last = s.lastActivity || s.joinedAt || 0;
+        return (Date.now() - last) <= STALE_MS;
+      });
       render();
     });
 
@@ -367,6 +398,9 @@ function renderMonitor(app) {
             <button class="btn btn-outline btn-sm" id="refresh-btn">
               <i class="fa-solid fa-rotate" style="margin-right:.35rem"></i>Actualizar
             </button>
+            <button class="btn btn-outline btn-sm" id="purge-btn" title="Eliminar estudiantes inactivos">
+              <i class="fa-solid fa-broom" style="margin-right:.35rem"></i>Limpiar
+            </button>
             <button class="btn btn-outline btn-sm" id="deselect-btn">
               <i class="fa-solid fa-arrow-left" style="margin-right:.35rem"></i>Cambiar
             </button>
@@ -471,10 +505,28 @@ function renderMonitor(app) {
         const all = [];
         const raw = snap.val();
         if (raw) Object.entries(raw).forEach(([key, val]) => all.push({ id: key, ...val }));
-        allStudents = all;
+        await purgeGhosts(selectedExam.code, all);
+        const snap2 = await fbDB.ref(`active_exams/${selectedExam.code}/students`).get();
+        const clean = [];
+        const raw2  = snap2.val();
+        if (raw2) Object.entries(raw2).forEach(([key, val]) => clean.push({ id: key, ...val }));
+        allStudents = clean;
         render();
       } catch(e) { console.error('Error al actualizar:', e); }
     };
+
+    document.getElementById('purge-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('purge-btn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+      try {
+        await purgeGhosts(selectedExam.code, allStudents);
+        allStudents = allStudents.filter(s => {
+          const last = s.lastActivity || s.joinedAt || 0;
+          return (Date.now() - last) <= STALE_MS;
+        });
+        render();
+      } catch(e) { console.error('Error al limpiar:', e); }
+    });
 
     document.querySelectorAll('[data-unblock]').forEach(btn => {
       btn.onclick = () => { const s = allStudents.find(x => x.id === btn.dataset.unblock); if (s) handleUnblock(s); };

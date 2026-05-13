@@ -28,11 +28,19 @@ function messagesRef(examCode) {
   return dbRef(`active_exams/${examCode}/messages`);
 }
 
-/** Registra un estudiante como activo en el examen */
-function registerActiveStudent(examCode, studentData) {
-  const path = `active_exams/${examCode}/students/${studentData.uid}`;
-  console.log('[FIREBASE] Registrando estudiante en path:', path, '— datos:', studentData.name, studentData.uid);
-  return studentRef(examCode, studentData.uid).set({
+/** Registra un estudiante como activo en el examen.
+ *  Configura onDisconnect para que Firebase elimine el nodo
+ *  automáticamente si la conexión se corta (cierre de pestaña,
+ *  pérdida de red, recarga abrupta, etc.).
+ */
+async function registerActiveStudent(examCode, studentData) {
+  const ref = studentRef(examCode, studentData.uid);
+
+  // Registrar primero el onDisconnect ANTES de escribir el dato,
+  // así si la conexión cae justo al escribir, igual se limpia.
+  await ref.onDisconnect().remove();
+
+  return ref.set({
     uid: studentData.uid,
     displayUid: studentData.displayUid || studentData.uid,
     email: studentData.email,
@@ -45,6 +53,14 @@ function registerActiveStudent(examCode, studentData) {
     isBlocked: false,
     lastActivity: Date.now()
   });
+}
+
+/** Cancela el onDisconnect registrado para un estudiante.
+ *  Llamar esto ANTES de removeActiveStudent para evitar
+ *  que Firebase intente borrar un nodo que ya no existe.
+ */
+function cancelStudentDisconnect(examCode, uid) {
+  return studentRef(examCode, uid).onDisconnect().cancel();
 }
 
 /** Actualiza el estado del estudiante (tiempo, respuestas, infracciones) */
@@ -68,8 +84,11 @@ function unblockStudent(examCode, uid) {
   });
 }
 
-/** Elimina al estudiante de la lista de activos */
+/** Elimina al estudiante de la lista de activos y cancela su onDisconnect */
 function removeActiveStudent(examCode, uid) {
+  // Cancelar el onDisconnect primero para que Firebase no intente
+  // borrar un nodo que ya vamos a borrar nosotros manualmente.
+  studentRef(examCode, uid).onDisconnect().cancel().catch(() => {});
   return studentRef(examCode, uid).remove();
 }
 
