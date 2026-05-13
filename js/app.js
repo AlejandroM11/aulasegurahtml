@@ -82,9 +82,31 @@ function getAvatarColor(str) {
 function buildNavBrandHTML() {
   return `
     <a href="#/" class="nav-brand">
-      <img src="logo.png" alt="AulaSegura"
-        onerror="this.style.display='none'"
-      />
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-logo-svg">
+        <defs>
+          <linearGradient id="shieldGrad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1e3a5f"/>
+            <stop offset="100%" stop-color="#2563eb"/>
+          </linearGradient>
+          <linearGradient id="lockGrad" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#ffffff"/>
+          </linearGradient>
+        </defs>
+        <path d="M22 3L5 10v10c0 9.5 7.2 18.4 17 20.9C31.8 38.4 39 29.5 39 20V10L22 3z"
+          fill="url(#shieldGrad)" stroke="#3b82f6" stroke-width="1.2" stroke-linejoin="round">
+          <animate attributeName="opacity" values="1;0.85;1" dur="3s" repeatCount="indefinite"/>
+        </path>
+        <path d="M22 7L9 13v8c0 7.5 5.7 14.5 13 16.5C29.3 35.5 35 28.5 35 21v-8L22 7z"
+          fill="rgba(255,255,255,0.07)"/>
+        <rect x="15" y="22" width="14" height="10" rx="2.5" fill="url(#lockGrad)" opacity="0.95"/>
+        <path d="M17 22v-3.5a5 5 0 0 1 10 0V22"
+          stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <circle cx="22" cy="26.5" r="1.8" fill="#1e3a5f">
+          <animate attributeName="r" values="1.8;2.2;1.8" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <span class="nav-brand-text">Aula<strong>Segura</strong></span>
     </a>
   `;
 }

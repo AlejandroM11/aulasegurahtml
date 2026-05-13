@@ -27,16 +27,46 @@
   <nav>
     <div class="nav-inner">
       <a href="#/" class="nav-brand">
-        <img src="logo.png" alt="AulaSegura"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-        />
-        <!-- Fallback si la imagen no carga -->
-        <div class="nav-brand-icon" aria-hidden="true" style="display:none">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="rgba(255,255,255,.25)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
+        <!-- Logo SVG animado — escudo con candado -->
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-logo-svg">
+          <defs>
+            <linearGradient id="shieldGrad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1e3a5f"/>
+              <stop offset="100%" stop-color="#2563eb"/>
+            </linearGradient>
+            <linearGradient id="lockGrad" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#ffffff"/>
+            </linearGradient>
+          </defs>
+          <!-- Escudo -->
+          <path d="M22 3L5 10v10c0 9.5 7.2 18.4 17 20.9C31.8 38.4 39 29.5 39 20V10L22 3z"
+            fill="url(#shieldGrad)" stroke="#3b82f6" stroke-width="1.2" stroke-linejoin="round">
+            <animate attributeName="opacity" values="1;0.85;1" dur="3s" repeatCount="indefinite"/>
+          </path>
+          <!-- Brillo interior del escudo -->
+          <path d="M22 7L9 13v8c0 7.5 5.7 14.5 13 16.5C29.3 35.5 35 28.5 35 21v-8L22 7z"
+            fill="rgba(255,255,255,0.07)"/>
+          <!-- Cuerpo del candado -->
+          <rect x="15" y="22" width="14" height="10" rx="2.5"
+            fill="url(#lockGrad)" opacity="0.95"/>
+          <!-- Arco del candado -->
+          <path d="M17 22v-3.5a5 5 0 0 1 10 0V22"
+            stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none">
+            <animate attributeName="stroke-dasharray" values="0,30;30,0;30,0" dur="2s" begin="0.5s" fill="freeze"/>
+            <animate attributeName="stroke-dashoffset" values="30;0;0" dur="2s" begin="0.5s" fill="freeze"/>
+          </path>
+          <!-- Ojo del candado -->
+          <circle cx="22" cy="26.5" r="1.8" fill="#1e3a5f">
+            <animate attributeName="r" values="1.8;2.2;1.8" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Check mark animado -->
+          <path d="M17 27.5l2.5 2.5 5-5" stroke="#1e3a5f" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" opacity="0">
+            <animate attributeName="opacity" values="0;0;1;1;0" dur="4s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+        <span class="nav-brand-text">Aula<strong>Segura</strong></span>
       </a>
       <div class="nav-actions" id="nav-actions">
         <button class="btn btn-outline" id="theme-toggle">🌙 Oscuro</button>
