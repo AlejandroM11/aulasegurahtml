@@ -83,7 +83,6 @@ function buildNavBrandHTML() {
   return `
     <a href="#/" class="nav-brand">
       <img src="logo.png" alt="AulaSegura"
-        style="height:36px;width:auto;object-fit:contain;display:block"
         onerror="this.style.display='none'"
       />
     </a>

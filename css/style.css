@@ -71,7 +71,7 @@
   --transition-slow: all .3s  cubic-bezier(.4,0,.2,1);
 
   --max-width:    1600px;
-  --nav-height:   64px;
+  --nav-height:   72px;
   --page-padding: clamp(.75rem, 2.5vw, 2rem);
 }
 
@@ -170,15 +170,14 @@ body.dark nav {
 }
 .nav-brand:hover { opacity: .8; }
 .nav-brand img {
-  height: 38px;
+  height: 52px;
   width: auto;
+  max-width: 220px;
   object-fit: contain;
   display: block;
-  /* La imagen tiene fondo blanco — en dark mode la oscurecemos levemente */
   transition: opacity .2s;
 }
 body.dark .nav-brand img {
-  /* Invertir colores oscuros para que se vea bien en dark mode */
   filter: brightness(.92) contrast(1.05);
 }
 
