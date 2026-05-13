@@ -349,10 +349,7 @@ function renderHome(app) {
           <span class="stat-num" data-text="En vivo">En vivo</span>
           <div class="stat-lbl">Monitoreo</div>
         </div>
-        <div class="stat-item">
-          <span class="stat-num" data-text="∞">∞</span>
-          <div class="stat-lbl">Estudiantes</div>
-        </div>
+
       </div>
 
       <div class="home-divider">
