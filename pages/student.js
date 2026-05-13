@@ -1010,12 +1010,77 @@ function renderStudent(app) {
   function showJoin() {
     injectStyles();
     app.innerHTML = `
-      <div class="st-page join-wrap">
-        <div class="join-bg-blob" style="width:500px;height:500px;background:#2563eb;top:-100px;right:-150px"></div>
-        <div class="join-bg-blob" style="width:400px;height:400px;background:#7c3aed;bottom:-80px;left:-120px"></div>
+      <!-- SVG sutil de fondo -->
+      <svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="stb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2563eb" stop-opacity=".06"/><stop offset="100%" stop-color="#7c3aed" stop-opacity=".04"/></linearGradient>
+          <linearGradient id="stb2" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7c3aed" stop-opacity=".05"/><stop offset="100%" stop-color="#2563eb" stop-opacity=".03"/></linearGradient>
+        </defs>
+        <circle cx="0" cy="0" r="420" fill="url(#stb1)"><animate attributeName="r" values="420;455;420" dur="9s" repeatCount="indefinite"/></circle>
+        <circle cx="1440" cy="900" r="380" fill="url(#stb2)"><animate attributeName="r" values="380;415;380" dur="11s" begin="2s" repeatCount="indefinite"/></circle>
+        <circle cx="1440" cy="0" r="260" fill="url(#stb1)" opacity=".7"><animate attributeName="r" values="260;290;260" dur="7s" begin="1s" repeatCount="indefinite"/></circle>
+        <circle cx="0" cy="900" r="200" fill="url(#stb2)" opacity=".6"><animate attributeName="r" values="200;225;200" dur="10s" begin="3s" repeatCount="indefinite"/></circle>
+      </svg>
 
+      <div class="st-page join-wrap" style="position:relative;z-index:1">
         <div class="join-card">
-          <div class="join-logo-ring">📋</div>
+
+          <!-- SVG animado: estudiante con examen -->
+          <div style="display:flex;justify-content:center;margin-bottom:1.5rem">
+            <svg width="110" height="110" viewBox="0 0 110 110" fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style="filter:drop-shadow(0 8px 24px rgba(37,99,235,.3))">
+              <defs>
+                <linearGradient id="stBg" x1="0" y1="0" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#1e3a5f"/>
+                  <stop offset="100%" stop-color="#2563eb"/>
+                </linearGradient>
+                <linearGradient id="stDoc" x1="20" y1="20" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#93c5fd"/>
+                  <stop offset="100%" stop-color="#ffffff"/>
+                </linearGradient>
+              </defs>
+              <!-- Círculo fondo -->
+              <circle cx="55" cy="55" r="50" fill="url(#stBg)">
+                <animate attributeName="r" values="50;52;50" dur="3s" repeatCount="indefinite"/>
+              </circle>
+              <!-- Anillos de pulso -->
+              <circle cx="55" cy="55" r="50" stroke="#3b82f6" stroke-width="1.5" fill="none" opacity="0">
+                <animate attributeName="r" values="50;68;68" dur="2.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.5;0;0" dur="2.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="55" cy="55" r="50" stroke="#2563eb" stroke-width="1" fill="none" opacity="0">
+                <animate attributeName="r" values="50;68;68" dur="2.5s" begin="1.25s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.3;0;0" dur="2.5s" begin="1.25s" repeatCount="indefinite"/>
+              </circle>
+              <!-- Hoja del examen -->
+              <rect x="32" y="28" width="36" height="46" rx="4" fill="url(#stDoc)" opacity=".95">
+                <animate attributeName="opacity" values=".95;1;.95" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <!-- Líneas del examen -->
+              <rect x="38" y="36" width="20" height="3" rx="1.5" fill="#1e3a5f" opacity=".5"/>
+              <rect x="38" y="43" width="24" height="2.5" rx="1.25" fill="#1e3a5f" opacity=".35"/>
+              <rect x="38" y="49" width="18" height="2.5" rx="1.25" fill="#1e3a5f" opacity=".35"/>
+              <!-- Check animado -->
+              <rect x="38" y="57" width="10" height="10" rx="2" fill="#22c55e" opacity=".9">
+                <animate attributeName="opacity" values=".9;1;.9" dur="1.5s" repeatCount="indefinite"/>
+              </rect>
+              <path d="M40 62 l2.5 2.5 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"
+                stroke-dasharray="12" stroke-dashoffset="12">
+                <animate attributeName="stroke-dashoffset" values="12;0;0;12" dur="2.5s" repeatCount="indefinite"/>
+              </path>
+              <!-- Lápiz animado -->
+              <g>
+                <animateTransform attributeName="transform" type="rotate"
+                  values="-15 68 68; 5 68 68; -15 68 68" dur="3s" repeatCount="indefinite"
+                  calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+                <rect x="64" y="55" width="6" height="18" rx="2" fill="#fbbf24" transform="rotate(-30 67 64)"/>
+                <polygon points="64,73 70,73 67,79" fill="#f59e0b" transform="rotate(-30 67 64)"/>
+                <rect x="64" y="55" width="6" height="4" rx="1" fill="#e2e8f0" transform="rotate(-30 67 64)"/>
+              </g>
+            </svg>
+          </div>
+
           <h1 class="join-title">Aula Segura</h1>
           <p class="join-subtitle">Ingresa el código de tu examen para comenzar</p>
 
