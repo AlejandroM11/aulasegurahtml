@@ -497,7 +497,7 @@ function renderTeacher(app) {
         <!-- Layout dashboard: izquierda formularios | derecha panel preguntas -->
         <div style="
           display:grid;
-          grid-template-columns:1fr 360px;
+          grid-template-columns:1fr 400px;
           gap:1.5rem;
           align-items:start;
         " class="crear-layout">
@@ -1098,18 +1098,16 @@ function renderTeacher(app) {
         <div style="display:flex;align-items:center;gap:.4rem;min-width:0">
           <span style="background:${typeBadge.bg};color:${typeBadge.color};
             font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:999px;
-            white-space:nowrap;flex-shrink:0">
+            white-space:nowrap;flex-shrink:0;max-width:130px;overflow:hidden;text-overflow:ellipsis">
             <i class="fa-solid ${typeBadge.icon}" style="margin-right:.25rem"></i>${typeBadge.label}
           </span>
           <span style="font-size:.72rem;color:#94a3b8;flex-shrink:0">#${idx+1}</span>
-          <!-- Spacer -->
-          <span style="flex:1"></span>
-          <!-- Botones siempre visibles, nunca se comprimen -->
-          <button class="btn btn-outline" style="padding:.25rem .45rem;font-size:.75rem;flex-shrink:0;min-width:0"
+          <span style="flex:1;min-width:0"></span>
+          <button class="btn btn-outline" style="padding:.25rem .45rem;font-size:.75rem;flex-shrink:0;line-height:1"
             data-edit-q="${q.id}" title="Editar">
             <i class="fa-solid fa-pen"></i>
           </button>
-          <button class="btn btn-danger" style="padding:.25rem .45rem;font-size:.75rem;flex-shrink:0;min-width:0"
+          <button class="btn btn-danger" style="padding:.25rem .45rem;font-size:.75rem;flex-shrink:0;line-height:1"
             data-del="${q.id}">
             <i class="fa-solid fa-trash"></i>
           </button>
