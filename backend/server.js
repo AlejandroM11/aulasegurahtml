@@ -119,64 +119,99 @@ app.post('/api/groq/generate', async (req, res) => {
 
   try {
     const fetch  = (await import('node-fetch')).default;
-    const snip   = text.slice(0, 3500);
+    const snip   = text.slice(0, 6000);
     const apiKey = process.env.GROQ_API_KEY;
 
     // Prompt especializado por tipo
     function buildPrompt(type, n) {
-      const intro = `Eres un experto en educación universitaria. Basándote EXCLUSIVAMENTE en el siguiente texto, genera EXACTAMENTE ${n} pregunta${n > 1 ? 's' : ''} de alta calidad académica.
+      const intro = `Eres un profesor universitario experto creando un examen de alta calidad.
 
-TEXTO FUENTE:
+TEXTO FUENTE (usa SOLO esta información):
 """
 ${snip}
 """
 
-REGLAS OBLIGATORIAS:
-- Todas las preguntas y opciones deben basarse ÚNICAMENTE en información del texto. NO inventes datos, fechas, nombres o conceptos que no estén en el texto.
-- Las opciones incorrectas (distractores) deben ser plausibles pero claramente incorrectas según el texto. NO uses opciones absurdas ni genéricas como "Ninguna de las anteriores" o "Todas las anteriores".
-- El texto de la pregunta debe ser claro, específico y sin ambigüedad.
-- Devuelve SOLO el array JSON válido, sin texto extra, sin markdown, sin comentarios.
+INSTRUCCIONES CRÍTICAS:
+1. Cada pregunta, opción y respuesta DEBE estar basada en información que aparece EXPLÍCITAMENTE en el texto anterior.
+2. Los distractores (opciones incorrectas) deben ser conceptos del MISMO tema que aparecen en el texto, pero que NO son la respuesta correcta a esa pregunta específica.
+3. Si el texto no tiene suficiente información para ${n} pregunta${n > 1 ? 's' : ''} de este tipo, genera las que puedas con la información disponible.
+4. NUNCA inventes datos, nombres, fechas o conceptos que no estén en el texto.
+5. Devuelve ÚNICAMENTE el array JSON. Sin explicaciones, sin markdown, sin texto adicional.
 
 `;
 
-      if (type === 'mc') return intro + `TIPO: Opción múltiple con UNA sola respuesta correcta.
-REQUISITOS:
-- 4 opciones por pregunta (A, B, C, D)
-- Las 3 opciones incorrectas deben ser conceptualmente relacionadas con el tema pero incorrectas según el texto
-- correctIndex indica el índice (0-3) de la única opción correcta
-- Verifica que correctIndex apunte a la opción realmente correcta
+      if (type === 'mc') return intro + `TIPO A GENERAR: Opción múltiple (una sola respuesta correcta)
 
-FORMATO JSON:
-[{"text":"Pregunta clara y específica?","type":"mc","options":["Opción correcta","Distractor plausible 1","Distractor plausible 2","Distractor plausible 3"],"correctIndex":0,"isMath":false}]`;
+REGLAS ESPECÍFICAS:
+- La respuesta correcta debe ser un hecho, concepto o dato que aparece en el texto.
+- Los 3 distractores deben ser otros conceptos del texto que NO responden la pregunta.
+- Ejemplo: si el texto habla de fotosíntesis, los distractores pueden ser otros procesos biológicos mencionados en el texto.
+- correctIndex es el índice (0, 1, 2 o 3) de la opción correcta. Varía el índice entre preguntas.
 
-      if (type === 'multi') return intro + `TIPO: Selección múltiple con DOS O MÁS respuestas correctas.
-REQUISITOS:
-- 4 opciones por pregunta
-- correctIndexes debe tener MÍNIMO 2 índices correctos
-- Las opciones correctas deben ser todas verdaderas según el texto
-- Las opciones incorrectas deben ser falsas según el texto pero plausibles
+FORMATO (devuelve solo esto):
+[
+  {
+    "text": "Pregunta específica basada en el texto?",
+    "type": "mc",
+    "options": ["Respuesta correcta del texto", "Concepto del texto incorrecto aquí", "Otro concepto del texto incorrecto", "Otro concepto del texto incorrecto"],
+    "correctIndex": 0,
+    "isMath": false
+  }
+]`;
 
-FORMATO JSON:
-[{"text":"¿Cuáles de las siguientes afirmaciones son correctas?","type":"multi","options":["Afirmación verdadera 1","Afirmación verdadera 2","Afirmación falsa 1","Afirmación falsa 2"],"correctIndexes":[0,1],"isMath":false}]`;
+      if (type === 'multi') return intro + `TIPO A GENERAR: Selección múltiple (dos o más respuestas correctas)
 
-      if (type === 'open') return intro + `TIPO: Pregunta abierta de respuesta libre.
-REQUISITOS:
-- La pregunta debe requerir una respuesta elaborada basada en el texto
-- Usa verbos como: Explica, Describe, Analiza, Compara, Justifica
-- NO incluyas opciones
+REGLAS ESPECÍFICAS:
+- Genera preguntas donde 2 o 3 opciones sean correctas según el texto.
+- Todas las opciones correctas deben ser verdaderas según el texto.
+- Las opciones incorrectas deben ser falsas o no mencionadas en el texto.
+- correctIndexes debe tener mínimo 2 índices.
 
-FORMATO JSON:
-[{"text":"Explica con tus propias palabras...","type":"open","isMath":false}]`;
+FORMATO (devuelve solo esto):
+[
+  {
+    "text": "¿Cuáles de las siguientes afirmaciones son correctas según el texto?",
+    "type": "multi",
+    "options": ["Afirmación verdadera del texto", "Otra afirmación verdadera del texto", "Afirmación falsa o no mencionada", "Otra afirmación falsa"],
+    "correctIndexes": [0, 1],
+    "isMath": false
+  }
+]`;
 
-      if (type === 'eq') return intro + `TIPO: Ecuación o expresión matemática del texto.
-REQUISITOS:
-- Solo si el texto contiene matemáticas, fórmulas o ecuaciones
-- "text" es el enunciado en español sin LaTeX
-- "latex" es la expresión matemática en LaTeX válido SIN signos $ (ej: "x^2-4=0", "\\frac{d}{dx}(x^2)")
-- "correctLatex" es la solución en LaTeX
+      if (type === 'open') return intro + `TIPO A GENERAR: Pregunta de respuesta abierta
 
-FORMATO JSON:
-[{"text":"Resuelve la siguiente ecuación:","type":"open","isMath":true,"latex":"x^2-4=0","correctLatex":"x=2 \\text{ o } x=-2"}]`;
+REGLAS ESPECÍFICAS:
+- La pregunta debe poder responderse con información del texto.
+- Usa verbos como: Explica, Describe, Analiza, Compara, Define, Menciona.
+- No incluyas opciones.
+
+FORMATO (devuelve solo esto):
+[
+  {
+    "text": "Explica con tus propias palabras [concepto del texto]...",
+    "type": "open",
+    "isMath": false
+  }
+]`;
+
+      if (type === 'eq') return intro + `TIPO A GENERAR: Ecuación o expresión matemática
+
+REGLAS ESPECÍFICAS:
+- Solo si el texto contiene fórmulas, ecuaciones o expresiones matemáticas.
+- "text" es el enunciado en español sin LaTeX.
+- "latex" es la expresión en LaTeX sin signos $ (ej: "x^2+3x-4=0").
+- "correctLatex" es la solución en LaTeX.
+
+FORMATO (devuelve solo esto):
+[
+  {
+    "text": "Resuelve la siguiente ecuación:",
+    "type": "open",
+    "isMath": true,
+    "latex": "x^2-4=0",
+    "correctLatex": "x=2 \\text{ o } x=-2"
+  }
+]`;
 
       return intro + '[]';
     }
@@ -188,8 +223,8 @@ FORMATO JSON:
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: buildPrompt(type, n) }],
-          temperature: 0.3,
-          max_tokens: 2500
+          temperature: 0.2,
+          max_tokens: 3500
         })
       });
       const d = await r.json();
