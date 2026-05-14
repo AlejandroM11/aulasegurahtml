@@ -27,9 +27,64 @@ function renderTeacher(app) {
   let title = '', code = '', dur = 30, showCorrectAnswers = false;
   let questions = [], qtext = '', qtype = 'mc';
   let options = ['', ''], correctIndex = 0, correctIndexes = [];
-  let mathEditorInstance = null;   // MathQuill instance para el campo de ecuación inline
-  let mathModalInstance = null;    // MathQuill instance del modal de inserción
+  let mathEditorInstance = null;
+  let mathModalInstance  = null;
   const user = getUser();
+
+  // ─── Auto-guardado de borrador ────────────────────────────
+  let _draftInterval = null;
+
+  function startDraftAutosave() {
+    stopDraftAutosave();
+    _draftInterval = setInterval(() => {
+      if (!user?.uid) return;
+      saveDraft(user.uid, {
+        title, code, dur, showCorrectAnswers, questions,
+        selectedExamId: selectedExam?.id || null
+      });
+    }, 15000); // cada 15s
+  }
+
+  function stopDraftAutosave() {
+    if (_draftInterval) { clearInterval(_draftInterval); _draftInterval = null; }
+  }
+
+  // Guardar al salir de la página
+  window.addEventListener('beforeunload', () => {
+    if (user?.uid && (title || questions.length > 0)) {
+      saveDraft(user.uid, { title, code, dur, showCorrectAnswers, questions, selectedExamId: selectedExam?.id || null });
+    }
+  });
+
+  // ─── Restaurar borrador si existe ────────────────────────
+  function checkAndRestoreDraft() {
+    if (!user?.uid) return;
+    const entry = loadDraft(user.uid);
+    if (!entry) return;
+    const left = draftTimeLeft(user.uid);
+    const d    = entry.data;
+    const qCount = d.questions?.length || 0;
+    if (!d.title && qCount === 0) { deleteDraft(user.uid); return; }
+
+    const msg = `📝 Tienes un borrador guardado hace menos de 2 minutos:\n\n` +
+      `• Título: ${d.title || '(sin título)'}\n` +
+      `• Preguntas: ${qCount}\n` +
+      `• Tiempo restante: ${left}\n\n` +
+      `¿Deseas restaurarlo?`;
+
+    if (confirm(msg)) {
+      title              = d.title              || '';
+      code               = d.code               || '';
+      dur                = d.dur                || 30;
+      showCorrectAnswers = d.showCorrectAnswers  || false;
+      questions          = d.questions           || [];
+      activeTab          = 'crear';
+      deleteDraft(user.uid);
+      render();
+    } else {
+      deleteDraft(user.uid);
+    }
+  }
 
   // ─── carga inicial ────────────────────────────────────────
   async function loadExams() {
@@ -174,9 +229,14 @@ function renderTeacher(app) {
           <button class="tab-pill" id="tab-monitor" style="flex:1">
             <i class="fa-solid fa-tower-broadcast" style="margin-right:.4rem"></i>Monitoreo
           </button>
+          <button class="tab-pill${activeTab==='borradores'?' active':''}" id="tab-borradores" style="flex:1;position:relative">
+            <i class="fa-solid fa-floppy-disk" style="margin-right:.4rem"></i>Borradores
+            ${hasDraft(user?.uid) ? `<span style="position:absolute;top:.3rem;right:.3rem;width:.55rem;height:.55rem;border-radius:50%;background:#f59e0b;border:2px solid #fff"></span>` : ''}
+          </button>
         </div>
-        ${activeTab === 'crear' ? renderTabCrear() : ''}
-        ${activeTab === 'lista' ? renderTabLista() : ''}
+        ${activeTab === 'crear'      ? renderTabCrear()      : ''}
+        ${activeTab === 'lista'      ? renderTabLista()      : ''}
+        ${activeTab === 'borradores' ? renderTabBorradores() : ''}
       </div>
 
       <!-- ══════════ MODAL ECUACIÓN ══════════ -->
@@ -1271,6 +1331,97 @@ function renderTeacher(app) {
   }
 
   // ──────────────────────────────────────────────────────────
+  //  renderTabBorradores
+  // ──────────────────────────────────────────────────────────
+  function renderTabBorradores() {
+    const entry = loadDraft(user?.uid);
+    const left  = draftTimeLeft(user?.uid);
+
+    if (!entry) {
+      return `
+        <div class="card" style="text-align:center;padding:3rem 2rem">
+          <i class="fa-solid fa-floppy-disk" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:.75rem"></i>
+          <p style="font-weight:700;color:#64748b;font-size:1rem">No hay borradores guardados</p>
+          <p style="font-size:.85rem;color:#94a3b8;margin-top:.35rem">
+            Los borradores se guardan automáticamente cada 15 segundos mientras creas un examen.<br/>
+            Se eliminan 2 minutos después de la última vez que guardaste.
+          </p>
+        </div>`;
+    }
+
+    const d      = entry.data;
+    const qCount = d.questions?.length || 0;
+    const age    = Math.round((Date.now() - entry.ts) / 1000);
+    const ageStr = age < 60 ? `hace ${age}s` : `hace ${Math.floor(age/60)}m ${age%60}s`;
+
+    return `
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+          <div>
+            <h2 style="font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:.5rem">
+              <i class="fa-solid fa-floppy-disk" style="color:#f59e0b"></i>
+              Borrador guardado
+            </h2>
+            <p style="font-size:.8rem;color:#94a3b8;margin-top:.2rem">
+              Guardado ${ageStr} · Expira en <strong style="color:#f59e0b">${left}</strong>
+            </p>
+          </div>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary" id="draft-restore-btn">
+              <i class="fa-solid fa-rotate-left" style="margin-right:.4rem"></i>Restaurar
+            </button>
+            <button class="btn btn-danger" id="draft-delete-btn">
+              <i class="fa-solid fa-trash" style="margin-right:.4rem"></i>Eliminar
+            </button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1.25rem">
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.85rem;padding:.85rem 1rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#92400e;margin-bottom:.25rem">Título</p>
+            <p style="font-weight:600;color:#1e293b">${d.title || '<em style="color:#94a3b8">Sin título</em>'}</p>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.85rem;padding:.85rem 1rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#92400e;margin-bottom:.25rem">Código</p>
+            <p style="font-weight:700;font-family:'JetBrains Mono',monospace;color:#2563eb">${d.code || '—'}</p>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.85rem;padding:.85rem 1rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#92400e;margin-bottom:.25rem">Preguntas</p>
+            <p style="font-weight:700;font-size:1.4rem;color:#1e293b;line-height:1">${qCount}</p>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.85rem;padding:.85rem 1rem">
+            <p style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#92400e;margin-bottom:.25rem">Duración</p>
+            <p style="font-weight:600;color:#1e293b">${d.dur} min</p>
+          </div>
+        </div>
+
+        ${qCount > 0 ? `
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:.85rem;padding:1rem;max-height:240px;overflow-y:auto">
+            <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:.65rem">
+              Vista previa de preguntas
+            </p>
+            ${d.questions.map((q, i) => `
+              <div style="display:flex;align-items:flex-start;gap:.6rem;padding:.45rem 0;border-bottom:1px solid #f1f5f9">
+                <span style="font-size:.7rem;font-weight:700;color:#94a3b8;flex-shrink:0;min-width:1.5rem">${i+1}.</span>
+                <span style="font-size:.82rem;color:#374151;line-height:1.4">${q.text || '(sin texto)'}</span>
+                <span style="font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:999px;flex-shrink:0;
+                  background:${q.type==='mc'?'#dbeafe':q.type==='multi'?'#cffafe':q.type==='eq'?'#ede9fe':'#dcfce7'};
+                  color:${q.type==='mc'?'#1d4ed8':q.type==='multi'?'#0e7490':q.type==='eq'?'#6d28d9':'#15803d'}">
+                  ${q.type==='mc'?'MC':q.type==='multi'?'MULTI':q.type==='eq'?'EQ':'OPEN'}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="info-box info-box-yellow mt-4" style="font-size:.82rem">
+          <i class="fa-solid fa-circle-info" style="margin-right:.4rem"></i>
+          Este borrador es <strong>privado</strong> — solo tú puedes verlo. Se elimina automáticamente 2 minutos después del último guardado.
+        </div>
+      </div>`;
+  }
+
+  // ──────────────────────────────────────────────────────────
   //  bindTabEvents
   // ──────────────────────────────────────────────────────────
   function bindTabEvents() {
@@ -1383,7 +1534,19 @@ function renderTeacher(app) {
     // ─── Botón IA ───
     const ragBtn = document.getElementById('rag-btn');
     if (ragBtn) ragBtn.onclick = () => {
-      openRAGModal((newQ) => { questions.push(...newQ); render(); });
+      openRAGModal((newQ) => {
+        // Deduplicar: no agregar preguntas cuyo texto ya existe en el array actual
+        const existingTexts = new Set(questions.map(q => q.text.trim().toLowerCase()));
+        const unique = newQ.filter(q => !existingTexts.has(q.text.trim().toLowerCase()));
+        const dupes  = newQ.length - unique.length;
+        if (dupes > 0) {
+          alert(`ℹ️ Se omitieron ${dupes} pregunta${dupes !== 1 ? 's' : ''} duplicada${dupes !== 1 ? 's' : ''} que ya estaban en el examen.`);
+        }
+        if (unique.length > 0) {
+          questions.push(...unique);
+          render();
+        }
+      });
     };
   }
 
