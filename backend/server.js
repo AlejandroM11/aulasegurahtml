@@ -124,15 +124,60 @@ app.post('/api/groq/generate', async (req, res) => {
 
     // Prompt especializado por tipo
     function buildPrompt(type, n) {
-      const intro = `Basandote en este texto educativo, genera EXACTAMENTE ${n} pregunta${n > 1 ? 's' : ''} del tipo indicado.\nTEXTO:\n"""\n${snip}\n"""\nDevuelve SOLO el array JSON, sin texto extra, sin markdown.\n\n`;
-      if (type === 'mc')
-        return intro + 'TIPO: Opcion multiple, UNA sola respuesta correcta.\nFORMATO: [{"text":"...","type":"mc","options":["A","B","C","D"],"correctIndex":0,"isMath":false}]';
-      if (type === 'multi')
-        return intro + 'TIPO: Seleccion multiple, DOS O MAS respuestas correctas. correctIndexes DEBE tener minimo 2 indices.\nFORMATO: [{"text":"...","type":"multi","options":["A","B","C","D"],"correctIndexes":[0,2],"isMath":false}]';
-      if (type === 'open')
-        return intro + 'TIPO: Pregunta abierta de texto libre, sin opciones.\nFORMATO: [{"text":"Explica...","type":"open","isMath":false}]';
-      if (type === 'eq')
-        return intro + 'TIPO: Ecuacion matematica. isMath:true, campo "latex" con LaTeX valido SIN signos $ (ej: "x^2-4=0", "\\frac{d}{dx}(x^2)"). "text" es el enunciado en espanol.\nFORMATO: [{"text":"Resuelve:","type":"open","isMath":true,"latex":"x^2-4=0","correctLatex":"x=2 o x=-2"}]';
+      const intro = `Eres un experto en educación universitaria. Basándote EXCLUSIVAMENTE en el siguiente texto, genera EXACTAMENTE ${n} pregunta${n > 1 ? 's' : ''} de alta calidad académica.
+
+TEXTO FUENTE:
+"""
+${snip}
+"""
+
+REGLAS OBLIGATORIAS:
+- Todas las preguntas y opciones deben basarse ÚNICAMENTE en información del texto. NO inventes datos, fechas, nombres o conceptos que no estén en el texto.
+- Las opciones incorrectas (distractores) deben ser plausibles pero claramente incorrectas según el texto. NO uses opciones absurdas ni genéricas como "Ninguna de las anteriores" o "Todas las anteriores".
+- El texto de la pregunta debe ser claro, específico y sin ambigüedad.
+- Devuelve SOLO el array JSON válido, sin texto extra, sin markdown, sin comentarios.
+
+`;
+
+      if (type === 'mc') return intro + `TIPO: Opción múltiple con UNA sola respuesta correcta.
+REQUISITOS:
+- 4 opciones por pregunta (A, B, C, D)
+- Las 3 opciones incorrectas deben ser conceptualmente relacionadas con el tema pero incorrectas según el texto
+- correctIndex indica el índice (0-3) de la única opción correcta
+- Verifica que correctIndex apunte a la opción realmente correcta
+
+FORMATO JSON:
+[{"text":"Pregunta clara y específica?","type":"mc","options":["Opción correcta","Distractor plausible 1","Distractor plausible 2","Distractor plausible 3"],"correctIndex":0,"isMath":false}]`;
+
+      if (type === 'multi') return intro + `TIPO: Selección múltiple con DOS O MÁS respuestas correctas.
+REQUISITOS:
+- 4 opciones por pregunta
+- correctIndexes debe tener MÍNIMO 2 índices correctos
+- Las opciones correctas deben ser todas verdaderas según el texto
+- Las opciones incorrectas deben ser falsas según el texto pero plausibles
+
+FORMATO JSON:
+[{"text":"¿Cuáles de las siguientes afirmaciones son correctas?","type":"multi","options":["Afirmación verdadera 1","Afirmación verdadera 2","Afirmación falsa 1","Afirmación falsa 2"],"correctIndexes":[0,1],"isMath":false}]`;
+
+      if (type === 'open') return intro + `TIPO: Pregunta abierta de respuesta libre.
+REQUISITOS:
+- La pregunta debe requerir una respuesta elaborada basada en el texto
+- Usa verbos como: Explica, Describe, Analiza, Compara, Justifica
+- NO incluyas opciones
+
+FORMATO JSON:
+[{"text":"Explica con tus propias palabras...","type":"open","isMath":false}]`;
+
+      if (type === 'eq') return intro + `TIPO: Ecuación o expresión matemática del texto.
+REQUISITOS:
+- Solo si el texto contiene matemáticas, fórmulas o ecuaciones
+- "text" es el enunciado en español sin LaTeX
+- "latex" es la expresión matemática en LaTeX válido SIN signos $ (ej: "x^2-4=0", "\\frac{d}{dx}(x^2)")
+- "correctLatex" es la solución en LaTeX
+
+FORMATO JSON:
+[{"text":"Resuelve la siguiente ecuación:","type":"open","isMath":true,"latex":"x^2-4=0","correctLatex":"x=2 \\text{ o } x=-2"}]`;
+
       return intro + '[]';
     }
 
@@ -143,8 +188,8 @@ app.post('/api/groq/generate', async (req, res) => {
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: buildPrompt(type, n) }],
-          temperature: 0.6,
-          max_tokens: 2000
+          temperature: 0.3,
+          max_tokens: 2500
         })
       });
       const d = await r.json();
@@ -156,28 +201,44 @@ app.post('/api/groq/generate', async (req, res) => {
     }
 
     function sanitize(q, forcedType) {
-      if (!q || !q.text) return null;
+      if (!q || !q.text || typeof q.text !== 'string') return null;
+      q.text = q.text.trim();
+      if (!q.text) return null;
       if (forcedType) q.type = forcedType;
+
       if (q.type === 'mc') {
-        if (!Array.isArray(q.options)) return null;
-        q.options = [...new Set(q.options.map(String))].slice(0, 4);
-        while (q.options.length < 4) q.options.push('Opcion ' + (q.options.length + 1));
-        if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) q.correctIndex = 0;
+        if (!Array.isArray(q.options) || q.options.length < 2) return null;
+        // Limpiar opciones vacías o duplicadas
+        q.options = [...new Set(q.options.map(o => String(o).trim()).filter(o => o.length > 0))].slice(0, 4);
+        if (q.options.length < 2) return null;
+        while (q.options.length < 4) q.options.push(`Opción ${q.options.length + 1}`);
+        // Validar correctIndex
+        const ci = Number(q.correctIndex);
+        q.correctIndex = (!isNaN(ci) && ci >= 0 && ci < q.options.length) ? ci : 0;
         q.isMath = false;
       }
+
       if (q.type === 'multi') {
-        if (!Array.isArray(q.options)) return null;
-        q.options = [...new Set(q.options.map(String))].slice(0, 4);
-        while (q.options.length < 4) q.options.push('Opcion ' + (q.options.length + 1));
-        if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length < 2) q.correctIndexes = [0, 1];
-        q.correctIndexes = [...new Set(q.correctIndexes.filter(i => i >= 0 && i < q.options.length))];
+        if (!Array.isArray(q.options) || q.options.length < 2) return null;
+        q.options = [...new Set(q.options.map(o => String(o).trim()).filter(o => o.length > 0))].slice(0, 4);
+        if (q.options.length < 2) return null;
+        while (q.options.length < 4) q.options.push(`Opción ${q.options.length + 1}`);
+        if (!Array.isArray(q.correctIndexes)) q.correctIndexes = [0, 1];
+        q.correctIndexes = [...new Set(
+          q.correctIndexes
+            .map(Number)
+            .filter(i => !isNaN(i) && i >= 0 && i < q.options.length)
+        )];
         if (q.correctIndexes.length < 2) q.correctIndexes = [0, 1];
         q.isMath = false;
       }
+
       if (q.type === 'open' && q.isMath) {
-        if (!q.latex) return null;
+        if (!q.latex || typeof q.latex !== 'string') return null;
         q.latex = q.latex.replace(/^\$+|\$+$/g, '').replace(/^\\\[|\\\]$/g, '').trim();
+        if (!q.latex) return null;
       }
+
       return q;
     }
 
