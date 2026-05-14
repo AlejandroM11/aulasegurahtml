@@ -33,11 +33,13 @@ function renderTeacher(app) {
 
   // ─── Auto-guardado de borrador ────────────────────────────
   let _draftInterval = null;
+  let _draftDiscarded = false;
 
   function startDraftAutosave() {
     stopDraftAutosave();
+    _draftDiscarded = false;
     _draftInterval = setInterval(() => {
-      if (!user?.uid) return;
+      if (!user?.uid || _draftDiscarded) return;
       saveDraft(user.uid, {
         title, code, dur, showCorrectAnswers, questions,
         selectedExamId: selectedExam?.id || null
@@ -49,8 +51,9 @@ function renderTeacher(app) {
     if (_draftInterval) { clearInterval(_draftInterval); _draftInterval = null; }
   }
 
-  // Guardar al salir de la página
+  // Guardar al salir de la página — solo si no fue descartado manualmente
   window.addEventListener('beforeunload', () => {
+    if (_draftDiscarded) return;
     if (user?.uid && (title || questions.length > 0)) {
       saveDraft(user.uid, { title, code, dur, showCorrectAnswers, questions, selectedExamId: selectedExam?.id || null });
     }
@@ -1478,6 +1481,8 @@ function renderTeacher(app) {
     document.getElementById('draft-delete-btn')?.addEventListener('click', () => {
       if (!confirm('¿Eliminar este borrador? No se puede deshacer.')) return;
       deleteDraft(user?.uid);
+      _draftDiscarded = true;
+      stopDraftAutosave();
       render();
     });
   }
