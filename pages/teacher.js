@@ -149,6 +149,7 @@ function renderTeacher(app) {
         alert('✅ Examen creado exitosamente');
       }
       resetForm(); activeTab = 'lista';
+      deleteDraft(user?.uid); // borrador ya no necesario — examen guardado
       await loadExams();
     } catch (err) {
       alert('❌ ' + (err.response?.data?.error || err.message || 'Error al guardar'));
@@ -1430,6 +1431,28 @@ function renderTeacher(app) {
     document.getElementById('tab-examenes').onclick   = () => navigate('/examenes');
     document.getElementById('tab-resultados').onclick = () => navigate('/resultados');
     document.getElementById('tab-monitor').onclick    = () => navigate('/monitor');
+    document.getElementById('tab-borradores').onclick = () => { activeTab = 'borradores'; render(); };
+
+    // Botones del tab borradores
+    document.getElementById('draft-restore-btn')?.addEventListener('click', () => {
+      const entry = loadDraft(user?.uid);
+      if (!entry) { alert('El borrador ya expiró.'); render(); return; }
+      const d = entry.data;
+      title              = d.title              || '';
+      code               = d.code               || '';
+      dur                = d.dur                || 30;
+      showCorrectAnswers = d.showCorrectAnswers  || false;
+      questions          = d.questions           || [];
+      deleteDraft(user.uid);
+      activeTab = 'crear';
+      render();
+    });
+
+    document.getElementById('draft-delete-btn')?.addEventListener('click', () => {
+      if (!confirm('¿Eliminar este borrador? No se puede deshacer.')) return;
+      deleteDraft(user?.uid);
+      render();
+    });
   }
 
   // ──────────────────────────────────────────────────────────
@@ -1572,5 +1595,9 @@ function renderTeacher(app) {
       .replace(/>/g, '&gt;');
   }
 
-  loadExams().then(() => checkPendingEdit());
+  loadExams().then(() => {
+    checkPendingEdit();
+    checkAndRestoreDraft();
+    startDraftAutosave();
+  });
 }
