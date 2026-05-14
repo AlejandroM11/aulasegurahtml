@@ -394,6 +394,66 @@ function renderHome(app) {
 
       </div>
 
+      <!-- ── CARTA UNIVERSIDAD ── -->
+      <div style="
+        margin:3rem 0 0;
+        background:var(--surface,#fff);
+        border:1px solid var(--border,#e2e8f0);
+        border-radius:1.5rem;
+        overflow:hidden;
+        box-shadow:0 2px 12px rgba(0,0,0,.06);
+        position:relative;z-index:1;
+        animation:slideUp .6s 1s ease both;opacity:0;
+        display:flex;flex-wrap:wrap;
+      ">
+        <!-- Mapa embed -->
+        <div style="flex:1;min-width:280px;min-height:220px;position:relative">
+          <iframe
+            src="https://maps.google.com/maps?q=Universidad+de+Ibagu%C3%A9,+Carrera+22+Calle+67B,+Ibagu%C3%A9,+Tolima,+Colombia&output=embed&z=15"
+            style="width:100%;height:100%;min-height:220px;border:none;display:block"
+            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            title="Ubicación Universidad de Ibagué">
+          </iframe>
+        </div>
+        <!-- Info -->
+        <div style="flex:1;min-width:260px;padding:1.75rem 2rem;display:flex;flex-direction:column;justify-content:center;gap:1rem">
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <div style="width:2.75rem;height:2.75rem;border-radius:.75rem;flex-shrink:0;background:linear-gradient(135deg,#1e3a5f,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,99,235,.3)">
+              <i class="fa-solid fa-graduation-cap" style="color:#fff;font-size:1rem"></i>
+            </div>
+            <div>
+              <p style="font-weight:800;font-size:1rem;color:var(--text-primary,#0d1117);letter-spacing:-.01em">Universidad de Ibagué</p>
+              <p style="font-size:.75rem;color:var(--text-muted,#8896a7);margin-top:.1rem">UNIBAGUÉ · Fundada en 1980</p>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.65rem">
+            <div style="display:flex;align-items:flex-start;gap:.65rem">
+              <i class="fa-solid fa-location-dot" style="color:#2563eb;font-size:.9rem;margin-top:.15rem;flex-shrink:0"></i>
+              <div>
+                <p style="font-size:.82rem;font-weight:600;color:var(--text-primary,#0d1117)">Carrera 22 Calle 67B</p>
+                <p style="font-size:.78rem;color:var(--text-muted,#8896a7)">Ibagué, Tolima, Colombia</p>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.65rem">
+              <i class="fa-solid fa-building-columns" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
+              <p style="font-size:.82rem;color:var(--text-secondary,#4a5568)">Universidad privada sin ánimo de lucro</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:.65rem">
+              <i class="fa-solid fa-globe" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
+              <a href="https://www.unibague.edu.co" target="_blank" rel="noopener" style="font-size:.82rem;color:#2563eb;text-decoration:none;font-weight:600">www.unibague.edu.co</a>
+            </div>
+            <div style="display:flex;align-items:center;gap:.65rem">
+              <i class="fa-solid fa-phone" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
+              <p style="font-size:.82rem;color:var(--text-secondary,#4a5568)">+57 (8) 276 0010</p>
+            </div>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:.85rem;padding:.65rem .9rem;font-size:.78rem;color:#1d4ed8;line-height:1.5">
+            <i class="fa-solid fa-circle-info" style="margin-right:.4rem"></i>
+            AulaSegura es un proyecto académico desarrollado por estudiantes de la Universidad de Ibagué.
+          </div>
+        </div>
+      </div>
+
       <!-- ── CTA FINAL ── -->
       <div class="home-cta-section">
         <!-- SVG decorativo -->
@@ -411,79 +471,6 @@ function renderHome(app) {
           <a href="#/invitado" class="cta-btn-outline-white">
             <i class="fa-solid fa-bolt"></i> Acceso rápido
           </a>
-        </div>
-      </div>
-
-      <!-- ── CARTA UNIVERSIDAD ── -->
-      <div style="
-        margin:2rem 0 1rem;
-        background:var(--surface,#fff);
-        border:1px solid var(--border,#e2e8f0);
-        border-radius:1.5rem;
-        overflow:hidden;
-        box-shadow:0 2px 12px rgba(0,0,0,.06);
-        position:relative;z-index:1;
-        animation:slideUp .6s 1.3s ease both;opacity:0;
-        display:flex;flex-wrap:wrap;
-      ">
-        <!-- Mapa embed -->
-        <div style="flex:1;min-width:280px;min-height:220px;position:relative">
-          <iframe
-            src="https://maps.google.com/maps?q=Universidad+de+Ibagu%C3%A9,+Carrera+22+Calle+67B,+Ibagu%C3%A9,+Tolima,+Colombia&output=embed&z=15"
-            style="width:100%;height:100%;min-height:220px;border:none;display:block"
-            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-            title="Ubicación Universidad de Ibagué">
-          </iframe>
-        </div>
-        <!-- Info -->
-        <div style="flex:1;min-width:260px;padding:1.75rem 2rem;display:flex;flex-direction:column;justify-content:center;gap:1rem">
-          <div style="display:flex;align-items:center;gap:.75rem">
-            <div style="
-              width:2.75rem;height:2.75rem;border-radius:.75rem;flex-shrink:0;
-              background:linear-gradient(135deg,#1e3a5f,#2563eb);
-              display:flex;align-items:center;justify-content:center;
-              box-shadow:0 4px 12px rgba(37,99,235,.3);
-            ">
-              <i class="fa-solid fa-graduation-cap" style="color:#fff;font-size:1rem"></i>
-            </div>
-            <div>
-              <p style="font-weight:800;font-size:1rem;color:var(--text-primary,#0d1117);letter-spacing:-.01em">Universidad de Ibagué</p>
-              <p style="font-size:.75rem;color:var(--text-muted,#8896a7);margin-top:.1rem">UNIBAGUÉ · Fundada en 1980</p>
-            </div>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:.65rem">
-            <div style="display:flex;align-items:flex-start;gap:.65rem">
-              <i class="fa-solid fa-location-dot" style="color:#2563eb;font-size:.9rem;margin-top:.15rem;flex-shrink:0"></i>
-              <div>
-                <p style="font-size:.82rem;font-weight:600;color:var(--text-primary,#0d1117)">Carrera 22 Calle 67B</p>
-                <p style="font-size:.78rem;color:var(--text-muted,#8896a7)">Ibagué, Tolima, Colombia</p>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:.65rem">
-              <i class="fa-solid fa-building-columns" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
-              <p style="font-size:.82rem;color:var(--text-secondary,#4a5568)">Universidad privada sin ánimo de lucro</p>
-            </div>
-            <div style="display:flex;align-items:center;gap:.65rem">
-              <i class="fa-solid fa-globe" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
-              <a href="https://www.unibague.edu.co" target="_blank" rel="noopener"
-                style="font-size:.82rem;color:#2563eb;text-decoration:none;font-weight:600">
-                www.unibague.edu.co
-              </a>
-            </div>
-            <div style="display:flex;align-items:center;gap:.65rem">
-              <i class="fa-solid fa-phone" style="color:#2563eb;font-size:.9rem;flex-shrink:0"></i>
-              <p style="font-size:.82rem;color:var(--text-secondary,#4a5568)">+57 (8) 276 0010</p>
-            </div>
-          </div>
-
-          <div style="
-            background:#eff6ff;border:1px solid #bfdbfe;border-radius:.85rem;
-            padding:.65rem .9rem;font-size:.78rem;color:#1d4ed8;line-height:1.5;
-          ">
-            <i class="fa-solid fa-circle-info" style="margin-right:.4rem"></i>
-            AulaSegura es un proyecto académico desarrollado por estudiantes de la Universidad de Ibagué.
-          </div>
         </div>
       </div>
 
