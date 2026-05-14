@@ -66,24 +66,51 @@ function renderTeacher(app) {
     const qCount = d.questions?.length || 0;
     if (!d.title && qCount === 0) { deleteDraft(user.uid); return; }
 
-    const msg = `📝 Tienes un borrador guardado hace menos de 2 minutos:\n\n` +
-      `• Título: ${d.title || '(sin título)'}\n` +
-      `• Preguntas: ${qCount}\n` +
-      `• Tiempo restante: ${left}\n\n` +
-      `¿Deseas restaurarlo?`;
+    // Mostrar toast sutil en vez de popup bloqueante
+    setTimeout(() => {
+      const existing = document.getElementById('draft-toast');
+      if (existing) return;
+      const toast = document.createElement('div');
+      toast.id = 'draft-toast';
+      toast.innerHTML = `
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <i class="fa-solid fa-floppy-disk" style="color:#f59e0b;font-size:1.1rem;flex-shrink:0"></i>
+          <div>
+            <p style="font-weight:700;font-size:.875rem;color:#1e293b">Borrador disponible</p>
+            <p style="font-size:.75rem;color:#64748b;margin-top:.1rem">
+              "${d.title || 'Sin título'}" · ${qCount} pregunta${qCount!==1?'s':''} · expira en ${left}
+            </p>
+          </div>
+          <button id="draft-toast-go" style="
+            background:#f59e0b;color:#fff;border:none;border-radius:.6rem;
+            padding:.4rem .85rem;font-size:.8rem;font-weight:700;cursor:pointer;
+            white-space:nowrap;flex-shrink:0;font-family:inherit;
+          ">Ver borrador</button>
+          <button id="draft-toast-close" style="
+            background:transparent;border:none;cursor:pointer;
+            color:#94a3b8;font-size:1rem;padding:.25rem;flex-shrink:0;
+          ">✕</button>
+        </div>
+      `;
+      toast.style.cssText = `
+        position:fixed;bottom:5.5rem;left:50%;transform:translateX(-50%);
+        background:#fff;border:1.5px solid #fde68a;border-radius:1rem;
+        padding:.85rem 1.1rem;box-shadow:0 8px 32px rgba(0,0,0,.12);
+        z-index:490;min-width:320px;max-width:480px;
+        animation:slideUp .3s ease;
+      `;
+      document.body.appendChild(toast);
 
-    if (confirm(msg)) {
-      title              = d.title              || '';
-      code               = d.code               || '';
-      dur                = d.dur                || 30;
-      showCorrectAnswers = d.showCorrectAnswers  || false;
-      questions          = d.questions           || [];
-      activeTab          = 'crear';
-      deleteDraft(user.uid);
-      render();
-    } else {
-      deleteDraft(user.uid);
-    }
+      document.getElementById('draft-toast-go').onclick = () => {
+        toast.remove();
+        activeTab = 'borradores';
+        render();
+      };
+      document.getElementById('draft-toast-close').onclick = () => toast.remove();
+
+      // Auto-cerrar en 8 segundos
+      setTimeout(() => toast.remove(), 8000);
+    }, 600);
   }
 
   // ─── carga inicial ────────────────────────────────────────
