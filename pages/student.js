@@ -1792,7 +1792,7 @@ function renderStudent(app) {
             </div>
             <div class="st-success-stat">
               <span class="st-success-stat-val">${pct !== null ? pct + '%' : '—'}</span>
-              <span class="st-success-stat-lbl">Resultado MC</span>
+              <span class="st-success-stat-lbl">Resultado</span>
             </div>
           </div>
 
