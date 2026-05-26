@@ -3,7 +3,18 @@ const cors    = require('cors');
 const admin   = require('firebase-admin');
 
 const app = express();
-app.use(cors({ origin: '*' }));
+
+// CORS — permite cualquier origen incluyendo Vercel y localhost
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: false,
+};
+app.use(cors(corsOptions));
+// Responder a preflight OPTIONS en todas las rutas
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
