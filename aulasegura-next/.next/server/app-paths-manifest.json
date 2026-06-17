@@ -1,0 +1,9 @@
+{
+  "/(public)/page": "app/(public)/page.js",
+  "/(public)/login/page": "app/(public)/login/page.js",
+  "/(protected)/docente/page": "app/(protected)/docente/page.js",
+  "/(public)/register/page": "app/(public)/register/page.js",
+  "/(protected)/perfil/page": "app/(protected)/perfil/page.js",
+  "/(protected)/resultados/page": "app/(protected)/resultados/page.js",
+  "/(protected)/monitor/page": "app/(protected)/monitor/page.js"
+}
